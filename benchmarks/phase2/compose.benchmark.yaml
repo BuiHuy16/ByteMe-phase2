@@ -1,0 +1,25 @@
+services:
+  mysql:
+    image: mysql@sha256:a81d043930e51745522bd5c430961cf8286f0a23f0a9a2a6e0108f7ea71b0902
+    command:
+      - --transaction-isolation=REPEATABLE-READ
+      - --max-connections=100
+      - --innodb-buffer-pool-size=536870912
+      - --performance-schema=ON
+    cpus: 2.0
+    mem_limit: 1536m
+    ports:
+      - "127.0.0.1:${DB_PORT}:3306"
+  backend:
+    environment:
+      JAVA_TOOL_OPTIONS: -Xms512m -Xmx768m -XX:+UseG1GC -Xlog:gc*:stdout:time,level,tags
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "10"
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: "10"
+      SERVER_TOMCAT_THREADS_MAX: "200"
+      SERVER_TOMCAT_THREADS_MIN_SPARE: "10"
+    cpus: 2.0
+    mem_limit: 1280m
+    ports:
+      - "127.0.0.1:${SERVER_PORT}:8080"
+    volumes:
+      - ./.local/phase2-benchmark/keys:/run/auth:ro
