@@ -195,12 +195,16 @@ def safe_extract(archive: pathlib.Path, destination: pathlib.Path) -> None:
     resolved = destination.resolve()
     with tarfile.open(archive) as bundle:
         members = bundle.getmembers()
-        names = set()
+        members_by_path: dict[pathlib.PurePosixPath, tarfile.TarInfo] = {}
         for member in members:
             pure = pathlib.PurePosixPath(member.name)
-            if pure.is_absolute() or ".." in pure.parts or member.name in names:
+            if pure.is_absolute() or ".." in pure.parts:
                 raise RuntimeError(f"unsafe archive member: {member.name}")
-            names.add(member.name)
+            previous = members_by_path.get(pure)
+            if previous is not None and not (previous.isdir() and member.isdir()):
+                raise RuntimeError(f"duplicate archive member: {member.name}")
+            if previous is None:
+                members_by_path[pure] = member
             if not (member.isdir() or member.isfile() or member.issym() or member.islnk()):
                 raise RuntimeError(f"unsupported archive member type: {member.name}")
             target = (destination / pathlib.Path(*pure.parts)).resolve()

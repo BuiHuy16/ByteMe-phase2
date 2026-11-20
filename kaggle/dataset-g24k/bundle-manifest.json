@@ -1,15 +1,15 @@
 ﻿{
     "schema_version":  2,
     "protocol_baseline_sha":  "510f6415b6af535ceec77213f0b0c7d5082123f7",
-    "repository_sha":  "d9527d5eaf0484923df8c752d6683e574cf5aa83",
+    "repository_sha":  "9d8900f7146a11d4d707384aba0bf485ab2ec13a",
     "application_sha":  "510f6415b6af535ceec77213f0b0c7d5082123f7",
-    "application_jar_sha256":  "e2cdf11768078d10907f3ae144c8ceefd6db07c6be126c668874f7f14183c28b",
+    "application_jar_sha256":  "d8f9570870c4e48f94d1d62241d390d9e9689a8d0cb6a0b5446897b3df188359",
     "build_provenance_path":  "build/build-provenance.json",
-    "generated_at_utc":  "2026-11-20T11:04:07.0638758Z",
+    "generated_at_utc":  "2026-11-20T14:55:28.1429399Z",
     "files":  [
                   {
                       "path":  "application.jar",
-                      "sha256":  "e2cdf11768078d10907f3ae144c8ceefd6db07c6be126c668874f7f14183c28b",
+                      "sha256":  "d8f9570870c4e48f94d1d62241d390d9e9689a8d0cb6a0b5446897b3df188359",
                       "bytes":  66980148
                   },
                   {
@@ -29,8 +29,8 @@
                   },
                   {
                       "path":  "benchmark-kit/benchmarks/phase2/kaggle/kaggle_runtime.py",
-                      "sha256":  "7308c02ca46b8bf4db625e89f3f86e55c891124511740bb4af235ff9c6bc5724",
-                      "bytes":  51882
+                      "sha256":  "639f9172acacc82245e5c7bbd7a050b815ae0e0599722bace8db74e358ae7e6f",
+                      "bytes":  52167
                   },
                   {
                       "path":  "benchmark-kit/benchmarks/phase2/kaggle/prepare_bundle.ps1",
@@ -44,8 +44,8 @@
                   },
                   {
                       "path":  "benchmark-kit/benchmarks/phase2/kaggle/tests/test_remediation.py",
-                      "sha256":  "6ea788c8de1cee4b94f1641387031ffb36675195b78de01e0a3deff3bef5cd7d",
-                      "bytes":  13997
+                      "sha256":  "f30a89d3846573ab60701ce919482073df8fcfd2e7804c38a2ac53a4c6bac857",
+                      "bytes":  17951
                   },
                   {
                       "path":  "benchmark-kit/benchmarks/phase2/prepare_dataset.py",
@@ -79,12 +79,12 @@
                   },
                   {
                       "path":  "build/build-provenance.json",
-                      "sha256":  "8993cec49b22c0a225715cfcbdea6c8c7a2b90816cf0593318a0448eff695fef",
+                      "sha256":  "176148518b46730da87a3c9ea25d501de80d75d33fe1af2eed4108139abec0b6",
                       "bytes":  1898
                   },
                   {
                       "path":  "build/maven-build.txt",
-                      "sha256":  "b7dac817835fc5612d0b29d2bf1c826f4b01821465457ea0ed84c406c9f684da",
+                      "sha256":  "7846a37a36bf7f0ce94907794f733bd9841d89b02429acc48a6ac19309a90c1f",
                       "bytes":  4458
                   },
                   {

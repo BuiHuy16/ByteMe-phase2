@@ -206,6 +206,63 @@ class ArchiveSafetyTests(unittest.TestCase):
         with tarfile.open(path, "w") as archive:
             archive.addfile(member, io.BytesIO(data) if member.isfile() else None)
 
+    def test_regular_directory_is_extracted(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            archive = root / "directory.tar"
+            member = tarfile.TarInfo("mysql-8.4.13-linux-glibc2.28-x86_64/bin")
+            member.type = tarfile.DIRTYPE
+            self.make_tar(archive, member)
+            runtime.safe_extract(archive, root / "out")
+            self.assertTrue((root / "out" / member.name).is_dir())
+
+    def test_duplicate_directory_entries_are_accepted(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            archive = root / "duplicate-directory.tar"
+            name = "mysql-8.4.13-linux-glibc2.28-x86_64/bin"
+            with tarfile.open(archive, "w") as bundle:
+                for _ in range(2):
+                    member = tarfile.TarInfo(name)
+                    member.type = tarfile.DIRTYPE
+                    bundle.addfile(member)
+            runtime.safe_extract(archive, root / "out")
+            self.assertTrue((root / "out" / name).is_dir())
+
+    def test_regular_file_is_extracted(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            archive = root / "file.tar"
+            content = b"mysql binary placeholder"
+            member = tarfile.TarInfo("mysql-8.4.13-linux-glibc2.28-x86_64/bin/mysqld")
+            member.size = len(content)
+            self.make_tar(archive, member, content)
+            runtime.safe_extract(archive, root / "out")
+            self.assertEqual((root / "out" / member.name).read_bytes(), content)
+
+    def test_directory_path_traversal_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            archive = root / "bad-directory.tar"
+            member = tarfile.TarInfo("../escape")
+            member.type = tarfile.DIRTYPE
+            self.make_tar(archive, member)
+            with self.assertRaisesRegex(RuntimeError, "unsafe archive member"):
+                runtime.safe_extract(archive, root / "out")
+
+    def test_duplicate_regular_file_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            archive = root / "duplicate-file.tar"
+            name = "inside/file"
+            with tarfile.open(archive, "w") as bundle:
+                for content in (b"first", b"second"):
+                    member = tarfile.TarInfo(name)
+                    member.size = len(content)
+                    bundle.addfile(member, io.BytesIO(content))
+            with self.assertRaisesRegex(RuntimeError, "duplicate archive member"):
+                runtime.safe_extract(archive, root / "out")
+
     def test_path_escape_symlink_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
             root = pathlib.Path(temp)
@@ -224,6 +281,31 @@ class ArchiveSafetyTests(unittest.TestCase):
             member.type, member.linkname = tarfile.LNKTYPE, "../escape"
             self.make_tar(archive, member)
             with self.assertRaisesRegex(RuntimeError, "unsafe hardlink"):
+                runtime.safe_extract(archive, root / "out")
+
+    def test_safe_hardlink_is_extracted(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            archive = root / "hardlink.tar"
+            content = b"library"
+            target = tarfile.TarInfo("inside/libmysqlclient.so.24")
+            target.size = len(content)
+            link = tarfile.TarInfo("inside/libmysqlclient.so")
+            link.type, link.linkname = tarfile.LNKTYPE, target.name
+            with tarfile.open(archive, "w") as bundle:
+                bundle.addfile(target, io.BytesIO(content))
+                bundle.addfile(link)
+            runtime.safe_extract(archive, root / "out")
+            self.assertEqual((root / "out" / link.name).read_bytes(), content)
+
+    def test_special_file_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            archive = root / "fifo.tar"
+            member = tarfile.TarInfo("inside/fifo")
+            member.type = tarfile.FIFOTYPE
+            self.make_tar(archive, member)
+            with self.assertRaisesRegex(RuntimeError, "unsupported archive member type"):
                 runtime.safe_extract(archive, root / "out")
 
 
