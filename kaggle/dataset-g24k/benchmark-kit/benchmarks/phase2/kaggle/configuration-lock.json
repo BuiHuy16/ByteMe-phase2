@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "platform": "kaggle-cpu",
+  "baseline_sha": "510f6415b6af535ceec77213f0b0c7d5082123f7",
+  "expected_versions": {
+    "java_contains": "21.0.13",
+    "mysql_contains": "8.4.13",
+    "k6_contains": "v0.55.2"
+  },
+  "runtime": {
+    "mysql_host": "127.0.0.1",
+    "mysql_port": 13309,
+    "backend_host": "127.0.0.1",
+    "backend_port": 18083,
+    "database": "byteme_g24_kaggle",
+    "database_user": "byteme_benchmark",
+    "java_options": [
+      "-Xms512m",
+      "-Xmx768m",
+      "-XX:+UseG1GC"
+    ],
+    "hikari_maximum_pool_size": 10,
+    "hikari_minimum_idle": 10,
+    "tomcat_threads_max": 200,
+    "tomcat_threads_min_spare": 10,
+    "mysql_transaction_isolation": "REPEATABLE-READ",
+    "mysql_max_connections": 100,
+    "mysql_innodb_buffer_pool_size": 536870912,
+    "performance_schema": true
+  },
+  "workloads": {
+    "warmup_seconds": 60,
+    "measurement_seconds": 180,
+    "cooldown_seconds": 30,
+    "w1_food_list_rps": 10,
+    "w1_food_search_rps": 5,
+    "w1_order_list_rps": 5,
+    "w1_order_page_size": 20,
+    "w2_vus": 10,
+    "w3_rounds": 15,
+    "minimum_runs": 3,
+    "target_runs": 5
+  },
+  "smoke": {
+    "profile": "smoke",
+    "w3_rounds": 2,
+    "expected_w1_checks": 6,
+    "expected_w1_requests": 6,
+    "expected_w2_checks": 8,
+    "expected_w2_requests": 8,
+    "minimum_resource_sample_rows": 1
+  },
+  "comparability": {
+    "require_cgroup_quota_evidence": true,
+    "require_cpuset_effective": true,
+    "require_memory_limit": true,
+    "require_kernel_identity": true,
+    "require_runtime_image_identity": true
+  }
+}

@@ -20,18 +20,18 @@ def code(source: str) -> dict:
 notebook = {
     "cells": [
         markdown("""
-        # ByteMe Phase 2 — G2.4-K Kaggle CPU smoke
+        # ByteMe Phase 2 — G2.4-K smoke test trên Kaggle CPU
 
-        This notebook adapts the versioned G2.4 kit without changing its business workload. It is a **smoke test only**, never an official G2.5 baseline.
+        Notebook này điều chỉnh bộ công cụ G2.4 đã được version hóa mà không thay đổi business workload. Đây **chỉ là smoke test**, không bao giờ là official baseline G2.5.
 
-        Before Run All:
+        Trước khi Run All:
 
-        1. Select **Accelerator: None**.
-        2. Attach the private G2.4-K bundle dataset produced by `prepare_bundle.ps1`.
-        3. Attach exactly one portable Linux x86_64 archive for Java 21.0.13, MySQL 8.4.13 and k6 0.55.2, unless the Kaggle image already reports that exact version.
-        4. Do not attach credentials or shared databases. Download the evidence ZIP before the session expires.
+        1. Chọn **Accelerator: None**.
+        2. Attach private G2.4-K bundle dataset được tạo bởi `prepare_bundle.ps1`.
+        3. Attach chính xác một portable Linux x86_64 archive cho mỗi tool Java 21.0.13, MySQL 8.4.13 và k6 0.55.2, trừ khi Kaggle image đã báo cáo đúng phiên bản đó.
+        4. Không attach credentials hoặc shared database. Tải evidence ZIP trước khi session hết hạn.
 
-        The runner probes root/apt/Docker only as capabilities; it does not assume or require them.
+        Runner chỉ probe root/apt/Docker như các capability; không giả định hoặc yêu cầu chúng.
         """),
         code("""
         import datetime as dt
@@ -62,11 +62,11 @@ notebook = {
             raise RuntimeError('Kaggle smoke did not pass; inspect the evidence ZIP and do not report PASS')
         """),
         markdown("""
-        ## Result interpretation
+        ## Diễn giải kết quả
 
-        A green notebook is not enough by itself. Retain `smoke-result.json`, `manifest/run-manifest.json`, raw W1/W2 JSON, W3 result, resource/DB/JVM logs and `SHA256SUMS.txt` from the ZIP. A smoke PASS validates orchestration only; it is not an official Phase 1 performance result.
+        Chỉ một notebook màu xanh là chưa đủ. Hãy giữ lại `smoke-result.json`, `manifest/run-manifest.json`, raw W1/W2 JSON, W3 result, resource/DB/JVM logs và `SHA256SUMS.txt` từ file ZIP. Smoke PASS chỉ xác minh orchestration; đó không phải kết quả performance chính thức của Pha 1.
 
-        Before G2.5, compare session manifests and reject different CPU model, core quota, RAM quota, OS image or toolchain/configuration/workload hashes. Run the standard profile only under the separately approved official protocol.
+        Trước G2.5, hãy so sánh session manifest và từ chối các run có CPU model, core quota, RAM quota, OS image hoặc toolchain/configuration/workload hashes khác nhau. Chỉ chạy standard profile theo official protocol đã được phê duyệt riêng.
         """),
     ],
     "metadata": {

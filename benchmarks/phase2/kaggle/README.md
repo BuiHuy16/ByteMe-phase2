@@ -1,46 +1,46 @@
-# ByteMe G2.4-K — Kaggle CPU adaptation
+# ByteMe G2.4-K — Thích ứng cho Kaggle CPU
 
-This adapter keeps the G2.4 workload and dataset semantics while replacing Docker-specific execution with loopback, user-space processes. It does not change application source, schema, seed or the historical upstream notebook.
+Adapter này giữ nguyên semantics của workload và dataset G2.4, đồng thời thay cách thực thi phụ thuộc Docker bằng các user-space process chạy trên loopback. Adapter không thay đổi application source, schema, seed hoặc notebook upstream lịch sử.
 
-## Status
+## Trạng thái
 
-The notebook and scripts have been statically validated locally. No Kaggle credentials/runtime are available in the preparation environment, so **Kaggle runtime validation is PENDING**. Do not report a smoke PASS until `smoke-result.json` from a real Kaggle session says `PASS`.
+Notebook và các script đã được static validation trên Local. Môi trường chuẩn bị không có Kaggle credentials/runtime, vì vậy **Kaggle runtime validation vẫn PENDING**. Không được báo cáo smoke PASS cho đến khi `smoke-result.json` từ một Kaggle session thực tế ghi nhận `PASS`.
 
-## Inputs
+## Input
 
-1. After the official regression gate, build and package directly from the verified executable tree:
+1. Sau official regression gate, build và package trực tiếp từ executable tree đã được xác minh:
 
    ```powershell
    ./benchmarks/phase2/kaggle/prepare_bundle.ps1 -ExpectedApplicationSha 510f6415b6af535ceec77213f0b0c7d5082123f7
    ```
 
-   The builder rejects staged, unstaged or untracked executable drift, runs Maven Wrapper `clean package`, and records source/tree identity, Java/Maven output, build command/exit and JAR SHA-256. For a future Phase 2 treatment, pass that reviewed application SHA; the benchmark workload remains independently hashed.
+   Builder từ chối executable drift ở staged, unstaged hoặc untracked, chạy Maven Wrapper `clean package`, đồng thời ghi lại source/tree identity, Java/Maven output, build command/exit và JAR SHA-256. Đối với treatment Pha 2 trong tương lai, hãy truyền application SHA đã được review; benchmark workload vẫn được hash độc lập.
 
-2. Add exact portable Linux x86_64 archives for Java 21.0.13, MySQL 8.4.13 and k6 0.55.2 to a private Kaggle Dataset. The adapter accepts a system binary only when its reported version contains the exact locked value. It never silently substitutes a different version.
-3. Upload `kaggle/script/byteme_phase2_g24k.ipynb`; select Accelerator `None`; attach the bundle/toolchain datasets. Internet may remain off when all archives are attached.
+2. Thêm các archive portable Linux x86_64 chính xác cho Java 21.0.13, MySQL 8.4.13 và k6 0.55.2 vào một private Kaggle Dataset. Adapter chỉ chấp nhận system binary khi phiên bản được báo cáo chứa đúng locked value. Adapter không bao giờ âm thầm thay thế bằng phiên bản khác.
+3. Upload `kaggle/script/byteme_phase2_g24k.ipynb`; chọn Accelerator `None`; attach bundle/toolchain datasets. Có thể tắt Internet khi mọi archive đã được attach.
 
-MySQL runs from its generic binary distribution under `/kaggle/working`, bound to `127.0.0.1:13309`; Docker and root/apt are not required. If a portable binary has missing shared libraries, the run fails closed and records the blocker.
+MySQL chạy từ generic binary distribution trong `/kaggle/working`, bind vào `127.0.0.1:13309`; không yêu cầu Docker hoặc quyền root/apt. Nếu portable binary thiếu shared library, run sẽ fail closed và ghi lại blocker.
 
-## Notebook phases
+## Các giai đoạn của notebook
 
-The notebook captures CPU model, core count, exact RAM quota, OS/kernel and capabilities; verifies every bundle file; resolves exact tool versions; initializes isolated MySQL; starts the baseline JAR with the configuration lock; prepares smoke fixtures; executes W1/W2/W3; captures raw k6, process/system resources, JVM/GC, DB status/query digests and final invariants; resets to the initial logical checksum; removes runtime secrets; creates `SHA256SUMS.txt` and an evidence ZIP.
+Notebook thu thập CPU model, core count, RAM quota chính xác, OS/kernel và capabilities; xác minh mọi bundle file; resolve phiên bản tool chính xác; khởi tạo MySQL cô lập; khởi động baseline JAR với configuration lock; chuẩn bị smoke fixtures; thực thi W1/W2/W3; thu k6 raw data, process/system resources, JVM/GC, DB status/query digests và final invariants; reset về initial logical checksum; xóa runtime secrets; tạo `SHA256SUMS.txt` và evidence ZIP.
 
-Initial fixture validation requires exact initial order/item counts and empty carts. Post-workload validation permits legitimate canceled orders and empty cart rows while still requiring immutable read fixtures, exact user/category/food cardinality, shared-stock restoration, positive quantities/non-negative stock and no orphan order/cart items. Reset then has to pass the initial rules and reproduce the original logical checksum.
+Initial fixture validation yêu cầu exact initial order/item counts và cart rỗng. Post-workload validation cho phép các canceled order và empty cart row hợp lệ, nhưng vẫn yêu cầu read fixtures bất biến, chính xác user/category/food cardinality, khôi phục shared-stock, quantity dương/stock không âm và không có orphan order/cart items. Sau đó, reset phải vượt qua initial rules và tái tạo đúng original logical checksum.
 
-A zero k6 exit code is insufficient: the runner parses W1/W2 summaries and asserts exact smoke check/request counts, zero HTTP/workload/unexpected/server errors, non-empty raw output and resource samples for backend, MySQL and driver. W3 baseline violations and recorded HTTP 500s remain defect evidence; missing rounds/responses/final state are harness failures.
+Exit code k6 bằng 0 là chưa đủ: runner parse W1/W2 summaries và assert chính xác smoke check/request counts, không có HTTP/workload/unexpected/server errors, raw output không rỗng và có resource samples cho backend, MySQL cùng driver. Các W3 baseline violation và HTTP 500 đã ghi nhận vẫn là defect evidence; thiếu rounds/responses/final state là harness failure.
 
-The `standard` profile remains 5,000 read foods, 500 orders, 20 write actors and four contention actors. G2.4-K runs only `smoke`; standard execution belongs to G2.5.
+Profile `standard` vẫn gồm 5.000 read foods, 500 orders, 20 write actors và bốn contention actors. G2.4-K chỉ chạy `smoke`; thực thi standard thuộc G2.5.
 
-## Before/after grouping
+## Nhóm so sánh before/after
 
-Run `compare_manifests.py` on the resulting `manifest/run-manifest.json` files. It rejects missing or different cgroup CPU quota, effective cpuset, memory limit, resolved limits, kernel/runtime-image identity, CPU model, visible cores/RAM, OS image, Java/MySQL/k6 versions or binary hashes, configuration/workload hashes or dataset checksum. Application SHA is reported as the treatment pair and is expected to differ for before/after. Never merge sessions merely because both are labelled “Kaggle CPU”.
+Chạy `compare_manifests.py` trên các file `manifest/run-manifest.json` thu được. Tool từ chối cgroup CPU quota, effective cpuset, memory limit, resolved limits, kernel/runtime-image identity, CPU model, visible cores/RAM, OS image, phiên bản Java/MySQL/k6 hoặc binary hashes, configuration/workload hashes hay dataset checksum bị thiếu hoặc khác nhau. Application SHA được báo cáo như treatment pair và được kỳ vọng khác nhau giữa before/after. Tuyệt đối không gộp các session chỉ vì cả hai đều mang nhãn “Kaggle CPU”.
 
-Official measurement parameters remain warm-up 60 s, W1/W2 180 s, cooldown 30 s, W1 arrival rates 10/5/5 RPS, W2 10 VUs, W3 15 rounds, minimum three and target five independent runs. The notebook smoke uses the smoke profile and two W3 rounds only.
+Các parameter đo chính thức vẫn là warm-up 60 giây, W1/W2 180 giây, cooldown 30 giây, W1 arrival rates 10/5/5 RPS, W2 10 VUs, W3 15 rounds, tối thiểu ba và mục tiêu năm independent run. Notebook smoke chỉ sử dụng smoke profile và hai W3 rounds.
 
-## Known limitations
+## Các giới hạn đã biết
 
-- Live Hikari gauges remain unavailable; Hikari configuration and MySQL connection behavior are captured.
-- CPU quota/model can vary between Kaggle sessions; manifests must match before aggregation.
-- Kaggle session lifetime and attached-dataset storage are external constraints. Download the evidence ZIP before the session ends.
-- The adapter does not use the historical notebook's moving apt packages, 50→200→500 VU workload or unverified thresholds.
-- Cleanup, secret scan, manifest/checksum and evidence packaging are part of smoke success. Cleanup failure forces `FAIL`; the runner still creates a failure evidence ZIP whenever filesystem access permits.
+- Live Hikari gauges vẫn chưa khả dụng; Hikari configuration và MySQL connection behavior được thu thập.
+- CPU quota/model có thể thay đổi giữa các Kaggle session; manifest phải khớp trước khi tổng hợp.
+- Kaggle session lifetime và attached-dataset storage là các ràng buộc bên ngoài. Hãy tải evidence ZIP trước khi session kết thúc.
+- Adapter không sử dụng moving apt packages, workload 50→200→500 VU hoặc unverified thresholds của notebook lịch sử.
+- Cleanup, secret scan, manifest/checksum và evidence packaging là một phần của smoke success. Cleanup failure buộc trạng thái `FAIL`; runner vẫn tạo failure evidence ZIP bất cứ khi nào filesystem access cho phép.
