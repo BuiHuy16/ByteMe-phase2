@@ -7,6 +7,7 @@ import argparse
 import concurrent.futures as futures
 import datetime as dt
 import json
+import os
 import pathlib
 import subprocess
 import threading
@@ -29,9 +30,21 @@ def compose(args) -> list[str]:
 
 
 def mysql(args, sql: str) -> str:
-    shell = 'MYSQL_PWD="$MYSQL_PASSWORD" mysql --batch --raw --skip-column-names -u"$MYSQL_USER" "$MYSQL_DATABASE"'
-    proc = subprocess.run(compose(args) + ["exec", "-T", "mysql", "sh", "-lc", shell], cwd=ROOT,
-                          input=sql, text=True, encoding="utf-8", capture_output=True)
+    if args.db_mode == "direct":
+        password = os.environ.get(args.mysql_password_env)
+        if password is None:
+            raise RuntimeError(f"Required password environment variable is absent: {args.mysql_password_env}")
+        environment = os.environ.copy()
+        environment["MYSQL_PWD"] = password
+        command = [args.mysql_bin, "--protocol=TCP", "--batch", "--raw", "--skip-column-names",
+                   "--host", args.mysql_host, "--port", str(args.mysql_port),
+                   "--user", args.mysql_user, args.mysql_database]
+        proc = subprocess.run(command, cwd=ROOT, input=sql, text=True, encoding="utf-8",
+                              capture_output=True, env=environment)
+    else:
+        shell = 'MYSQL_PWD="$MYSQL_PASSWORD" mysql --batch --raw --skip-column-names -u"$MYSQL_USER" "$MYSQL_DATABASE"'
+        proc = subprocess.run(compose(args) + ["exec", "-T", "mysql", "sh", "-lc", shell], cwd=ROOT,
+                              input=sql, text=True, encoding="utf-8", capture_output=True)
     if proc.returncode != 0:
         raise RuntimeError(proc.stderr.strip())
     return proc.stdout.strip()
@@ -160,12 +173,23 @@ def run_c4(args, admin, actor, food, initial, round_id):
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--project", required=True)
-    parser.add_argument("--env-file", required=True)
+    parser.add_argument("--env-file")
+    parser.add_argument("--db-mode", choices=("compose", "direct"), default="compose")
+    parser.add_argument("--mysql-bin", default="mysql")
+    parser.add_argument("--mysql-host", default="127.0.0.1")
+    parser.add_argument("--mysql-port", type=int, default=3306)
+    parser.add_argument("--mysql-user")
+    parser.add_argument("--mysql-database")
+    parser.add_argument("--mysql-password-env", default="BENCH_DB_PASSWORD")
     parser.add_argument("--base-url", required=True)
     parser.add_argument("--actors", required=True)
     parser.add_argument("--rounds", type=int, default=15)
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
+    if args.db_mode == "direct" and (not args.mysql_user or not args.mysql_database):
+        parser.error("--mysql-user and --mysql-database are required in direct mode")
+    if args.db_mode == "compose" and not args.env_file:
+        parser.error("--env-file is required in compose mode")
     if not (args.project.startswith("byteme-g24-") or args.project.startswith("byteme-benchmark-")):
         raise SystemExit("Refusing non-benchmark project")
     fixture = json.loads(pathlib.Path(args.actors).read_text(encoding="utf-8"))

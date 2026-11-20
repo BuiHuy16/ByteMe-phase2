@@ -36,9 +36,21 @@ def compose_prefix(args) -> list[str]:
 
 
 def mysql(args, sql: str) -> str:
-    shell = 'MYSQL_PWD="$MYSQL_PASSWORD" mysql --batch --raw --skip-column-names -u"$MYSQL_USER" "$MYSQL_DATABASE"'
-    proc = subprocess.run(compose_prefix(args) + ["exec", "-T", "mysql", "sh", "-lc", shell],
-                          cwd=ROOT, input=sql, text=True, encoding="utf-8", capture_output=True)
+    if args.db_mode == "direct":
+        password = os.environ.get(args.mysql_password_env)
+        if password is None:
+            raise RuntimeError(f"Required password environment variable is absent: {args.mysql_password_env}")
+        environment = os.environ.copy()
+        environment["MYSQL_PWD"] = password
+        command = [args.mysql_bin, "--protocol=TCP", "--batch", "--raw", "--skip-column-names",
+                   "--host", args.mysql_host, "--port", str(args.mysql_port),
+                   "--user", args.mysql_user, args.mysql_database]
+        proc = subprocess.run(command, cwd=ROOT, input=sql, text=True, encoding="utf-8",
+                              capture_output=True, env=environment)
+    else:
+        shell = 'MYSQL_PWD="$MYSQL_PASSWORD" mysql --batch --raw --skip-column-names -u"$MYSQL_USER" "$MYSQL_DATABASE"'
+        proc = subprocess.run(compose_prefix(args) + ["exec", "-T", "mysql", "sh", "-lc", shell],
+                              cwd=ROOT, input=sql, text=True, encoding="utf-8", capture_output=True)
     if proc.returncode != 0:
         raise RuntimeError(f"mysql exit {proc.returncode}: {proc.stderr.strip()}")
     return proc.stdout.strip()
@@ -181,7 +193,45 @@ def table_digest(args, table: str, columns: str) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def build_manifest(args, profile: dict) -> dict:
+def evaluate_invariants(profile: dict, counts: dict[str, int], *, read_orders: int,
+                        read_order_items: int, shared_stock: int, orphan_order_items: int,
+                        orphan_cart_items: int, negative_food_stock: int,
+                        invalid_cart_quantities: int, invalid_order_quantities: int,
+                        validation_phase: str) -> dict[str, bool]:
+    """Validate immutable fixtures plus phase-appropriate database state."""
+    expected_users = 2 + profile["write_actors"] + profile["contention_actors"]
+    expected_foods = profile["read_foods"] + profile["write_actors"] + 1
+    expected_items = profile["read_orders"] * profile["items_per_order"]
+    invariants = {
+        "expected_user_count": counts["users"] == expected_users,
+        "expected_category_count": counts["categories"] == profile["categories"],
+        "expected_food_count": counts["foods"] == expected_foods,
+        "read_fixture_orders_preserved": read_orders == profile["read_orders"],
+        "read_fixture_order_items_preserved": read_order_items == expected_items,
+        "shared_stock_matches_profile": shared_stock == profile["shared_stock"],
+        "no_orphan_order_items": orphan_order_items == 0,
+        "no_orphan_cart_items": orphan_cart_items == 0,
+        "no_negative_food_stock": negative_food_stock == 0,
+        "positive_cart_item_quantities": invalid_cart_quantities == 0,
+        "positive_order_item_quantities": invalid_order_quantities == 0,
+    }
+    if validation_phase == "initial":
+        invariants.update({
+            "initial_total_orders_exact": counts["orders"] == profile["read_orders"],
+            "initial_total_order_items_exact": counts["order_items"] == expected_items,
+            "initial_carts_empty": counts["carts"] == 0 and counts["cart_items"] == 0,
+        })
+    elif validation_phase == "post_workload":
+        invariants.update({
+            "post_total_orders_not_below_fixture": counts["orders"] >= profile["read_orders"],
+            "post_total_order_items_not_below_fixture": counts["order_items"] >= expected_items,
+        })
+    else:
+        raise ValueError(f"Unknown validation phase: {validation_phase}")
+    return invariants
+
+
+def build_manifest(args, profile: dict, validation_phase: str) -> dict:
     actual_db = mysql(args, "SELECT DATABASE();").splitlines()[-1]
     require_isolated(args.project, actual_db)
     counts_raw = mysql(args, """
@@ -206,21 +256,23 @@ def build_manifest(args, profile: dict) -> dict:
     overall = hashlib.sha256(json.dumps({"counts": counts, "digests": digests}, sort_keys=True).encode()).hexdigest()
     shared_stock = int(mysql(args, "SELECT stock_quantity FROM foods WHERE name='BENCH_SHARED_STOCK';").splitlines()[-1])
     orphan_items = int(mysql(args, "SELECT COUNT(*) FROM order_items oi LEFT JOIN orders o ON o.id=oi.order_id WHERE o.id IS NULL;").splitlines()[-1])
+    orphan_cart_items = int(mysql(args, "SELECT COUNT(*) FROM cart_items ci LEFT JOIN carts c ON c.id=ci.cart_id WHERE c.id IS NULL;").splitlines()[-1])
     read_orders = int(mysql(args, "SELECT COUNT(*) FROM orders o JOIN users u ON u.id=o.user_id WHERE u.email='bench.read@example.test';").splitlines()[-1])
-    expected_users = 2 + profile["write_actors"] + profile["contention_actors"]
-    expected_foods = profile["read_foods"] + profile["write_actors"] + 1
-    expected_items = profile["read_orders"] * profile["items_per_order"]
-    invariants = {
-        "expected_user_count": counts["users"] == expected_users,
-        "expected_food_count": counts["foods"] == expected_foods,
-        "expected_read_orders": read_orders == profile["read_orders"],
-        "expected_order_items": counts["order_items"] == expected_items,
-        "initial_carts_empty": counts["carts"] == 0 and counts["cart_items"] == 0,
-        "shared_stock_matches_profile": shared_stock == profile["shared_stock"],
-        "no_orphan_order_items": orphan_items == 0,
-    }
+    read_order_items = int(mysql(args, "SELECT COUNT(*) FROM order_items oi JOIN orders o ON o.id=oi.order_id JOIN users u ON u.id=o.user_id WHERE u.email='bench.read@example.test';").splitlines()[-1])
+    negative_stock = int(mysql(args, "SELECT COUNT(*) FROM foods WHERE stock_quantity < 0;").splitlines()[-1])
+    invalid_cart_quantities = int(mysql(args, "SELECT COUNT(*) FROM cart_items WHERE quantity <= 0;").splitlines()[-1])
+    invalid_order_quantities = int(mysql(args, "SELECT COUNT(*) FROM order_items WHERE quantity <= 0;").splitlines()[-1])
+    invariants = evaluate_invariants(
+        profile, counts, read_orders=read_orders, read_order_items=read_order_items,
+        shared_stock=shared_stock, orphan_order_items=orphan_items,
+        orphan_cart_items=orphan_cart_items, negative_food_stock=negative_stock,
+        invalid_cart_quantities=invalid_cart_quantities,
+        invalid_order_quantities=invalid_order_quantities, validation_phase=validation_phase,
+    )
     return {
         "generated_at_utc": utc_now(), "profile": args.profile, "profile_parameters": profile,
+        "execution_mode": args.db_mode, "benchmark_project": args.project,
+        "validation_phase": validation_phase,
         "compose_project": args.project, "database": actual_db, "counts": counts,
         "logical_sha256": digests, "overall_sha256": overall,
         "invariants": invariants, "all_invariants_pass": all(invariants.values()),
@@ -232,19 +284,34 @@ def main() -> int:
     parser.add_argument("--mode", choices=("prepare", "snapshot"), default="prepare")
     parser.add_argument("--profile", choices=("smoke", "standard"), required=True)
     parser.add_argument("--project", required=True)
-    parser.add_argument("--env-file", required=True)
+    parser.add_argument("--env-file")
+    parser.add_argument("--db-mode", choices=("compose", "direct"), default="compose")
+    parser.add_argument("--mysql-bin", default="mysql")
+    parser.add_argument("--mysql-host", default="127.0.0.1")
+    parser.add_argument("--mysql-port", type=int, default=3306)
+    parser.add_argument("--mysql-user")
+    parser.add_argument("--mysql-database")
+    parser.add_argument("--mysql-password-env", default="BENCH_DB_PASSWORD")
     parser.add_argument("--base-url", required=True)
     parser.add_argument("--runtime-actors", required=True)
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
     profiles = json.loads(PROFILES_PATH.read_text(encoding="utf-8"))
     profile = profiles[args.profile]
-    env_lines = pathlib.Path(args.env_file).read_text(encoding="utf-8").splitlines()
-    db_name = next(line.split("=", 1)[1] for line in env_lines if line.startswith("DB_NAME="))
+    if args.db_mode == "direct":
+        if not args.mysql_user or not args.mysql_database:
+            parser.error("--mysql-user and --mysql-database are required in direct mode")
+        db_name = args.mysql_database
+    else:
+        if not args.env_file:
+            parser.error("--env-file is required in compose mode")
+        env_lines = pathlib.Path(args.env_file).read_text(encoding="utf-8").splitlines()
+        db_name = next(line.split("=", 1)[1] for line in env_lines if line.startswith("DB_NAME="))
     require_isolated(args.project, db_name)
     if args.mode == "prepare":
         prepare(args, profile)
-    manifest = build_manifest(args, profile)
+    validation_phase = "initial" if args.mode == "prepare" else "post_workload"
+    manifest = build_manifest(args, profile, validation_phase)
     out = pathlib.Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")

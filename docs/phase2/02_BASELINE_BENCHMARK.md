@@ -503,9 +503,9 @@ Baseline application vẫn là `510f6415b6af535ceec77213f0b0c7d5082123f7`; final
 
 ### 2. Platform Decision
 
-**Primary: Local Windows + Docker Desktop Compose. Fallback: Kaggle CPU.** Local thắng về khả năng pin image/tool version, cô lập volume/project, reset/checksum, giữ raw artifacts và thu Docker/JVM/DB telemetry. Docker runtime quan sát được 12 CPU và 8.171.761.664 byte RAM; backend/MySQL/k6 có resource limit riêng.
+Quyết định ban đầu của G2.4 là **Local Windows + Docker Desktop Compose** vì khả năng pin image/tool version, cô lập volume/project, reset/checksum, giữ raw artifacts và thu Docker/JVM/DB telemetry. Docker runtime quan sát được 12 CPU và 8.171.761.664 byte RAM; backend/MySQL/k6 có resource limit riêng. Phần chuẩn bị và smoke Local này vẫn **PASS** và được giữ làm development/integration verification.
 
-Kaggle historical path cài generic JDK/MySQL/k6 từ moving apt repositories, chưa khóa reset, session image/noisy-neighbor và không giữ đủ raw CSV/server/resource/DB artifacts. Nếu phải dùng fallback, cần tạo protocol Kaggle độc lập và chỉ so Kaggle-before với Kaggle-after. **Không so chéo local với Kaggle; không dùng historical Kaggle result làm baseline tương thích.** Decision matrix đầy đủ nằm trong evidence G2.4.
+Theo yêu cầu giảng viên được áp dụng tại G2.4-K, **primary platform cho official G2.5 được đổi thành Kaggle CPU**; Local trở thành platform phụ cho development/integration. Kaggle historical path cài moving packages và thiếu reset/telemetry nên không được tái sử dụng trực tiếp; adapter G2.4-K dùng exact-version user-space toolchain và manifest phần cứng. Chỉ so Kaggle-before với Kaggle-after khi CPU model/core/RAM quota và lock khác khớp. **Không so chéo Local với Kaggle; không dùng historical Kaggle result làm baseline tương thích.**
 
 ### 3. Benchmark Goals
 
@@ -624,5 +624,115 @@ Các latency/RPS smoke không được coi là baseline vì chỉ có vài reque
 
 G2.5 có thể bắt đầu sau khi copy/freeze `benchmark-source-SHA256SUMS.txt` vào run manifest và giữ nguyên configuration lock. Với mỗi baseline/treatment SHA: tạo unique project/run; build/capture; prepare `standard`; warm-up; chạy W1, reset, W2, reset, W3, reset; thu telemetry/logs; cleanup; lặp tối thiểu 3, mục tiêu 5. Sau đó chỉ aggregate run có manifest khớp và công bố cả failed/rejected run.
 
-Readiness decision: **READY WITH DECLARED LIMITATIONS** trên local Docker. Nếu cần live Hikari pool metrics thì đó là instrumentation gap phải được phê duyệt ở G2.5 hoặc phase implementation; không được âm thầm sửa application/config trong G2.4. G2.5 chưa được bắt đầu trong hạng mục này.
+Readiness decision tại thời điểm G2.4 Local: **READY WITH DECLARED LIMITATIONS cho development/integration**, nhưng không còn là quyết định platform chính thức. Sau yêu cầu giảng viên, official G2.5 phải chờ Kaggle adaptation được runtime-validate; xem G2.4-K bên dưới. G2.5 chưa được bắt đầu trong hạng mục này.
+
+## G2.4-K — Kaggle CPU Benchmark Adaptation
+
+### 1. Scope and access evidence
+
+G2.4-K chuyển cùng benchmark semantics từ Docker sang Kaggle CPU, không thiết kế lại nghiệp vụ và không chạy official G2.5. Môi trường thực thi hiện tại không có Kaggle CLI, `KAGGLE_USERNAME`, `KAGGLE_KEY`, `KAGGLE_API_TOKEN` hoặc `~/.kaggle/kaggle.json`; vì vậy không có quyền tạo/chạy Kaggle session thật. Theo policy, **Kaggle runtime validation giữ PENDING** và không báo smoke PASS.
+
+HEAD hiện là repository/tooling commit `24b3ace314365bc2b727928fae2243c605b4c87c`, còn executable tree không khác baseline `510f6415b6af535ceec77213f0b0c7d5082123f7` trên `src`, POM, Compose, Dockerfile và runtime scripts (`git diff --quiet` exit 0). Bundle manifest tách `repository_sha` khỏi `application_sha` để không biến commit tài liệu/tooling thành treatment ứng dụng.
+
+### 2. Primary platform decision
+
+**Official primary platform: Kaggle CPU. Local Docker: development/integration verification.** Local G2.4 preparation/smoke vẫn PASS nhưng kết quả Local không được gộp hoặc so trực tiếp với Kaggle. Historical upstream notebook được giữ nguyên để bảo toàn provenance; notebook mới nằm cạnh nó với tên khác.
+
+Một nhãn “Kaggle CPU” không đủ chứng minh phần cứng cố định. Mỗi run phải ghi CPU model, logical core count, exact `MemTotal`, OS image/version và kernel; run comparator từ chối session khác CPU model/core/RAM/OS hoặc toolchain/config/workload/dataset lock.
+
+### 3. Rootless fixed toolchain design
+
+Adapter không giả định Docker, root, `sudo` hoặc `apt-get`. Notebook chỉ probe các capability này. Java 21.0.13, MySQL 8.4.13 và k6 0.55.2 được resolve từ exact portable Linux x86_64 archives đã attach, hoặc từ system binary chỉ khi output version khớp lock chính xác. Binary path, full version output và executable SHA-256 được lưu.
+
+MySQL generic distribution được extract dưới `/kaggle/working`, initialize bằng `--initialize-insecure` trong datadir riêng, chỉ bind `127.0.0.1:13309`, bật Performance Schema và giữ RR/max connections/buffer pool như G2.4. Root chỉ dùng Unix socket nội bộ cho lifecycle/telemetry; application user có password ngẫu nhiên trong process environment và không được archive. Spring Boot chạy trực tiếp từ JAR với G1, Xms 512 MiB, Xmx 768 MiB, Hikari 10/10 và Tomcat 200/10.
+
+### 4. Workload compatibility
+
+W1 và W2 dùng nguyên JavaScript G2.4. `prepare_dataset.py` và W3 được mở rộng bằng optional `--db-mode direct`; default vẫn là `compose`, nên Local kit không bị xóa hoặc đổi semantics. Direct mode dùng MySQL client qua loopback và password environment variable, không hardcode credential.
+
+| Workload | Kaggle adaptation | Runtime status |
+|---|---|---|
+| W1 food list/search/order list | Native k6, actors/tokens tạo trước measurement, page size 20 | **STATIC PASS; KAGGLE PENDING** |
+| W2 add/update/checkout/cancel | Native k6, per-actor food/cart, business/server error tách riêng | **STATIC PASS; KAGGLE PENDING** |
+| W3 same-food/same-cart/admin-vs-checkout | Python barrier harness + direct MySQL final-state inspection | **STATIC PASS; KAGGLE PENDING** |
+
+### 5. Dataset and reset
+
+Profile `standard` không đổi: 5.000 read foods, 500 read orders, hai items/order, 20 write actors/foods, bốn contention actors, write stock 1.000.000 và shared stock 10. Kaggle smoke chỉ dùng profile `smoke` và hai W3 rounds. Generator vẫn giới hạn namespace `byteme-g24-*`/`byteme_g24_*`, ghi counts/invariants/logical checksum và reset toàn bộ benchmark DB cô lập.
+
+Bundle builder copy đúng `schema.sql` gốc và không copy/áp dụng `seed.sql`; generator tạo toàn bộ fixture benchmark. Static bundle dry-run xác minh 14 file và 0 checksum error. Standard dataset và exact reset trên Kaggle vẫn **PENDING** vì chưa có runtime session.
+
+### 6. Telemetry and artifacts
+
+Notebook/runner chuẩn bị thu:
+
+- hardware/runtime fingerprint trước setup;
+- exact Java/MySQL/k6 versions và executable hashes;
+- raw k6 JSON + full summary cho W1/W2;
+- system CPU/RAM và per-process CPU/RSS/read/write bytes cho backend, MySQL và driver;
+- backend stdout, dedicated JVM GC log;
+- MySQL global connection/query/lock/buffer status và normalized Performance Schema digest trước/sau W1/W2/W3;
+- W3 outcomes/final state, dataset snapshots và reset checksum;
+- run manifest, `SHA256SUMS.txt`, cleanup result và evidence ZIP.
+
+Live Hikari gauges vẫn unavailable; chỉ config lock và MySQL connection behavior được observed. Metric thiếu không được suy diễn.
+
+### 7. Configuration and comparability lock
+
+Kaggle configuration lock giữ cùng workload/load controls của G2.4: warm-up 60 s; W1 10/5/5 RPS và W2 10 VUs trong 180 s; W3 15 rounds; cooldown 30 s; minimum 3, target 5 runs. Kaggle smoke không chạy các duration này.
+
+`compare_manifests.py` yêu cầu trùng CPU model, logical cores, total RAM, OS ID/version, exact Java/MySQL/k6 versions và binary hashes, configuration hash, workload-source hash và dataset checksum. Application SHA được báo thành treatment pair và được phép khác. CPU/resource quota khác thì run không cùng comparison group; không tự normalize hay gộp.
+
+### 8. Implementation and static validation
+
+Đã thêm:
+
+- `kaggle/script/byteme_phase2_g24k.ipynb` — notebook mới, không ghi đè notebook lịch sử;
+- `benchmarks/phase2/kaggle/kaggle_runtime.py` — rootless lifecycle/smoke/telemetry/evidence runner;
+- `configuration-lock.json`, `prepare_bundle.ps1`, `compare_manifests.py`, generator và README;
+- direct DB transport tùy chọn cho dataset generator và W3.
+
+Python AST, PowerShell parser, JSON/notebook parsing và từng notebook code cell đều PASS. Bundle static dry-run PASS với baseline `application_sha 510f641…`, repository SHA `24b3ace…`, 14 files và 0 hash mismatch. Không có application/test/schema/production-config change.
+
+### 9. G2.4-K status and blockers
+
+| Criterion | Status |
+|---|---|
+| Kaggle-specific notebook and rootless adapter | **PASS — implemented/static validated** |
+| W1/W2/W3 semantics retained | **PASS — static compatibility** |
+| Standard profile retained | **PASS — definition** |
+| Bundle provenance/checksum | **PASS — local dry-run** |
+| Exact-version toolchain on real Kaggle | **PENDING** |
+| MySQL/backend lifecycle on real Kaggle | **PENDING** |
+| Smoke W1/W2/W3/reset/telemetry on real Kaggle | **PENDING** |
+| Cross-session hardware equivalence evidence | **PENDING — requires at least two actual manifests** |
+
+**Overall G2.4-K: PARTIAL.** Implementation is complete enough to attempt a real smoke, but runtime validation cannot pass without Kaggle access and exact portable toolchain inputs. This is an external execution blocker, not an application failure.
+
+### 10. G2.5 readiness
+
+Official G2.5 is **BLOCKED/PENDING on Kaggle runtime validation**. Trước G2.5 cần: upload private bundle/toolchain datasets; chạy notebook smoke thật; archive evidence ZIP; xác minh tool versions, W1/W2 checks, W3 completion, reset checksum và cleanup; sau đó chạy thêm session để kiểm tra hardware manifest comparability. Chỉ khi các bước này PASS mới freeze Kaggle comparison group và bắt đầu official Phase 1 baseline. Không có official load run nào được thực hiện trong G2.4-K.
+
+### 11. Independent Code Review Remediation
+
+Review độc lập được kiểm tra lại ngày 2026-11-20. Các finding sau đều tái hiện được trên code trước remediation; không có finding nào bị gắn PASS chỉ bằng suy luận.
+
+| Finding | Recheck | Fix và trạng thái |
+|---|---|---|
+| P0 post-workload snapshot dùng initial invariants | **CONFIRMED** — canceled orders/empty cart rows hợp lệ làm `initial_carts_empty` và exact total items fail | **FIXED** — `initial` yêu cầu exact fixture/empty carts; `post_workload` cho phép mutation nhưng vẫn khóa read fixtures, cardinality, shared stock, positive quantity/non-negative stock và no-orphan |
+| P0 k6 exit 0 có thể che failed checks | **CONFIRMED** — JS không có threshold bắt buộc nên process exit không đủ | **FIXED** — parse summary, assert exact smoke checks/requests, zero HTTP/workload/unexpected/server errors và raw output |
+| Missing telemetry/cleanup vẫn có thể để status PASS | **CONFIRMED** | **FIXED** — resource file phải có sample cho backend/MySQL/driver; DB telemetry phải đủ header; reset checksum và cleanup/secret scan là PASS criteria; failure cố tạo evidence ZIP |
+| W3 baseline defect vs harness failure | **CONFIRMED ambiguity** | **FIXED** — violation/HTTP 500 được giữ làm defect evidence; chỉ thiếu scenario/round/response/final-state làm harness fail |
+| P1 chỉ dùng `os.cpu_count()`/`MemTotal` | **CONFIRMED** | **FIXED trong implementation** — capture cgroup v1/v2 CPU quota/period, effective cpuset, memory limit, resolved limits, kernel và runtime-image hash; comparator fail closed khi thiếu/khác. **Actual Kaggle values PENDING** |
+| P1 builder nhận arbitrary JAR và bỏ sót staged/untracked drift | **CONFIRMED** | **FIXED** — builder tự chạy Maven Wrapper `clean package`, chặn staged/unstaged/untracked executable drift, lưu source/tree/build/JAR provenance và hỗ trợ reviewed future application SHA |
+| Tar path check chưa xử lý link đầy đủ | **CONFIRMED** | **FIXED** — manual extraction chỉ cho regular file/directory và in-tree symlink/hardlink; reject special/path-escape entries |
+
+Verification thực tế:
+
+- **18/18 Python unit/adversarial tests PASS**: initial/post invariants, orphan rejection, valid/invalid k6 summaries, request-count mismatch, header-only telemetry, W3 defect semantics, cleanup/reset failure, failure ZIP, secret scan, malicious symlink/hardlink, cgroup v2 resolution và comparator missing/mismatched quota.
+- PowerShell bundle parser PASS; adversarial untracked file dưới `src` bị từ chối và được xóa sau test.
+- Maven Wrapper provenance build thực tế **PASS**, tests intentionally skipped cho packaging step; JAR SHA-256 và 17 bundle-file checksums khớp build/bundle manifests; runtime bundle resolution PASS.
+- Application source/test/schema/seed/production configuration và baseline SHA không đổi. Không commit/tag/push và không chạy official benchmark.
+
+Kaggle runtime validation vẫn **PENDING** vì không có Kaggle session/credential/toolchain input trong môi trường này. Overall G2.4-K vẫn **PARTIAL**; blockers còn lại là chạy notebook thật, xác minh portable toolchain/lifecycle/W1–W3/reset/telemetry và chứng minh hardware manifests tương đương giữa các session trước G2.5.
 

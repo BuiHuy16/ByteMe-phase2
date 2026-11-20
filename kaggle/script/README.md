@@ -1,5 +1,10 @@
 # 📦 Cấu Trúc Kiểm Thử Tải ByteMe Trên Kaggle
 
+> Phase 2 dùng notebook mới `byteme_phase2_g24k.ipynb` và adapter tại
+> `benchmarks/phase2/kaggle/`. Notebook lịch sử bên dưới được giữ nguyên cho
+> provenance, không còn là protocol official before/after. Xem README của
+> adapter để chuẩn bị bundle, exact portable toolchain và evidence manifest.
+
 Dự án đã được phân chia rõ ràng thành 2 thư mục:
 
 ```

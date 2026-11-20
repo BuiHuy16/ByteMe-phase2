@@ -4,7 +4,9 @@ This directory prepares the common before/after protocol. It does **not** contai
 
 ## Platform
 
-Primary platform: local Windows + Docker Desktop Compose. k6 runs from the pinned container tag in `K6_IMAGE`; the application and MySQL run in a dedicated Compose project. The load generator shares the Docker VM/host, so its CPU/memory use is collected and treated as a confounder. Kaggle remains a fallback only; local and Kaggle results must never be compared directly.
+Primary platform for the instructor-required official before/after benchmark: Kaggle CPU through the G2.4-K user-space adapter. Local Windows + Docker Desktop remains the development/integration verification platform and preserves the already-passed G2.4 preparation evidence. Local and Kaggle results must never be compared directly.
+
+Kaggle sessions are comparable only when their captured CPU model, core/RAM quota, OS image, exact portable toolchain binaries, configuration, workload and dataset locks match. Kaggle runtime validation is still pending until a real session produces a PASS evidence bundle.
 
 ## Files
 
@@ -20,6 +22,7 @@ Primary platform: local Windows + Docker Desktop Compose. k6 runs from the pinne
 - `tools/new_manifest.ps1`: SHA-256 artifact manifest.
 - `tools/aggregate_runs.py`: median/min/max/CV aggregation for comparable k6 summaries; rejects malformed runs.
 - `tools/run_smoke.ps1`: small preparation smoke test only.
+- `kaggle/`: rootless Kaggle runtime adapter, configuration lock, bundle builder and manifest comparator.
 
 ## Dataset profiles
 
@@ -36,10 +39,10 @@ Primary platform: local Windows + Docker Desktop Compose. k6 runs from the pinne
 
 Users, categories, foods, orders and order items are regenerated from the profile. Logical checksums deliberately exclude password hashes, JWTs and generated timestamps. Temporary actor tokens stay under `.local/phase2-benchmark/` and must never be archived.
 
-## Official G2.5 protocol (not run by G2.4)
+## Shared G2.5 protocol (not run by G2.4/G2.4-K)
 
-1. Create a new unique run ID and a new dedicated Compose project/volume.
-2. Build the selected source SHA and record image/base-image IDs.
+1. Create a new unique run ID and an isolated runtime: user-space MySQL datadir on Kaggle, or a dedicated Compose project/volume for Local verification.
+2. Build the selected source SHA and record JAR hash; record image/base-image IDs as well when using Local Docker.
 3. Prepare `standard`; archive cardinality and logical checksums.
 4. Readiness, then 60 s low-rate warm-up. Discard warm-up metrics.
 5. Run W1 for 180 s using constant arrival rates: food list 10 RPS, search 5 RPS, order list 5 RPS. Lock page size (proposed 20; add a separate diagnostic run for 50).
@@ -47,7 +50,7 @@ Users, categories, foods, orders and order items are regenerated from the profil
 7. Run W2 for 180 s with 10 constant VUs, not exceeding the 20 dedicated actors.
 8. Reset and verify the dataset.
 9. Run W3 separately for 15 correctness rounds/scenario; never mix it into throughput percentiles.
-10. Cool down 30 s, collect logs/metrics, reset and verify again, then remove only the run's project resources.
+10. Cool down 30 s, collect logs/metrics, reset and verify again, then remove only that run's processes/data/resources.
 11. Repeat independent measurement runs at least 3 times (target 5), alternating before/after order where practical. A failed run is retained and classified, never silently rerun.
 
 For each metric report per-run p50/p95/p99/RPS/error rate, then median across valid runs plus min/max and coefficient of variation. Do not treat historical p95/p99 thresholds as accepted SLOs. Business 409s, HTTP 500s and transport errors are separate counters.
@@ -58,7 +61,7 @@ The aggregator requires the frozen configuration and dataset SHA-256 values on e
 
 ## Configuration lock
 
-The benchmark override explicitly locks G1 heap, Hikari 10/10, Tomcat 200/10, MySQL isolation/max connections/buffer pool, CPU/memory limits, GC logging and the MySQL digest. k6 is run with a pinned tag and its resolved digest is recorded. Any later configuration change is either prohibited or declared as a separate treatment.
+Local verification uses the benchmark Compose override to lock G1 heap, Hikari 10/10, Tomcat 200/10, MySQL isolation/max connections/buffer pool, CPU/memory limits, GC logging and image digests. Kaggle uses `kaggle/configuration-lock.json`, exact portable tool versions/binary hashes and a hardware fingerprint. Any later configuration change is either prohibited or declared as a separate treatment.
 
 ## Smoke test
 
