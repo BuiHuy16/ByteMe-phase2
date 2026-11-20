@@ -18,6 +18,7 @@ import re
 import secrets
 import shutil
 import signal
+import socket
 import stat
 import subprocess
 import tarfile
@@ -29,6 +30,12 @@ import zipfile
 
 
 BASELINE_SHA = "510f6415b6af535ceec77213f0b0c7d5082123f7"
+
+TOOLCHAIN_ARCHIVE_PATTERNS = {
+    "java": ("*jdk*21*.tar.gz", "*jre*21*.tar.gz"),
+    "mysql": ("mysql*8.4*.tar.xz", "mysql*8.4*.tar.gz"),
+    "k6": ("k6*v0.55.2*linux*amd64*.tar.gz", "k6*0.55.2*linux*amd64*.tar.gz"),
+}
 
 
 def utc_now() -> str:
@@ -242,6 +249,260 @@ def safe_extract(archive: pathlib.Path, destination: pathlib.Path) -> None:
                 os.link(link_target, target)
 
 
+def _matching_files(root: pathlib.Path, patterns: tuple[str, ...]) -> list[pathlib.Path]:
+    found: set[pathlib.Path] = set()
+    for pattern in patterns:
+        found.update(path for path in root.rglob(pattern) if path.is_file())
+    return sorted(found)
+
+
+def _executable_candidates(root: pathlib.Path, component: str) -> list[pathlib.Path]:
+    names = {"java", "java.exe"} if component == "java" else {"k6", "k6.exe"}
+    candidates = []
+    for name in names:
+        for path in root.rglob(name):
+            if not path.is_file():
+                continue
+            if component == "java" and path.parent.name != "bin":
+                continue
+            candidates.append(path)
+    return sorted(set(candidates))
+
+
+def _validate_extracted_tree(root: pathlib.Path) -> None:
+    resolved = root.resolve()
+    for path in root.rglob("*"):
+        if not path.is_symlink():
+            continue
+        target = path.resolve()
+        if target != resolved and resolved not in target.parents:
+            raise RuntimeError(f"extracted toolchain symlink escapes its root: {path} -> {target}")
+
+
+def _materialize_file(source: pathlib.Path, destination: pathlib.Path) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        destination.symlink_to(source.resolve())
+    except OSError:
+        shutil.copy2(source, destination)
+
+
+def _safe_bundle_relative(raw: str) -> pathlib.PurePosixPath:
+    relative = pathlib.PurePosixPath(raw)
+    if relative.is_absolute() or not relative.parts or ".." in relative.parts:
+        raise RuntimeError(f"unsafe bundle manifest path: {raw}")
+    return relative
+
+
+def _bootstrap_version(component: str, executable: pathlib.Path, version_runner=None) -> str:
+    args = ["-version"] if component == "java" else ["version"]
+    if version_runner is not None:
+        return str(version_runner(component, executable, args))
+    proc = subprocess.run([str(executable), *args], text=True, encoding="utf-8", errors="replace",
+                          capture_output=True, timeout=30)
+    output = (proc.stdout + proc.stderr).strip()
+    if proc.returncode:
+        raise RuntimeError(f"{component} executable version probe failed: {executable}: "
+                           f"exit={proc.returncode}, output={output}")
+    return output
+
+
+def prepare_kaggle_input(input_root: str | pathlib.Path = "/kaggle/input",
+                         working_root: str | pathlib.Path = "/kaggle/working/byteme-g24k-bootstrap",
+                         version_runner=None) -> pathlib.Path:
+    """Normalize Kaggle inputs without requiring a manual staging cell.
+
+    Kaggle may expose Java and k6 either as original archives or as already
+    extracted, non-executable dataset files. This function validates one exact
+    source for each tool, materializes Java/k6 under writable storage, preserves
+    MySQL/libaio as locked inputs, and returns the only input root a session
+    should use. Repeated calls with the same inputs return the same directory.
+    """
+    source_root = pathlib.Path(input_root).resolve()
+    bootstrap_root = pathlib.Path(working_root).resolve()
+    if not source_root.is_dir():
+        raise RuntimeError(f"Kaggle input root does not exist: {source_root}")
+
+    bundle_manifests = sorted(source_root.rglob("bundle-manifest.json"))
+    if len(bundle_manifests) != 1:
+        raise RuntimeError(f"expected exactly one bundle-manifest.json below {source_root}, "
+                           f"found {len(bundle_manifests)}: {bundle_manifests}")
+    bundle_manifest_path = bundle_manifests[0]
+    bundle_root = bundle_manifest_path.parent
+    bundle_manifest = json.loads(bundle_manifest_path.read_text(encoding="utf-8-sig"))
+    if bundle_manifest.get("protocol_baseline_sha") != BASELINE_SHA:
+        raise RuntimeError("bundle protocol baseline mismatch during bootstrap")
+    bundle_files: list[tuple[pathlib.PurePosixPath, pathlib.Path, str]] = []
+    for item in bundle_manifest.get("files", []):
+        relative = _safe_bundle_relative(item["path"])
+        source = bundle_root / pathlib.Path(*relative.parts)
+        actual = sha256(source) if source.is_file() else None
+        if actual != item.get("sha256"):
+            raise RuntimeError(f"bundle checksum mismatch during bootstrap: {relative.as_posix()}")
+        bundle_files.append((relative, source, actual))
+    locks = list(bundle_root.rglob("configuration-lock.json"))
+    if len(locks) != 1:
+        raise RuntimeError(f"configuration-lock.json missing or ambiguous during bootstrap: {locks}")
+    config = json.loads(locks[0].read_text(encoding="utf-8-sig"))
+    if config.get("baseline_sha") != BASELINE_SHA:
+        raise RuntimeError("configuration baseline mismatch during bootstrap")
+    expected = config["expected_versions"]
+
+    mysql_archives = _matching_files(source_root, TOOLCHAIN_ARCHIVE_PATTERNS["mysql"])
+    if len(mysql_archives) != 1:
+        raise RuntimeError(f"expected exactly one MySQL {expected['mysql_contains']} archive, "
+                           f"found {len(mysql_archives)}: {mysql_archives}")
+    if expected["mysql_contains"] not in mysql_archives[0].name:
+        raise RuntimeError(f"MySQL archive does not identify locked version {expected['mysql_contains']}: "
+                           f"{mysql_archives[0]}")
+    mysql_sha = sha256(mysql_archives[0])
+
+    libaio_lock = config["offline_dependencies"]["libaio"]
+    libaio_packages = sorted(path for path in source_root.rglob(libaio_lock["filename"]) if path.is_file())
+    if len(libaio_packages) != 1:
+        raise RuntimeError(f"expected exactly one locked libaio package, found {len(libaio_packages)}: "
+                           f"{libaio_packages}")
+    libaio_sha = sha256(libaio_packages[0])
+    if libaio_sha != libaio_lock["package_sha256"]:
+        raise RuntimeError(f"libaio package checksum mismatch during bootstrap: {libaio_sha}")
+
+    sources = {}
+    for component in ("java", "k6"):
+        archives = _matching_files(source_root, TOOLCHAIN_ARCHIVE_PATTERNS[component])
+        extracted = _executable_candidates(source_root, component)
+        source_count = len(archives) + len(extracted)
+        if source_count != 1:
+            raise RuntimeError(f"expected exactly one {component} source (archive or extracted executable), "
+                               f"found archives={archives}, extracted={extracted}")
+        if archives:
+            sources[component] = {"kind": "archive", "path": archives[0], "sha256": sha256(archives[0])}
+        else:
+            executable = extracted[0]
+            install_root = executable.parent.parent if component == "java" else executable.parent
+            _validate_extracted_tree(install_root)
+            sources[component] = {"kind": "extracted", "path": install_root,
+                                  "relative_executable": executable.relative_to(install_root),
+                                  "sha256": sha256(executable)}
+
+    fingerprint_document = {
+        "schema_version": 1,
+        "bundle_manifest_sha256": sha256(bundle_manifest_path),
+        "configuration_sha256": sha256(locks[0]),
+        "mysql": {"name": mysql_archives[0].name, "sha256": mysql_sha},
+        "libaio": {"name": libaio_packages[0].name, "sha256": libaio_sha},
+        "java": {key: str(value) if isinstance(value, pathlib.Path) else value
+                 for key, value in sources["java"].items() if key != "path"},
+        "k6": {key: str(value) if isinstance(value, pathlib.Path) else value
+               for key, value in sources["k6"].items() if key != "path"},
+    }
+    fingerprint = hashlib.sha256(json.dumps(fingerprint_document, sort_keys=True).encode()).hexdigest()
+    prepared = bootstrap_root / f"g24k-input-{fingerprint[:16]}"
+    bootstrap_manifest_path = prepared / "bootstrap-manifest.json"
+    if prepared.exists():
+        if not bootstrap_manifest_path.is_file():
+            raise RuntimeError(f"prepared input exists without bootstrap manifest: {prepared}")
+        previous = json.loads(bootstrap_manifest_path.read_text(encoding="utf-8"))
+        if previous.get("input_fingerprint_sha256") != fingerprint:
+            raise RuntimeError(f"prepared input fingerprint mismatch: {prepared}")
+        for component in ("java", "k6"):
+            executable = prepared / pathlib.Path(*pathlib.PurePosixPath(
+                previous["components"][component]["prepared_executable"]).parts)
+            if not executable.is_file() or sha256(executable) != previous["components"][component]["sha256"]:
+                raise RuntimeError(f"prepared {component} executable changed: {executable}")
+            output = _bootstrap_version(component, executable, version_runner)
+            if expected[f"{component}_contains"] not in output:
+                raise RuntimeError(f"prepared {component} version drift: expected "
+                                   f"{expected[f'{component}_contains']}, actual={output}")
+        return prepared.resolve()
+
+    bootstrap_root.mkdir(parents=True, exist_ok=True)
+    temporary = bootstrap_root / f".{prepared.name}.tmp-{secrets.token_hex(6)}"
+    temporary.mkdir(parents=False, exist_ok=False)
+    try:
+        _materialize_file(bundle_manifest_path, temporary / "bundle-manifest.json")
+        for relative, source, _ in bundle_files:
+            _materialize_file(source, temporary / pathlib.Path(*relative.parts))
+        _materialize_file(mysql_archives[0], temporary / "toolchain-source/mysql" / mysql_archives[0].name)
+        _materialize_file(libaio_packages[0], temporary / "toolchain-source/libaio" / libaio_packages[0].name)
+
+        components = {}
+        for component in ("java", "k6"):
+            destination = temporary / "toolchain-source" / component
+            source = sources[component]
+            if source["kind"] == "archive":
+                safe_extract(source["path"], destination)
+                candidates = _executable_candidates(destination, component)
+                if len(candidates) != 1:
+                    raise RuntimeError(f"{component} archive must contain exactly one executable, "
+                                       f"found {candidates}")
+                executable = candidates[0]
+            else:
+                copied_root = destination / source["path"].name
+                shutil.copytree(source["path"], copied_root, symlinks=True)
+                executable = copied_root / source["relative_executable"]
+            _validate_extracted_tree(destination)
+            executable.chmod(executable.stat().st_mode | 0o111)
+            output = _bootstrap_version(component, executable, version_runner)
+            expected_marker = expected[f"{component}_contains"]
+            if expected_marker not in output:
+                raise RuntimeError(f"{component} version mismatch: expected {expected_marker}, actual={output}")
+            components[component] = {
+                "source_kind": source["kind"],
+                "source_sha256": source["sha256"],
+                "prepared_executable": executable.relative_to(temporary).as_posix(),
+                "sha256": sha256(executable),
+                "version": output,
+            }
+        document = {
+            "schema_version": 1,
+            "created_at_utc": utc_now(),
+            "source_input_root": str(source_root),
+            "prepared_input_root": str(prepared),
+            "input_fingerprint_sha256": fingerprint,
+            "fingerprint": fingerprint_document,
+            "components": {
+                **components,
+                "mysql": {"archive": f"toolchain-source/mysql/{mysql_archives[0].name}",
+                            "version": expected["mysql_contains"], "sha256": mysql_sha},
+                "libaio": {"package": f"toolchain-source/libaio/{libaio_packages[0].name}",
+                            "version": libaio_lock["version"], "sha256": libaio_sha},
+            },
+        }
+        (temporary / "bootstrap-manifest.json").write_text(
+            json.dumps(document, ensure_ascii=False, indent=2), encoding="utf-8")
+        temporary.rename(prepared)
+    except Exception:
+        shutil.rmtree(temporary, ignore_errors=True)
+        raise
+    return prepared.resolve()
+
+
+def inspect_elf_library(path: pathlib.Path, lock: dict) -> dict:
+    """Validate the exact locked ELF library without relying on host binutils."""
+    actual_sha = sha256(path)
+    if actual_sha != lock["library_sha256"]:
+        raise RuntimeError(f"offline dependency library checksum mismatch: {actual_sha}")
+    data = path.read_bytes()
+    if len(data) < 20 or data[:4] != b"\x7fELF":
+        raise RuntimeError(f"offline dependency is not ELF: {path}")
+    elf = lock["elf"]
+    actual = {"class": data[4], "data": data[5], "osabi": data[7],
+              "machine": int.from_bytes(data[18:20], "little" if data[5] == 1 else "big")}
+    expected = {key: elf[key] for key in ("class", "data", "osabi", "machine")}
+    if actual != expected:
+        raise RuntimeError(f"offline dependency ELF mismatch: expected={expected}, actual={actual}")
+    required_markers = [elf["soname"], *elf["required_symbol_versions"]]
+    missing_markers = [item for item in required_markers if item.encode() + b"\0" not in data]
+    if missing_markers:
+        raise RuntimeError(f"offline dependency ABI markers missing: {missing_markers}")
+    return {**actual, "sha256": actual_sha, "soname": elf["soname"],
+            "required_symbol_versions": elf["required_symbol_versions"]}
+
+
+def parse_ldd_missing(output: str) -> list[str]:
+    return sorted(set(re.findall(r"^\s*([^\s]+)\s+=>\s+not found\s*$", output, re.MULTILINE)))
+
+
 def validate_resource_samples(path: pathlib.Path, required_labels: set[str]) -> dict:
     if not path.is_file():
         raise RuntimeError(f"resource telemetry missing: {path}")
@@ -403,7 +664,9 @@ class ResourceSampler:
 class KaggleSession:
     def __init__(self, input_root: str = "/kaggle/input", working_root: str = "/kaggle/working/byteme-g24k",
                  run_id: str | None = None):
-        self.input_root = pathlib.Path(input_root)
+        self.input_root = pathlib.Path(input_root).resolve()
+        if not self.input_root.is_dir():
+            raise RuntimeError(f"session input root does not exist: {self.input_root}")
         self.working_root = pathlib.Path(working_root)
         self.run_id = run_id or dt.datetime.now().strftime("%Y%m%d-%H%M%S")
         self.run_dir = self.working_root / self.run_id
@@ -418,6 +681,9 @@ class KaggleSession:
         self.config: dict = {}
         self.tools: dict[str, pathlib.Path] = {}
         self.tool_versions: dict[str, str] = {}
+        self.mysql_env = os.environ.copy()
+        self.offline_dependencies: dict[str, dict] = {}
+        self.dynamic_dependency_reports: dict[str, dict] = {}
         self.application_sha: str | None = None
         self.repository_sha: str | None = None
         self.db_password = secrets.token_urlsafe(24) + "9a!"
@@ -438,6 +704,7 @@ class KaggleSession:
         probe = {
             "captured_at_utc": utc_now(),
             "is_kaggle": pathlib.Path("/kaggle").exists(),
+            "prepared_input_root": str(self.input_root),
             "hardware": {"cpu_model": cpu_model(), "logical_cores": os.cpu_count(),
                          "memory_total_bytes": memory_total(),
                          "cgroup": cgroup,
@@ -447,7 +714,8 @@ class KaggleSession:
                         "os_id": os_release.get("ID"), "os_version": os_release.get("VERSION_ID"),
                         "image_identity": image},
             "capabilities": {"docker": shutil.which("docker"), "apt_get": shutil.which("apt-get"),
-                             "sudo": shutil.which("sudo"), "openssl": shutil.which("openssl")},
+                             "sudo": shutil.which("sudo"), "openssl": shutil.which("openssl"),
+                             "dpkg_deb": shutil.which("dpkg-deb"), "ldd": shutil.which("ldd")},
         }
         self._write_json("environment/hardware-runtime.json", probe)
         return probe
@@ -494,25 +762,82 @@ class KaggleSession:
             raise RuntimeError("configuration baseline mismatch")
         shutil.copy2(manifest_path, self.evidence / "environment/bundle-manifest.json")
 
-    def _archives(self, component: str) -> list[pathlib.Path]:
-        patterns = {"java": ("*jdk*21*.tar.gz", "*jre*21*.tar.gz"),
-                    "mysql": ("mysql*8.4*.tar.xz", "mysql*8.4*.tar.gz"),
-                    "k6": ("k6*v0.55.2*linux*amd64*.tar.gz", "k6*0.55.2*linux*amd64*.tar.gz")}
-        found = []
-        for pattern in patterns[component]:
-            found.extend(self.input_root.rglob(pattern))
-        return sorted(set(found))
+    def setup_offline_dependencies(self) -> None:
+        lock = self.config["offline_dependencies"]["libaio"]
+        matches = list(self.input_root.rglob(lock["filename"]))
+        if len(matches) != 1:
+            raise RuntimeError(f"expected exactly one locked libaio package below {self.input_root}, found {len(matches)}")
+        package = matches[0]
+        package_sha = sha256(package)
+        if package_sha != lock["package_sha256"]:
+            raise RuntimeError(f"libaio package checksum mismatch: {package_sha}")
+        dpkg_deb = shutil.which("dpkg-deb")
+        if not dpkg_deb:
+            raise RuntimeError("dpkg-deb is unavailable; cannot extract locked offline dependency")
+        metadata = {}
+        for field, expected in (("Package", lock["package"]), ("Version", lock["version"]),
+                                ("Architecture", lock["architecture"])):
+            proc = subprocess.run([dpkg_deb, "--field", str(package), field], text=True,
+                                  encoding="utf-8", errors="replace", capture_output=True, timeout=30)
+            actual = proc.stdout.strip()
+            if proc.returncode or actual != expected:
+                raise RuntimeError(f"libaio package metadata mismatch for {field}: expected={expected}, actual={actual}")
+            metadata[field.lower()] = actual
 
-    def _version(self, executable: pathlib.Path, args: list[str]) -> str:
+        package_root = self.toolchain_dir / "libaio-package"
+        package_root.mkdir(parents=True, exist_ok=False)
+        extract = subprocess.run([dpkg_deb, "--extract", str(package), str(package_root)], text=True,
+                                 encoding="utf-8", errors="replace", capture_output=True, timeout=60)
+        if extract.returncode:
+            raise RuntimeError(f"libaio package extraction failed: {extract.stderr.strip()}")
+        source = package_root / pathlib.PurePosixPath(lock["library_path"])
+        if not source.is_file():
+            raise RuntimeError(f"locked libaio library is absent after extraction: {source}")
+        elf = inspect_elf_library(source, lock)
+
+        library_dir = self.toolchain_dir / "libaio"
+        library_dir.mkdir(parents=True, exist_ok=False)
+        library = library_dir / source.name
+        shutil.copy2(source, library)
+        compatibility = library_dir / lock["compatibility_soname"]
+        compatibility.symlink_to(library.name)
+        if not compatibility.is_file() or sha256(compatibility) != lock["library_sha256"]:
+            raise RuntimeError("libaio compatibility symlink validation failed")
+        previous = self.mysql_env.get("LD_LIBRARY_PATH")
+        self.mysql_env["LD_LIBRARY_PATH"] = str(library_dir) + (os.pathsep + previous if previous else "")
+        evidence = {**metadata, "source_url": lock["source_url"], "filename": lock["filename"],
+                    "package_sha256": package_sha, "library_path": str(library),
+                    "compatibility_path": str(compatibility), "compatibility_soname": lock["compatibility_soname"],
+                    "elf": elf, "ld_library_path_prefix": str(library_dir)}
+        self.offline_dependencies["libaio"] = evidence
+        self._write_json("environment/offline-dependencies.json", self.offline_dependencies)
+
+    def _archives(self, component: str) -> list[pathlib.Path]:
+        return _matching_files(self.input_root, TOOLCHAIN_ARCHIVE_PATTERNS[component])
+
+    def _version(self, executable: pathlib.Path, args: list[str], env: dict | None = None) -> str:
         proc = subprocess.run([str(executable), *args], text=True, encoding="utf-8", errors="replace",
-                              capture_output=True, timeout=30)
+                              capture_output=True, timeout=30, env=env)
         return (proc.stdout + proc.stderr).strip()
 
-    def _select_tool(self, component: str, binary: str, version_args: list[str], expected: str) -> tuple[pathlib.Path, str]:
+    def _dynamic_dependencies(self, executable: pathlib.Path, env: dict) -> dict:
+        ldd = shutil.which("ldd")
+        if not ldd:
+            raise RuntimeError("ldd is unavailable; cannot preflight MySQL shared libraries")
+        proc = subprocess.run([ldd, str(executable)], text=True, encoding="utf-8", errors="replace",
+                              capture_output=True, timeout=30, env=env)
+        output = (proc.stdout + proc.stderr).strip()
+        if proc.returncode or not output or "not a dynamic executable" in output.lower():
+            raise RuntimeError(f"ldd preflight failed for {executable}: exit={proc.returncode}, output={output}")
+        return {"executable": str(executable), "exit_code": proc.returncode,
+                "missing": parse_ldd_missing(output), "output": output}
+
+    def _select_tool(self, component: str, binary: str, version_args: list[str], expected: str,
+                     env: dict | None = None, dynamic_preflight: bool = False) -> tuple[pathlib.Path, str]:
         candidates = []
-        system = shutil.which(binary)
-        if system:
-            candidates.append(pathlib.Path(system))
+        input_names = (binary, f"{binary}.exe") if os.name == "nt" else (binary,)
+        for name in input_names:
+            candidates.extend(path for path in self.input_root.rglob(name) if path.is_file())
         archives = self._archives(component)
         if len(archives) > 1:
             raise RuntimeError(f"multiple {component} archives attached; keep exactly one: {archives}")
@@ -520,6 +845,9 @@ class KaggleSession:
             destination = self.toolchain_dir / component
             safe_extract(archives[0], destination)
             candidates.extend(destination.rglob(binary))
+        system = shutil.which(binary)
+        if system:
+            candidates.append(pathlib.Path(system))
         checked = []
         for candidate in candidates:
             if not candidate.is_file():
@@ -527,19 +855,28 @@ class KaggleSession:
             if not os.access(candidate, os.X_OK):
                 candidate.chmod(candidate.stat().st_mode | 0o111)
             try:
-                version = self._version(candidate, version_args)
+                dependency_report = self._dynamic_dependencies(candidate, env or os.environ.copy()) if dynamic_preflight else None
+                if dependency_report and dependency_report["missing"]:
+                    checked.append(f"{candidate}: missing shared libraries {dependency_report['missing']}")
+                    continue
+                version = self._version(candidate, version_args, env)
             except Exception as exc:
                 checked.append(f"{candidate}: {exc}")
                 continue
             checked.append(f"{candidate}: {version.splitlines()[0] if version else 'empty'}")
             if expected in version:
+                if dependency_report:
+                    self.dynamic_dependency_reports[str(candidate)] = dependency_report
                 return candidate.resolve(), version
         raise RuntimeError(f"no exact {component} {expected}; checked={checked}; archives={archives}")
 
     def setup_toolchain(self) -> None:
         expected = self.config["expected_versions"]
+        self.toolchain_dir.mkdir(parents=True, exist_ok=False)
+        self.setup_offline_dependencies()
         java, java_v = self._select_tool("java", "java", ["-version"], expected["java_contains"])
-        mysqld, mysql_v = self._select_tool("mysql", "mysqld", ["--version"], expected["mysql_contains"])
+        mysqld, mysql_v = self._select_tool("mysql", "mysqld", ["--version"], expected["mysql_contains"],
+                                            self.mysql_env, dynamic_preflight=True)
         k6, k6_v = self._select_tool("k6", "k6", ["version"], expected["k6_contains"])
         mysql_bin = mysqld.parent / "mysql"
         mysqladmin = mysqld.parent / "mysqladmin"
@@ -550,15 +887,25 @@ class KaggleSession:
         if not mysql_bin.exists() or not mysqladmin.exists():
             raise RuntimeError("selected MySQL distribution lacks mysql/mysqladmin clients")
         for client in (mysql_bin, mysqladmin):
-            client_version = self._version(client, ["--version"])
+            dependency_report = self._dynamic_dependencies(client, self.mysql_env)
+            if dependency_report["missing"]:
+                raise RuntimeError(f"MySQL client shared libraries missing: {client}: {dependency_report['missing']}")
+            self.dynamic_dependency_reports[str(client)] = dependency_report
+            client_version = self._version(client, ["--version"], self.mysql_env)
             if expected["mysql_contains"] not in client_version:
                 raise RuntimeError(f"MySQL client version mismatch: {client}: {client_version}")
         self.tools = {"java": java, "mysqld": mysqld, "mysql": mysql_bin, "mysqladmin": mysqladmin, "k6": k6}
         self.tool_versions = {"java_version": java_v, "mysql_version": mysql_v, "k6_version": k6_v}
+        self._write_json("environment/mysql-dynamic-dependencies.json", {
+            "ld_library_path": self.mysql_env.get("LD_LIBRARY_PATH"),
+            "executables": self.dynamic_dependency_reports,
+            "all_dependencies_resolved": all(not item["missing"] for item in self.dynamic_dependency_reports.values()),
+        })
         self._write_json("environment/toolchain.json", {
             **self.tool_versions,
             "executables": {key: str(value) for key, value in self.tools.items()},
             "sha256": {key: sha256(value) for key, value in self.tools.items()},
+            "offline_dependencies": self.offline_dependencies,
         })
 
     def _mysql(self, sql: str, user: str = "root", password: str = "", database: str | None = None) -> str:
@@ -571,7 +918,7 @@ class KaggleSession:
                             "--port", str(runtime["mysql_port"])])
         if database:
             command.append(database)
-        env = os.environ.copy()
+        env = self.mysql_env.copy()
         env["MYSQL_PWD"] = password
         proc = subprocess.run(command, input=sql, text=True, encoding="utf-8", capture_output=True, env=env)
         if proc.returncode:
@@ -594,23 +941,32 @@ class KaggleSession:
             f"innodb-buffer-pool-size={runtime['mysql_innodb_buffer_pool_size']}", "performance-schema=ON", "",
         ]), encoding="utf-8")
         init = subprocess.run([str(self.tools["mysqld"]), f"--defaults-file={config}", "--initialize-insecure"],
-                              text=True, capture_output=True)
+                              text=True, capture_output=True, env=self.mysql_env)
         if init.returncode:
             raise RuntimeError(f"mysqld initialize failed: {init.stderr}")
-        process = subprocess.Popen([str(self.tools["mysqld"]), f"--defaults-file={config}"],
-                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        startup_stdout = self.evidence / "logs/mysql-startup.stdout.log"
+        startup_stderr = self.evidence / "logs/mysql-startup.stderr.log"
+        with startup_stdout.open("wb") as stdout, startup_stderr.open("wb") as stderr:
+            process = subprocess.Popen([str(self.tools["mysqld"]), f"--defaults-file={config}"],
+                                       stdout=stdout, stderr=stderr, env=self.mysql_env)
         self.processes["mysql"] = process
         deadline = time.time() + 120
         while time.time() < deadline:
             if process.poll() is not None:
-                raise RuntimeError("mysqld exited during startup")
+                self._mysql_startup_diagnostics(process, "early_exit", data)
+                raise RuntimeError("mysqld exited during startup; see logs/mysql-startup.stderr.log, "
+                                   "logs/mysql-startup.stdout.log, logs/mysql.log and "
+                                   "environment/mysql-startup-failure.json in the evidence ZIP")
             ping = subprocess.run([str(self.tools["mysqladmin"]), "--protocol=SOCKET",
-                                   "--socket", str(self.run_dir / "mysql.sock"), "-uroot", "ping"], capture_output=True)
+                                   "--socket", str(self.run_dir / "mysql.sock"), "-uroot", "ping"],
+                                  capture_output=True, env=self.mysql_env)
             if ping.returncode == 0:
                 break
             time.sleep(1)
         else:
-            raise RuntimeError("mysqld readiness timeout")
+            self._mysql_startup_diagnostics(process, "readiness_timeout", data)
+            raise RuntimeError("mysqld readiness timeout; see logs/mysql-startup.stderr.log, "
+                               "logs/mysql.log and environment/mysql-startup-failure.json in the evidence ZIP")
         database, user = runtime["database"], runtime["database_user"]
         quoted_password = self.db_password.replace("'", "''")
         self._mysql(f"CREATE DATABASE `{database}` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci;"
@@ -620,6 +976,45 @@ class KaggleSession:
                     f"GRANT ALL ON `{database}`.* TO '{user}'@'localhost'; FLUSH PRIVILEGES;")
         schema = self._find_single("schema.sql")
         self._mysql(schema.read_text(encoding="utf-8"), user, self.db_password, database)
+
+    def _mysql_startup_diagnostics(self, process: subprocess.Popen, reason: str, data: pathlib.Path) -> None:
+        """Capture startup facts before cleanup removes the run's datadir and socket."""
+        code = process.poll()
+        runtime = self.config["runtime"]
+        paths = {"datadir": data, "socket_parent": self.run_dir,
+                 "socket": self.run_dir / "mysql.sock", "pid_file": self.run_dir / "mysql.pid"}
+        path_status = {}
+        for name, path in paths.items():
+            try:
+                info = path.stat()
+                path_status[name] = {"exists": True, "mode": oct(stat.S_IMODE(info.st_mode)),
+                                     "readable": os.access(path, os.R_OK), "writable": os.access(path, os.W_OK),
+                                     "executable": os.access(path, os.X_OK), "is_directory": path.is_dir()}
+            except FileNotFoundError:
+                path_status[name] = {"exists": False}
+            except OSError as exc:
+                path_status[name] = {"stat_error": f"{type(exc).__name__}: {exc}"}
+        try:
+            with socket.create_connection((runtime["mysql_host"], runtime["mysql_port"]), timeout=1):
+                port_status = "accepting_connections"
+        except OSError as exc:
+            port_status = f"not_accepting: {type(exc).__name__}: {exc}"
+        cgroup = {}
+        for candidate in ("/sys/fs/cgroup/memory.events", "/sys/fs/cgroup/memory/memory.oom_control",
+                          "/sys/fs/cgroup/memory.current", "/sys/fs/cgroup/memory.max"):
+            try:
+                cgroup[candidate] = pathlib.Path(candidate).read_text(encoding="utf-8").strip()
+            except OSError:
+                pass
+        mysql_log = self.evidence / "logs/mysql.log"
+        self._write_json("environment/mysql-startup-failure.json", {
+            "reason": reason, "exit_code": code, "signal": -code if code is not None and code < 0 else None,
+            "logs": {"stdout": "logs/mysql-startup.stdout.log", "stderr": "logs/mysql-startup.stderr.log",
+                     "mysql_error": "logs/mysql.log", "mysql_error_exists": mysql_log.is_file(),
+                     "mysql_error_bytes": mysql_log.stat().st_size if mysql_log.is_file() else None},
+            "port": {"host": runtime["mysql_host"], "number": runtime["mysql_port"], "status": port_status},
+            "paths": path_status, "cgroup": cgroup,
+        })
 
     def start_backend(self) -> None:
         if not shutil.which("openssl"):
@@ -800,6 +1195,7 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
     def write_run_manifest(self, dataset_sha: str | None) -> None:
         hardware = json.loads((self.evidence / "environment/hardware-runtime.json").read_text(encoding="utf-8"))
         toolchain = json.loads((self.evidence / "environment/toolchain.json").read_text(encoding="utf-8")) if (self.evidence / "environment/toolchain.json").exists() else {}
+        libaio = toolchain.get("offline_dependencies", {}).get("libaio", {})
         manifest = {
             "run_id": self.run_id, "timestamp_timezone": {"timestamps": "UTC", "project_timezone": "Asia/Saigon"},
             "source": {"protocol_baseline_sha": BASELINE_SHA, "repository_sha": self.repository_sha,
@@ -816,7 +1212,12 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
                           "k6_version": toolchain.get("k6_version"),
                           "java_executable_sha256": toolchain.get("sha256", {}).get("java"),
                           "mysqld_executable_sha256": toolchain.get("sha256", {}).get("mysqld"),
-                          "k6_executable_sha256": toolchain.get("sha256", {}).get("k6")},
+                          "k6_executable_sha256": toolchain.get("sha256", {}).get("k6"),
+                          "libaio_package_version": libaio.get("version"),
+                          "libaio_package_sha256": libaio.get("package_sha256"),
+                          "libaio_library_sha256": libaio.get("elf", {}).get("sha256"),
+                          "libaio_library_soname": libaio.get("elf", {}).get("soname"),
+                          "libaio_compatibility_soname": libaio.get("compatibility_soname")},
             "locks": {"configuration_sha256": sha256(self.config_path) if self.config_path else None,
                       "workload_source_sha256": self._source_hash() if self.bundle_root else None,
                       "dataset_sha256": dataset_sha},
@@ -849,7 +1250,7 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
                 runtime = self.config["runtime"]
                 shutdown = subprocess.run([str(self.tools["mysqladmin"]), "--protocol=SOCKET",
                                            "--socket", str(self.run_dir / "mysql.sock"), "-uroot", "shutdown"],
-                                          timeout=20, capture_output=True)
+                                          timeout=20, capture_output=True, env=self.mysql_env)
                 if shutdown.returncode:
                     mysql.send_signal(signal.SIGTERM)
                 try:

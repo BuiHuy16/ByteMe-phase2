@@ -6,7 +6,7 @@ Thư mục này chuẩn bị protocol before/after dùng chung. Thư mục **kh�
 
 Nền tảng chính cho benchmark before/after chính thức theo yêu cầu của giảng viên là Kaggle CPU thông qua adapter user-space G2.4-K. Local Windows + Docker Desktop vẫn là nền tảng xác minh development/integration và giữ nguyên evidence chuẩn bị G2.4 đã PASS. Tuyệt đối không so sánh trực tiếp kết quả Local với Kaggle.
 
-Các Kaggle session chỉ có thể so sánh khi CPU model, core/RAM quota, OS image, portable toolchain binaries chính xác, configuration, workload và dataset locks đã thu thập đều khớp nhau. Kaggle runtime validation vẫn PENDING cho đến khi một session thực tế tạo được evidence bundle PASS.
+Các Kaggle session chỉ có thể so sánh khi CPU model, core/RAM quota, OS image, portable toolchain binaries, locked offline dependencies, configuration, workload và dataset locks đã thu thập đều khớp nhau. Kaggle runtime validation vẫn PENDING cho đến khi một session thực tế tạo được evidence bundle PASS.
 
 ## Các file
 

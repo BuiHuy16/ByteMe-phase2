@@ -22,14 +22,15 @@ notebook = {
         markdown("""
         # ByteMe Phase 2 — G2.4-K smoke test trên Kaggle CPU
 
-        Notebook này điều chỉnh bộ công cụ G2.4 đã được version hóa mà không thay đổi business workload. Đây **chỉ là smoke test**, không bao giờ là official baseline G2.5.
+        Notebook này điều phối bộ công cụ G2.4 đã được khóa phiên bản mà không thay đổi business workload. Đây **chỉ là smoke test**, không phải official baseline G2.5.
 
         Trước khi Run All:
 
         1. Chọn **Accelerator: None**.
         2. Attach private G2.4-K bundle dataset được tạo bởi `prepare_bundle.ps1`.
-        3. Attach chính xác một portable Linux x86_64 archive cho mỗi tool Java 21.0.13, MySQL 8.4.13 và k6 0.55.2, trừ khi Kaggle image đã báo cáo đúng phiên bản đó.
-        4. Không attach credentials hoặc shared database. Tải evidence ZIP trước khi session hết hạn.
+        3. Attach Toolchain Dataset chứa đúng Java 21.0.13, MySQL 8.4.13, k6 0.55.2 và `libaio1t64_0.3.113-6build1.1_amd64.deb`.
+        4. Java/k6 có thể còn ở dạng archive hoặc đã được Kaggle tự giải nén; bootstrap chính thức sẽ tự nhận diện, staging và kiểm tra phiên bản.
+        5. Không attach credentials hoặc shared database. Tải evidence ZIP trước khi session hết hạn.
 
         Runner chỉ probe root/apt/Docker như các capability; không giả định hoặc yêu cầu chúng.
         """),
@@ -43,21 +44,40 @@ notebook = {
         if len(runtime_files) != 1:
             raise RuntimeError(f'Expected one bundled kaggle_runtime.py, found {len(runtime_files)}: {runtime_files}')
         sys.path.insert(0, str(runtime_files[0].parent))
-        from kaggle_runtime import KaggleSession
+        from kaggle_runtime import KaggleSession, prepare_kaggle_input
 
-        RUN_ID = 'g24k-smoke-' + dt.datetime.now(dt.timezone.utc).strftime('%Y%m%dT%H%M%SZ')
-        session = KaggleSession(run_id=RUN_ID)
-        print({'run_id': RUN_ID, 'runtime_module': str(runtime_files[0])})
+        print({'runtime_module': str(runtime_files[0])})
         """),
         code("""
-        # Hardware/runtime fingerprint is written before any toolchain setup.
+        # Chuẩn hóa đúng một input root trước khi tạo session. Không cần cell staging thủ công.
+        SOURCE_INPUT_ROOT = pathlib.Path('/kaggle/input')
+        BOOTSTRAP_ROOT = pathlib.Path('/kaggle/working/byteme-g24k-bootstrap')
+        prepared_input_root = prepare_kaggle_input(SOURCE_INPUT_ROOT, BOOTSTRAP_ROOT)
+
+        RUN_ID = 'g24k-smoke-' + dt.datetime.now(dt.timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+        session = KaggleSession(input_root=prepared_input_root, run_id=RUN_ID)
+        if session.input_root != prepared_input_root.resolve():
+            raise RuntimeError(f'KaggleSession lost prepared input root: {session.input_root}')
+        bootstrap_manifest = json.loads((prepared_input_root / 'bootstrap-manifest.json').read_text())
+        print({'run_id': RUN_ID, 'prepared_input_root': str(prepared_input_root),
+               'toolchain': {key: value.get('version') for key, value in bootstrap_manifest['components'].items()}})
+        """),
+        code("""
+        # Hardware/runtime fingerprint records the same prepared input root used by smoke.
         probe = session.probe()
+        if pathlib.Path(probe['prepared_input_root']) != session.input_root:
+            raise RuntimeError('Probe did not preserve the prepared input root')
         print(json.dumps(probe, indent=2, ensure_ascii=False))
         """),
         code("""
-        # This method fails closed, always attempts cleanup, writes checksums, and packages evidence.
+        # Preflight toolchain runs before MySQL; the method always attempts cleanup and evidence export.
         result = session.run_smoke()
         print(json.dumps(result, indent=2, ensure_ascii=False))
+        """),
+        code("""
+        # Evidence ZIP is produced for PASS and, when feasible, for FAIL.
+        evidence_zip = pathlib.Path(result['evidence_zip'])
+        print({'evidence_zip': str(evidence_zip), 'exists': evidence_zip.is_file(), 'status': result['status']})
         if result['status'] != 'PASS':
             raise RuntimeError('Kaggle smoke did not pass; inspect the evidence ZIP and do not report PASS')
         """),
@@ -71,7 +91,7 @@ notebook = {
     ],
     "metadata": {
         "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
-        "language_info": {"name": "python", "version": "3"},
+        "language_info": {"name": "Python", "version": "3"},
         "kaggle": {"accelerator": "none", "internet": False, "isGpuEnabled": False, "isInternetEnabled": False},
     },
     "nbformat": 4,

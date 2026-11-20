@@ -16,10 +16,12 @@ Notebook và các script đã được static validation trên Local. Môi trư�
 
    Builder từ chối executable drift ở staged, unstaged hoặc untracked, chạy Maven Wrapper `clean package`, đồng thời ghi lại source/tree identity, Java/Maven output, build command/exit và JAR SHA-256. Đối với treatment Pha 2 trong tương lai, hãy truyền application SHA đã được review; benchmark workload vẫn được hash độc lập.
 
-2. Thêm các archive portable Linux x86_64 chính xác cho Java 21.0.13, MySQL 8.4.13 và k6 0.55.2 vào một private Kaggle Dataset. Adapter chỉ chấp nhận system binary khi phiên bản được báo cáo chứa đúng locked value. Adapter không bao giờ âm thầm thay thế bằng phiên bản khác.
-3. Upload `kaggle/script/byteme_phase2_g24k.ipynb`; chọn Accelerator `None`; attach bundle/toolchain datasets. Có thể tắt Internet khi mọi archive đã được attach.
+2. Thêm các archive portable Linux x86_64 chính xác cho Java 21.0.13, MySQL 8.4.13 và k6 0.55.2 vào private Kaggle Toolchain Dataset. Thêm cả gói Ubuntu Noble chính thức `libaio1t64_0.3.113-6build1.1_amd64.deb` với SHA-256 `433212b33e26d424605c01cec1de33b63f2cc12870987b4cb7b3625baba66a19`. Adapter chỉ chấp nhận binary/package khi version và hash khớp configuration lock.
+3. Upload `kaggle/script/byteme_phase2_g24k.ipynb`; chọn Accelerator `None`; attach bundle dataset và toolchain dataset. Có thể tắt Internet khi mọi artifact đã được attach.
 
-MySQL chạy từ generic binary distribution trong `/kaggle/working`, bind vào `127.0.0.1:13309`; không yêu cầu Docker hoặc quyền root/apt. Nếu portable binary thiếu shared library, run sẽ fail closed và ghi lại blocker.
+MySQL chạy từ generic binary distribution trong `/kaggle/working`, bind vào `127.0.0.1:13309`; không yêu cầu Docker hoặc quyền root/apt. Runner dùng `dpkg-deb --extract` để giải nén `libaio1t64` vào run directory, xác minh package metadata/checksum và ELF64 x86-64 ABI, tạo user-space compatibility symlink `libaio.so.1`, rồi chỉ thêm thư mục đó vào `LD_LIBRARY_PATH` của MySQL. `ldd` phải xác nhận không còn dependency `not found` trước khi initialize database.
+
+Nếu MySQL thoát trong startup hoặc không đạt readiness, đọc `logs/mysql-startup.stderr.log`, `logs/mysql-startup.stdout.log`, `logs/mysql.log` và `environment/mysql-startup-failure.json` trong evidence ZIP. JSON ghi exit code/signal, trạng thái port/socket/datadir và các cgroup memory/OOM counters khả dụng trước cleanup; các dữ liệu này chưa tự xác định nguyên nhân nếu log không nêu rõ.
 
 ## Các giai đoạn của notebook
 
@@ -33,7 +35,7 @@ Profile `standard` vẫn gồm 5.000 read foods, 500 orders, 20 write actors và
 
 ## Nhóm so sánh before/after
 
-Chạy `compare_manifests.py` trên các file `manifest/run-manifest.json` thu được. Tool từ chối cgroup CPU quota, effective cpuset, memory limit, resolved limits, kernel/runtime-image identity, CPU model, visible cores/RAM, OS image, phiên bản Java/MySQL/k6 hoặc binary hashes, configuration/workload hashes hay dataset checksum bị thiếu hoặc khác nhau. Application SHA được báo cáo như treatment pair và được kỳ vọng khác nhau giữa before/after. Tuyệt đối không gộp các session chỉ vì cả hai đều mang nhãn “Kaggle CPU”.
+Chạy `compare_manifests.py` trên các file `manifest/run-manifest.json` thu được. Tool từ chối cgroup CPU quota, effective cpuset, memory limit, resolved limits, kernel/runtime-image identity, CPU model, visible cores/RAM, OS image, phiên bản Java/MySQL/k6, binary hashes, libaio package/library hashes, configuration/workload hashes hay dataset checksum bị thiếu hoặc khác nhau. Application SHA được báo cáo như treatment pair và được kỳ vọng khác nhau giữa before/after. Tuyệt đối không gộp các session chỉ vì cả hai đều mang nhãn “Kaggle CPU”.
 
 Các parameter đo chính thức vẫn là warm-up 60 giây, W1/W2 180 giây, cooldown 30 giây, W1 arrival rates 10/5/5 RPS, W2 10 VUs, W3 15 rounds, tối thiểu ba và mục tiêu năm independent run. Notebook smoke chỉ sử dụng smoke profile và hai W3 rounds.
 

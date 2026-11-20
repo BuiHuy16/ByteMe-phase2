@@ -83,4 +83,4 @@ $manifest = [ordered]@{ schema_version = 2; protocol_baseline_sha = $baseline; r
 $manifest | ConvertTo-Json -Depth 5 | Set-Content -Encoding UTF8 -LiteralPath (Join-Path $output 'bundle-manifest.json')
 Write-Output "Bundle ready: $output"
 Write-Output "Verified application JAR SHA-256: $jarHash"
-Write-Output 'Upload this directory as a private Kaggle Dataset together with exactly one portable archive for Java 21.0.13, MySQL 8.4.13 and k6 0.55.2.'
+Write-Output 'Upload this directory as a private Kaggle Dataset. The toolchain Dataset must contain exact portable archives for Java 21.0.13, MySQL 8.4.13 and k6 0.55.2 plus the locked libaio1t64 amd64 package.'
