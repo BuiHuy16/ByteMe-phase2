@@ -1,0 +1,45 @@
+{
+  "generated_at_utc": "2026-11-19T18:37:33+00:00",
+  "profile": "smoke",
+  "profile_parameters": {
+    "categories": 3,
+    "read_foods": 60,
+    "read_orders": 20,
+    "items_per_order": 2,
+    "write_actors": 2,
+    "contention_actors": 4,
+    "write_stock": 1000,
+    "shared_stock": 10
+  },
+  "compose_project": "byteme-g24-smoke",
+  "database": "byteme_g24_smoke",
+  "counts": {
+    "users": 8,
+    "categories": 3,
+    "foods": 63,
+    "carts": 0,
+    "cart_items": 0,
+    "orders": 20,
+    "order_items": 40
+  },
+  "logical_sha256": {
+    "users": "8ce3f1ed12baf16e7e033dedb964f8fd201fa11815bb86bd2526b661a1f7ec5d",
+    "categories": "d0fc25336c9bec6a41c8e42a4d9aefed192056d3ddfa4c11b345186d439726cd",
+    "foods": "2dc64e6597da4d065122276fbbb4c66479472723622a4aa80b9e898dd96f6f34",
+    "carts": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "cart_items": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "orders": "72d64d8cc58f9afd9d25bb2fa70b15b22de7c1f5c64bd03152e4cfeb85036d88",
+    "order_items": "4d887847653d996240b6920c0b8c290d2f17c8ea1923e024f6b0153d3f1c0e33"
+  },
+  "overall_sha256": "1563f0bc27189c805d600347a497830593289542cfc3543d3b73d29117961e50",
+  "invariants": {
+    "expected_user_count": true,
+    "expected_food_count": true,
+    "expected_read_orders": true,
+    "expected_order_items": true,
+    "initial_carts_empty": true,
+    "shared_stock_matches_profile": true,
+    "no_orphan_order_items": true
+  },
+  "all_invariants_pass": true
+}

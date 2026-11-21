@@ -1,0 +1,6 @@
+﻿uid=10001(10001) gid=10001(10001) groups=10001(10001)
+private_readable=0
+public_readable=0
+2484 /run/auth/private.pem
+ 625 /run/auth/public.pem
+3109 total

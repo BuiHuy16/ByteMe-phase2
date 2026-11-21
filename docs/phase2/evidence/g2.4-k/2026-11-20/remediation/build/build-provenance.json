@@ -1,0 +1,30 @@
+﻿{
+    "schema_version":  1,
+    "protocol_baseline_sha":  "510f6415b6af535ceec77213f0b0c7d5082123f7",
+    "repository_sha":  "24b3ace314365bc2b727928fae2243c605b4c87c",
+    "application_sha":  "510f6415b6af535ceec77213f0b0c7d5082123f7",
+    "executable_tree_listing_sha256":  "0a6a0df1f9cef0461d6c66074e44baba656dc9a5c77ea1e10de50af01a7cbdd8",
+    "executable_paths":  [
+                             "src",
+                             "pom.xml",
+                             "compose.yaml",
+                             "Dockerfile",
+                             ".dockerignore",
+                             ".env.example",
+                             "scripts"
+                         ],
+    "staged_executable_changes":  false,
+    "unstaged_executable_changes":  false,
+    "untracked_executable_changes":  [
+
+                                     ],
+    "build_command":  ".\\mvnw.cmd -B -DskipTests clean package",
+    "build_started_utc":  "2026-11-20T08:00:13.0212873Z",
+    "build_finished_utc":  "2026-11-20T08:00:26.5636504Z",
+    "build_exit_code":  0,
+    "java_version":  "java version \"21.0.12\" 2026-07-21 LTS\nJava(TM) SE Runtime Environment (build 21.0.12+7-LTS-205)\nJava HotSpot(TM) 64-Bit Server VM (build 21.0.12+7-LTS-205, mixed mode, sharing)",
+    "maven_version":  "Apache Maven 3.9.11 (3e54c93a704957b63ee3494413a2b544fd3d825b)\nMaven home: C:\\Users\\THIN BOX\\.m2\\wrapper\\dists\\apache-maven-3.9.11-bin\\86516310\\apache-maven-3.9.11\nJava version: 21.0.12, vendor: Oracle Corporation, runtime: C:\\Program Files\\Java\\jdk-21.0.12\nDefault locale: en_US, platform encoding: UTF-8\nOS name: \"windows 11\", version: \"10.0\", arch: \"amd64\", family: \"windows\"",
+    "jar_source_path":  "target/application.jar",
+    "jar_sha256":  "ff3d8e1c8cbdf93e07c38f25f4a732a7655accd5684307c556a110d267c475aa",
+    "jar_bytes":  66980148
+}

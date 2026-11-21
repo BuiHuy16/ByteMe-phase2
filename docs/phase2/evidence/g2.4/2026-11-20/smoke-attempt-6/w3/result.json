@@ -1,0 +1,291 @@
+{
+  "started_at_utc": "2026-11-19T18:39:24.366287+00:00",
+  "rounds_per_scenario": 2,
+  "scenarios": {
+    "same_food_checkout": {
+      "rounds": [
+        {
+          "round": 1,
+          "before": {
+            "orders": 0,
+            "committed_quantity": 0,
+            "stock": 10,
+            "cart_items": 2
+          },
+          "responses": [
+            {
+              "started_at_utc": "2026-11-19T18:39:24.997759+00:00",
+              "ended_at_utc": "2026-11-19T18:39:25.064046+00:00",
+              "elapsed_ms": 66.805,
+              "http_status": 201,
+              "body": {
+                "id": 24,
+                "status": "PENDING"
+              },
+              "actor_index": 1
+            },
+            {
+              "started_at_utc": "2026-11-19T18:39:24.996785+00:00",
+              "ended_at_utc": "2026-11-19T18:39:25.037525+00:00",
+              "elapsed_ms": 39.994,
+              "http_status": 201,
+              "body": {
+                "id": 23,
+                "status": "PENDING"
+              },
+              "actor_index": 2
+            }
+          ],
+          "after": {
+            "orders": 2,
+            "committed_quantity": 14,
+            "stock": 3,
+            "cart_items": 0
+          },
+          "violations": [
+            "OVERSELLING",
+            "LOST_UPDATE"
+          ]
+        },
+        {
+          "round": 2,
+          "before": {
+            "orders": 0,
+            "committed_quantity": 0,
+            "stock": 10,
+            "cart_items": 2
+          },
+          "responses": [
+            {
+              "started_at_utc": "2026-11-19T18:39:25.961188+00:00",
+              "ended_at_utc": "2026-11-19T18:39:25.996668+00:00",
+              "elapsed_ms": 35.517,
+              "http_status": 201,
+              "body": {
+                "id": 25,
+                "status": "PENDING"
+              },
+              "actor_index": 1
+            },
+            {
+              "started_at_utc": "2026-11-19T18:39:25.961188+00:00",
+              "ended_at_utc": "2026-11-19T18:39:26.023676+00:00",
+              "elapsed_ms": 62.087,
+              "http_status": 201,
+              "body": {
+                "id": 26,
+                "status": "PENDING"
+              },
+              "actor_index": 2
+            }
+          ],
+          "after": {
+            "orders": 2,
+            "committed_quantity": 14,
+            "stock": 3,
+            "cart_items": 0
+          },
+          "violations": [
+            "OVERSELLING",
+            "LOST_UPDATE"
+          ]
+        }
+      ],
+      "violation_rounds": [
+        1,
+        2
+      ],
+      "server_error_rounds": []
+    },
+    "same_cart_checkout": {
+      "rounds": [
+        {
+          "round": 1,
+          "before": {
+            "orders": 0,
+            "committed_quantity": 0,
+            "stock": 10,
+            "cart_items": 1
+          },
+          "responses": [
+            {
+              "started_at_utc": "2026-11-19T18:39:26.918283+00:00",
+              "ended_at_utc": "2026-11-19T18:39:27.058535+00:00",
+              "elapsed_ms": 140.304,
+              "http_status": 409,
+              "body": {
+                "code": "CONCURRENT_UPDATE",
+                "status": 409,
+                "message": "Dữ liệu đang được cập nhật đồng thời, vui lòng thử lại."
+              },
+              "actor_index": 1
+            },
+            {
+              "started_at_utc": "2026-11-19T18:39:26.917774+00:00",
+              "ended_at_utc": "2026-11-19T18:39:26.981481+00:00",
+              "elapsed_ms": 63.775,
+              "http_status": 201,
+              "body": {
+                "id": 27,
+                "status": "PENDING"
+              },
+              "actor_index": 2
+            }
+          ],
+          "after": {
+            "orders": 1,
+            "committed_quantity": 2,
+            "stock": 8,
+            "cart_items": 0
+          },
+          "violations": []
+        },
+        {
+          "round": 2,
+          "before": {
+            "orders": 0,
+            "committed_quantity": 0,
+            "stock": 10,
+            "cart_items": 1
+          },
+          "responses": [
+            {
+              "started_at_utc": "2026-11-19T18:39:27.924778+00:00",
+              "ended_at_utc": "2026-11-19T18:39:27.980331+00:00",
+              "elapsed_ms": 54.86,
+              "http_status": 500,
+              "body": {
+                "code": "INTERNAL_ERROR",
+                "status": 500,
+                "message": "Đã xảy ra lỗi hệ thống."
+              },
+              "actor_index": 1
+            },
+            {
+              "started_at_utc": "2026-11-19T18:39:27.924778+00:00",
+              "ended_at_utc": "2026-11-19T18:39:27.961430+00:00",
+              "elapsed_ms": 36.483,
+              "http_status": 201,
+              "body": {
+                "id": 29,
+                "status": "PENDING"
+              },
+              "actor_index": 2
+            }
+          ],
+          "after": {
+            "orders": 1,
+            "committed_quantity": 2,
+            "stock": 8,
+            "cart_items": 0
+          },
+          "violations": []
+        }
+      ],
+      "violation_rounds": [],
+      "server_error_rounds": [
+        2
+      ]
+    },
+    "admin_stock_vs_checkout": {
+      "rounds": [
+        {
+          "round": 1,
+          "before": {
+            "orders": 0,
+            "committed_quantity": 0,
+            "stock": 10,
+            "cart_items": 1
+          },
+          "responses": [
+            {
+              "started_at_utc": "2026-11-19T18:39:28.793935+00:00",
+              "ended_at_utc": "2026-11-19T18:39:28.851184+00:00",
+              "elapsed_ms": 57.367,
+              "http_status": 201,
+              "body": {
+                "id": 31,
+                "status": "PENDING"
+              },
+              "actor_index": 1
+            },
+            {
+              "started_at_utc": "2026-11-19T18:39:28.793935+00:00",
+              "ended_at_utc": "2026-11-19T18:39:28.865215+00:00",
+              "elapsed_ms": 71.111,
+              "http_status": 200,
+              "body": {
+                "id": 63,
+                "status": "ACTIVE"
+              },
+              "actor_index": 2
+            }
+          ],
+          "after": {
+            "orders": 1,
+            "committed_quantity": 3,
+            "stock": 20,
+            "cart_items": 0
+          },
+          "serial_final_stock": [
+            17,
+            20
+          ],
+          "violations": []
+        },
+        {
+          "round": 2,
+          "before": {
+            "orders": 0,
+            "committed_quantity": 0,
+            "stock": 10,
+            "cart_items": 1
+          },
+          "responses": [
+            {
+              "started_at_utc": "2026-11-19T18:39:29.685046+00:00",
+              "ended_at_utc": "2026-11-19T18:39:29.741608+00:00",
+              "elapsed_ms": 56.555,
+              "http_status": 201,
+              "body": {
+                "id": 32,
+                "status": "PENDING"
+              },
+              "actor_index": 1
+            },
+            {
+              "started_at_utc": "2026-11-19T18:39:29.685554+00:00",
+              "ended_at_utc": "2026-11-19T18:39:29.723796+00:00",
+              "elapsed_ms": 38.305,
+              "http_status": 200,
+              "body": {
+                "id": 63,
+                "status": "ACTIVE"
+              },
+              "actor_index": 2
+            }
+          ],
+          "after": {
+            "orders": 1,
+            "committed_quantity": 3,
+            "stock": 7,
+            "cart_items": 0
+          },
+          "serial_final_stock": [
+            17,
+            20
+          ],
+          "violations": [
+            "NON_SERIALIZABLE_FINAL_STOCK"
+          ]
+        }
+      ],
+      "violation_rounds": [
+        2
+      ],
+      "server_error_rounds": []
+    }
+  },
+  "finished_at_utc": "2026-11-19T18:39:30.277155+00:00",
+  "method_limit": "Client barrier does not prove a database in-transaction barrier."
+}

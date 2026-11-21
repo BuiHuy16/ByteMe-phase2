@@ -1,0 +1,7 @@
+﻿timestamp_utc	container	cpu_percent	memory_usage	memory_percent	net_io	block_io	pids
+2026-11-19T18:38:56.1741609Z	byteme-g24-smoke-backend-1	0.39%	641.5MiB / 1.25GiB	50.12%	141kB / 145kB	0B / 0B	37
+2026-11-19T18:38:56.1741609Z	byteme-g24-smoke-mysql-1	1.58%	477.9MiB / 1.5GiB	31.12%	78.3kB / 122kB	64MB / 308MB	49
+2026-11-19T18:38:59.7919513Z	byteme-g24-smoke-backend-1	0.40%	641.5MiB / 1.25GiB	50.12%	141kB / 145kB	0B / 0B	37
+2026-11-19T18:38:59.7919513Z	byteme-g24-smoke-mysql-1	1.60%	478MiB / 1.5GiB	31.12%	78.5kB / 122kB	64MB / 308MB	49
+2026-11-19T18:39:03.3462643Z	byteme-g24-smoke-backend-1	0.52%	641.5MiB / 1.25GiB	50.12%	141kB / 145kB	0B / 0B	37
+2026-11-19T18:39:03.3462643Z	byteme-g24-smoke-mysql-1	3.12%	478.5MiB / 1.5GiB	31.15%	78.5kB / 122kB	64MB / 308MB	49

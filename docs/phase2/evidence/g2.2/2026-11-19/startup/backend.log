@@ -1,0 +1,45 @@
+﻿backend-1  | 2026-11-19T04:27:59.230424911Z 
+backend-1  | 2026-11-19T04:27:59.230480455Z   .   ____          _            __ _ _
+backend-1  | 2026-11-19T04:27:59.230484111Z  /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+backend-1  | 2026-11-19T04:27:59.230485565Z ( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+backend-1  | 2026-11-19T04:27:59.230486751Z  \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+backend-1  | 2026-11-19T04:27:59.230487819Z   '  |____| .__|_| |_|_| |_\__, | / / / /
+backend-1  | 2026-11-19T04:27:59.230488690Z  =========|_|==============|___/=/_/_/_/
+backend-1  | 2026-11-19T04:27:59.230489771Z 
+backend-1  | 2026-11-19T04:27:59.230727682Z  :: Spring Boot ::               (v3.5.16)
+backend-1  | 2026-11-19T04:27:59.230739434Z 
+backend-1  | 2026-11-19T04:27:59.314874252Z 2026-11-19T04:27:59.312Z  INFO 1 --- [byteme] [           main] org.example.Application                  : Starting Application v0.0.1-SNAPSHOT using Java 21.0.13 with PID 1 (/app/application.jar started by ? in /app)
+backend-1  | 2026-11-19T04:27:59.316006526Z 2026-11-19T04:27:59.315Z  INFO 1 --- [byteme] [           main] org.example.Application                  : No active profile set, falling back to 1 default profile: "default"
+backend-1  | 2026-11-19T04:28:00.424743224Z 2026-11-19T04:28:00.424Z  INFO 1 --- [byteme] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+backend-1  | 2026-11-19T04:28:00.472852846Z 2026-11-19T04:28:00.472Z  INFO 1 --- [byteme] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 39 ms. Found 5 JPA repository interfaces.
+backend-1  | 2026-11-19T04:28:00.940874581Z 2026-11-19T04:28:00.940Z  INFO 1 --- [byteme] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+backend-1  | 2026-11-19T04:28:00.967999764Z 2026-11-19T04:28:00.967Z  INFO 1 --- [byteme] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+backend-1  | 2026-11-19T04:28:00.968084056Z 2026-11-19T04:28:00.967Z  INFO 1 --- [byteme] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.55]
+backend-1  | 2026-11-19T04:28:01.012568611Z 2026-11-19T04:28:01.012Z  INFO 1 --- [byteme] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+backend-1  | 2026-11-19T04:28:01.013833449Z 2026-11-19T04:28:01.013Z  INFO 1 --- [byteme] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1656 ms
+backend-1  | 2026-11-19T04:28:01.274307213Z 2026-11-19T04:28:01.272Z  INFO 1 --- [byteme] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+backend-1  | 2026-11-19T04:28:01.321015297Z 2026-11-19T04:28:01.320Z  INFO 1 --- [byteme] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.53.Final
+backend-1  | 2026-11-19T04:28:01.354045421Z 2026-11-19T04:28:01.353Z  INFO 1 --- [byteme] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+backend-1  | 2026-11-19T04:28:01.617172995Z 2026-11-19T04:28:01.616Z  INFO 1 --- [byteme] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+backend-1  | 2026-11-19T04:28:01.639715921Z 2026-11-19T04:28:01.639Z  INFO 1 --- [byteme] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+backend-1  | 2026-11-19T04:28:01.945243409Z 2026-11-19T04:28:01.944Z  INFO 1 --- [byteme] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@7b8fcdf2
+backend-1  | 2026-11-19T04:28:01.947211249Z 2026-11-19T04:28:01.946Z  INFO 1 --- [byteme] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+backend-1  | 2026-11-19T04:28:02.013575447Z 2026-11-19T04:28:02.013Z  INFO 1 --- [byteme] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+backend-1  | 2026-11-19T04:28:02.013598993Z 	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+backend-1  | 2026-11-19T04:28:02.013601512Z 	Database driver: undefined/unknown
+backend-1  | 2026-11-19T04:28:02.013603313Z 	Database version: 8.4.13
+backend-1  | 2026-11-19T04:28:02.013605320Z 	Autocommit mode: undefined/unknown
+backend-1  | 2026-11-19T04:28:02.013606503Z 	Isolation level: undefined/unknown
+backend-1  | 2026-11-19T04:28:02.013630662Z 	Minimum pool size: undefined/unknown
+backend-1  | 2026-11-19T04:28:02.013631488Z 	Maximum pool size: undefined/unknown
+backend-1  | 2026-11-19T04:28:03.037420207Z 2026-11-19T04:28:03.036Z  INFO 1 --- [byteme] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+backend-1  | 2026-11-19T04:28:03.040996053Z 2026-11-19T04:28:03.040Z  INFO 1 --- [byteme] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+backend-1  | 2026-11-19T04:28:03.580268383Z 2026-11-19T04:28:03.579Z  INFO 1 --- [byteme] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+backend-1  | 2026-11-19T04:28:04.986541717Z 2026-11-19T04:28:04.985Z  INFO 1 --- [byteme] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+backend-1  | 2026-11-19T04:28:05.728982934Z 2026-11-19T04:28:05.728Z  INFO 1 --- [byteme] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+backend-1  | 2026-11-19T04:28:05.742680701Z 2026-11-19T04:28:05.742Z  INFO 1 --- [byteme] [           main] org.example.Application                  : Started Application in 6.944 seconds (process running for 7.494)
+backend-1  | 2026-11-19T04:28:05.812358624Z 2026-11-19T04:28:05.811Z  WARN 1 --- [byteme] [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'
+backend-1  | 2026-11-19T04:28:05.812439346Z 2026-11-19T04:28:05.812Z  WARN 1 --- [byteme] [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /swagger-ui.html endpoint is enabled by default. To disable it in production, set the property 'springdoc.swagger-ui.enabled=false'
+backend-1  | 2026-11-19T04:28:23.694707557Z 2026-11-19T04:28:23.694Z  INFO 1 --- [byteme] [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+backend-1  | 2026-11-19T04:28:23.694741862Z 2026-11-19T04:28:23.694Z  INFO 1 --- [byteme] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+backend-1  | 2026-11-19T04:28:23.696504792Z 2026-11-19T04:28:23.696Z  INFO 1 --- [byteme] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms

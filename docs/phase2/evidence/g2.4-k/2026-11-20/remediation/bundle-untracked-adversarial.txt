@@ -1,0 +1,5 @@
+﻿captured_at_utc=2026-11-20T08:01:45.7464268Z
+untracked_executable_rejected=True
+probe_removed=True
+output_created=False
+message=Working tree has untracked executable files: src/g24k-untracked-provenance-test.tmp

@@ -1,0 +1,47 @@
+Captured: 2026-11-19T10:40:09+07:00
+Timezone: SE Asia Standard Time (UTC+07:00)
+
+OS
+Caption: Microsoft Windows 11 Home Single Language
+Version: 10.0.26200
+Build: 26200
+Architecture: x64 / 64-bit
+Host manufacturer/model: Micro-Star International Co., Ltd. / Thin 15 B12UCX
+
+CPU
+Model: 12th Gen Intel(R) Core(TM) i5-12450H
+Cores: 8
+Logical processors: 12
+Reported max clock: 2000 MHz
+
+Memory at capture
+Total physical memory: 16869146624 bytes (~15.71 GiB)
+Free physical memory: 3529170944 bytes (~3.29 GiB)
+
+Java
+Version: 21.0.12 LTS (build 21.0.12+7-LTS-205)
+Vendor: Oracle Corporation
+VM: Java HotSpot(TM) 64-Bit Server VM
+Architecture: amd64
+
+Maven
+Wrapper version declared: 3.3.4
+Distribution declared/resolved: Apache Maven 3.9.11
+Maven commit: 3e54c93a704957b63ee3494413a2b544fd3d825b
+Platform encoding: UTF-8
+Wrapper distribution cache: temporary writable host cache; project configuration unchanged
+
+Docker/Testcontainers
+Docker client: 29.9.1, API 1.56
+Docker Compose: v5.6.0
+Context: desktop-linux
+Daemon result: UNAVAILABLE
+Daemon error: //./pipe/dockerDesktopLinuxEngine does not exist
+Docker Desktop/backend/dockerd process detected: no
+Docker service detected: no
+mysql:8.4 inspect/digest: BLOCKED because daemon unavailable
+Testcontainers readiness: BLOCKED because a Docker-compatible daemon is unavailable
+
+Secret-handling note
+No environment-variable dump, password, token, private key, key content or credential was captured.
+

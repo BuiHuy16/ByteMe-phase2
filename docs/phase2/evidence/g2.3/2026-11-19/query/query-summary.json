@@ -1,0 +1,28 @@
+{
+  "started_at_utc": "2026-11-19T18:01:01.382846+00:00",
+  "finished_at_utc": "2026-11-19T18:01:53.822600+00:00",
+  "base_url": "http://127.0.0.1:18081",
+  "compose_project": "byteme-g23",
+  "results": [
+    {
+      "investigation": "Q1",
+      "classification": "CONFIRMED DEFECT",
+      "finding": "N+1 observed: one order_items SELECT per listed order"
+    },
+    {
+      "investigation": "Q2",
+      "classification": "INCONCLUSIVE",
+      "finding": "Execution-plan/index facts are diagnostic; no representative workload or official benchmark threshold was defined."
+    },
+    {
+      "investigation": "Q3",
+      "classification": "INCONCLUSIVE",
+      "finding": "Plans and query counts were measured, but G2.3 is not an official workload benchmark and has no bottleneck threshold."
+    }
+  ],
+  "limitations": [
+    "Synthetic isolated dataset, diagnostic only; not the G2.5 benchmark.",
+    "Client latency is single-run diagnostic latency without warm-up/control protocol.",
+    "EXPLAIN ANALYZE statements ran only on the isolated database; no indexes were added."
+  ]
+}

@@ -1,0 +1,121 @@
+{
+  "investigation": "Q3",
+  "levels": [
+    {
+      "total_synthetic_orders": 100,
+      "actor_orders": 5,
+      "api_query_count": {
+        "api": {
+          "http_status": 200,
+          "elapsed_ms": 22.091,
+          "error": null,
+          "content_count": 5,
+          "total_elements": 5
+        },
+        "sql_statement_count": 8,
+        "order_statement_count": 2,
+        "order_item_statement_count": 5
+      },
+      "filtered_api": {
+        "http_status": 200,
+        "elapsed_ms": 24.738,
+        "content_count": 3
+      },
+      "list_plan": {
+        "sql": "SELECT id,user_id,status,order_type,table_number,recipient_name,shipping_phone,shipping_address,payment_method,note,confirmed_by,confirmed_at,cancelled_at,completed_at,created_at,updated_at FROM orders WHERE user_id=8 AND status IN ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED') ORDER BY created_at DESC,id DESC LIMIT 20",
+        "explain_analyze": "-> Limit: 20 row(s)  (cost=1 rows=5) (actual time=0.0379..0.0388 rows=5 loops=1)\n    -> Sort: orders.created_at DESC, orders.id DESC, limit input to 20 row(s) per chunk  (cost=1 rows=5) (actual time=0.0368..0.0375 rows=5 loops=1)\n        -> Filter: (orders.`status` in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED'))  (cost=1 rows=5) (actual time=0.0213..0.0255 rows=5 loops=1)\n            -> Index lookup on orders using fk_orders_user (user_id=8)  (cost=1 rows=5) (actual time=0.0196..0.0216 rows=5 loops=1)",
+        "explain_json": "{\n  \"query_block\": {\n    \"select_id\": 1,\n    \"cost_info\": {\n      \"query_cost\": \"1.25\"\n    },\n    \"ordering_operation\": {\n      \"using_filesort\": true,\n      \"table\": {\n        \"table_name\": \"orders\",\n        \"access_type\": \"ref\",\n        \"possible_keys\": [\n          \"fk_orders_user\"\n        ],\n        \"key\": \"fk_orders_user\",\n        \"used_key_parts\": [\n          \"user_id\"\n        ],\n        \"key_length\": \"8\",\n        \"ref\": [\n          \"const\"\n        ],\n        \"rows_examined_per_scan\": 5,\n        \"rows_produced_per_join\": 2,\n        \"filtered\": \"50.00\",\n        \"cost_info\": {\n          \"read_cost\": \"0.75\",\n          \"eval_cost\": \"0.25\",\n          \"prefix_cost\": \"1.25\",\n          \"data_read_per_join\": \"12K\"\n        },\n        \"used_columns\": [\n          \"id\",\n          \"user_id\",\n          \"status\",\n          \"order_type\",\n          \"table_number\",\n          \"recipient_name\",\n          \"shipping_phone\",\n          \"shipping_address\",\n          \"payment_method\",\n          \"note\",\n          \"confirmed_by\",\n          \"confirmed_at\",\n          \"cancelled_at\",\n          \"completed_at\",\n          \"created_at\",\n          \"updated_at\"\n        ],\n        \"attached_condition\": \"(`byteme_g23`.`orders`.`status` in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED'))\"\n      }\n    }\n  }\n}"
+      },
+      "filtered_plan": {
+        "sql": "SELECT id,user_id,status,order_type,created_at,updated_at FROM orders WHERE user_id=8 AND status='PENDING' AND order_type='DINE_IN' ORDER BY created_at DESC,id DESC LIMIT 20",
+        "explain_analyze": "-> Limit: 20 row(s)  (cost=0.755 rows=5) (actual time=0.0317..0.0322 rows=3 loops=1)\n    -> Sort: orders.created_at DESC, orders.id DESC, limit input to 20 row(s) per chunk  (cost=0.755 rows=5) (actual time=0.0311..0.0313 rows=3 loops=1)\n        -> Filter: ((orders.order_type = 'DINE_IN') and (orders.`status` = 'PENDING'))  (cost=0.755 rows=5) (actual time=0.0179..0.0213 rows=3 loops=1)\n            -> Index lookup on orders using fk_orders_user (user_id=8)  (cost=0.755 rows=5) (actual time=0.0151..0.0167 rows=5 loops=1)",
+        "explain_json": "{\n  \"query_block\": {\n    \"select_id\": 1,\n    \"cost_info\": {\n      \"query_cost\": \"1.25\"\n    },\n    \"ordering_operation\": {\n      \"using_filesort\": true,\n      \"table\": {\n        \"table_name\": \"orders\",\n        \"access_type\": \"ref\",\n        \"possible_keys\": [\n          \"fk_orders_user\"\n        ],\n        \"key\": \"fk_orders_user\",\n        \"used_key_parts\": [\n          \"user_id\"\n        ],\n        \"key_length\": \"8\",\n        \"ref\": [\n          \"const\"\n        ],\n        \"rows_examined_per_scan\": 5,\n        \"rows_produced_per_join\": 0,\n        \"filtered\": \"1.00\",\n        \"cost_info\": {\n          \"read_cost\": \"0.75\",\n          \"eval_cost\": \"0.01\",\n          \"prefix_cost\": \"1.25\",\n          \"data_read_per_join\": \"254\"\n        },\n        \"used_columns\": [\n          \"id\",\n          \"user_id\",\n          \"status\",\n          \"order_type\",\n          \"created_at\",\n          \"updated_at\"\n        ],\n        \"attached_condition\": \"((`byteme_g23`.`orders`.`order_type` = 'DINE_IN') and (`byteme_g23`.`orders`.`status` = 'PENDING'))\"\n      }\n    }\n  }\n}"
+      },
+      "count_plan": {
+        "sql": "SELECT COUNT(*) FROM orders WHERE user_id=8 AND status IN ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED')",
+        "explain_analyze": "-> Aggregate: count(0)  (cost=1.25 rows=1) (actual time=0.0207..0.0207 rows=1 loops=1)\n    -> Filter: (orders.`status` in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED'))  (cost=1 rows=2.5) (actual time=0.0155..0.0188 rows=5 loops=1)\n        -> Index lookup on orders using fk_orders_user (user_id=8)  (cost=1 rows=5) (actual time=0.0138..0.0151 rows=5 loops=1)",
+        "explain_json": "{\n  \"query_block\": {\n    \"select_id\": 1,\n    \"cost_info\": {\n      \"query_cost\": \"1.25\"\n    },\n    \"table\": {\n      \"table_name\": \"orders\",\n      \"access_type\": \"ref\",\n      \"possible_keys\": [\n        \"fk_orders_user\"\n      ],\n      \"key\": \"fk_orders_user\",\n      \"used_key_parts\": [\n        \"user_id\"\n      ],\n      \"key_length\": \"8\",\n      \"ref\": [\n        \"const\"\n      ],\n      \"rows_examined_per_scan\": 5,\n      \"rows_produced_per_join\": 2,\n      \"filtered\": \"50.00\",\n      \"cost_info\": {\n        \"read_cost\": \"0.75\",\n        \"eval_cost\": \"0.25\",\n        \"prefix_cost\": \"1.25\",\n        \"data_read_per_join\": \"12K\"\n      },\n      \"used_columns\": [\n        \"user_id\",\n        \"status\"\n      ],\n      \"attached_condition\": \"(`byteme_g23`.`orders`.`status` in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED'))\"\n    }\n  }\n}"
+      }
+    },
+    {
+      "total_synthetic_orders": 1000,
+      "actor_orders": 48,
+      "api_query_count": {
+        "api": {
+          "http_status": 200,
+          "elapsed_ms": 28.855,
+          "error": null,
+          "content_count": 20,
+          "total_elements": 48
+        },
+        "sql_statement_count": 23,
+        "order_statement_count": 2,
+        "order_item_statement_count": 20
+      },
+      "filtered_api": {
+        "http_status": 200,
+        "elapsed_ms": 57.541,
+        "content_count": 20
+      },
+      "list_plan": {
+        "sql": "SELECT id,user_id,status,order_type,table_number,recipient_name,shipping_phone,shipping_address,payment_method,note,confirmed_by,confirmed_at,cancelled_at,completed_at,created_at,updated_at FROM orders WHERE user_id=8 AND status IN ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED') ORDER BY created_at DESC,id DESC LIMIT 20",
+        "explain_analyze": "-> Limit: 20 row(s)  (cost=8.4 rows=20) (actual time=0.102..0.105 rows=20 loops=1)\n    -> Sort: orders.created_at DESC, orders.id DESC, limit input to 20 row(s) per chunk  (cost=8.4 rows=48) (actual time=0.102..0.103 rows=20 loops=1)\n        -> Filter: (orders.`status` in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED'))  (cost=8.4 rows=48) (actual time=0.022..0.0838 rows=48 loops=1)\n            -> Index lookup on orders using fk_orders_user (user_id=8)  (cost=8.4 rows=48) (actual time=0.0203..0.0636 rows=48 loops=1)",
+        "explain_json": "{\n  \"query_block\": {\n    \"select_id\": 1,\n    \"cost_info\": {\n      \"query_cost\": \"10.80\"\n    },\n    \"ordering_operation\": {\n      \"using_filesort\": true,\n      \"table\": {\n        \"table_name\": \"orders\",\n        \"access_type\": \"ref\",\n        \"possible_keys\": [\n          \"fk_orders_user\"\n        ],\n        \"key\": \"fk_orders_user\",\n        \"used_key_parts\": [\n          \"user_id\"\n        ],\n        \"key_length\": \"8\",\n        \"ref\": [\n          \"const\"\n        ],\n        \"rows_examined_per_scan\": 48,\n        \"rows_produced_per_join\": 24,\n        \"filtered\": \"50.00\",\n        \"cost_info\": {\n          \"read_cost\": \"6.00\",\n          \"eval_cost\": \"2.40\",\n          \"prefix_cost\": \"10.80\",\n          \"data_read_per_join\": \"119K\"\n        },\n        \"used_columns\": [\n          \"id\",\n          \"user_id\",\n          \"status\",\n          \"order_type\",\n          \"table_number\",\n          \"recipient_name\",\n          \"shipping_phone\",\n          \"shipping_address\",\n          \"payment_method\",\n          \"note\",\n          \"confirmed_by\",\n          \"confirmed_at\",\n          \"cancelled_at\",\n          \"completed_at\",\n          \"created_at\",\n          \"updated_at\"\n        ],\n        \"attached_condition\": \"(`byteme_g23`.`orders`.`status` in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED'))\"\n      }\n    }\n  }\n}"
+      },
+      "filtered_plan": {
+        "sql": "SELECT id,user_id,status,order_type,created_at,updated_at FROM orders WHERE user_id=8 AND status='PENDING' AND order_type='DINE_IN' ORDER BY created_at DESC,id DESC LIMIT 20",
+        "explain_analyze": "-> Limit: 20 row(s)  (cost=6.05 rows=20) (actual time=0.0904..0.092 rows=20 loops=1)\n    -> Sort: orders.created_at DESC, orders.id DESC, limit input to 20 row(s) per chunk  (cost=6.05 rows=48) (actual time=0.0894..0.0902 rows=20 loops=1)\n        -> Filter: ((orders.order_type = 'DINE_IN') and (orders.`status` = 'PENDING'))  (cost=6.05 rows=48) (actual time=0.0204..0.0752 rows=24 loops=1)\n            -> Index lookup on orders using fk_orders_user (user_id=8)  (cost=6.05 rows=48) (actual time=0.0181..0.0601 rows=48 loops=1)",
+        "explain_json": "{\n  \"query_block\": {\n    \"select_id\": 1,\n    \"cost_info\": {\n      \"query_cost\": \"10.80\"\n    },\n    \"ordering_operation\": {\n      \"using_filesort\": true,\n      \"table\": {\n        \"table_name\": \"orders\",\n        \"access_type\": \"ref\",\n        \"possible_keys\": [\n          \"fk_orders_user\"\n        ],\n        \"key\": \"fk_orders_user\",\n        \"used_key_parts\": [\n          \"user_id\"\n        ],\n        \"key_length\": \"8\",\n        \"ref\": [\n          \"const\"\n        ],\n        \"rows_examined_per_scan\": 48,\n        \"rows_produced_per_join\": 0,\n        \"filtered\": \"1.00\",\n        \"cost_info\": {\n          \"read_cost\": \"6.00\",\n          \"eval_cost\": \"0.05\",\n          \"prefix_cost\": \"10.80\",\n          \"data_read_per_join\": \"2K\"\n        },\n        \"used_columns\": [\n          \"id\",\n          \"user_id\",\n          \"status\",\n          \"order_type\",\n          \"created_at\",\n          \"updated_at\"\n        ],\n        \"attached_condition\": \"((`byteme_g23`.`orders`.`order_type` = 'DINE_IN') and (`byteme_g23`.`orders`.`status` = 'PENDING'))\"\n      }\n    }\n  }\n}"
+      },
+      "count_plan": {
+        "sql": "SELECT COUNT(*) FROM orders WHERE user_id=8 AND status IN ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED')",
+        "explain_analyze": "-> Aggregate: count(0)  (cost=10.8 rows=1) (actual time=0.0781..0.0782 rows=1 loops=1)\n    -> Filter: (orders.`status` in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED'))  (cost=8.4 rows=24) (actual time=0.0471..0.075 rows=48 loops=1)\n        -> Index lookup on orders using fk_orders_user (user_id=8)  (cost=8.4 rows=48) (actual time=0.045..0.0528 rows=48 loops=1)",
+        "explain_json": "{\n  \"query_block\": {\n    \"select_id\": 1,\n    \"cost_info\": {\n      \"query_cost\": \"10.80\"\n    },\n    \"table\": {\n      \"table_name\": \"orders\",\n      \"access_type\": \"ref\",\n      \"possible_keys\": [\n        \"fk_orders_user\"\n      ],\n      \"key\": \"fk_orders_user\",\n      \"used_key_parts\": [\n        \"user_id\"\n      ],\n      \"key_length\": \"8\",\n      \"ref\": [\n        \"const\"\n      ],\n      \"rows_examined_per_scan\": 48,\n      \"rows_produced_per_join\": 24,\n      \"filtered\": \"50.00\",\n      \"cost_info\": {\n        \"read_cost\": \"6.00\",\n        \"eval_cost\": \"2.40\",\n        \"prefix_cost\": \"10.80\",\n        \"data_read_per_join\": \"119K\"\n      },\n      \"used_columns\": [\n        \"user_id\",\n        \"status\"\n      ],\n      \"attached_condition\": \"(`byteme_g23`.`orders`.`status` in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED'))\"\n    }\n  }\n}"
+      }
+    },
+    {
+      "total_synthetic_orders": 5000,
+      "actor_orders": 239,
+      "api_query_count": {
+        "api": {
+          "http_status": 200,
+          "elapsed_ms": 33.573,
+          "error": null,
+          "content_count": 20,
+          "total_elements": 239
+        },
+        "sql_statement_count": 23,
+        "order_statement_count": 2,
+        "order_item_statement_count": 20
+      },
+      "filtered_api": {
+        "http_status": 200,
+        "elapsed_ms": 32.829,
+        "content_count": 20
+      },
+      "list_plan": {
+        "sql": "SELECT id,user_id,status,order_type,table_number,recipient_name,shipping_phone,shipping_address,payment_method,note,confirmed_by,confirmed_at,cancelled_at,completed_at,created_at,updated_at FROM orders WHERE user_id=8 AND status IN ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED') ORDER BY created_at DESC,id DESC LIMIT 20",
+        "explain_analyze": "-> Limit: 20 row(s)  (cost=36.7 rows=20) (actual time=0.456..0.459 rows=20 loops=1)\n    -> Sort: orders.created_at DESC, orders.id DESC, limit input to 20 row(s) per chunk  (cost=36.7 rows=239) (actual time=0.455..0.457 rows=20 loops=1)\n        -> Filter: (orders.`status` in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED'))  (cost=36.7 rows=239) (actual time=0.0491..0.373 rows=239 loops=1)\n            -> Index lookup on orders using fk_orders_user (user_id=8)  (cost=36.7 rows=239) (actual time=0.0467..0.271 rows=239 loops=1)",
+        "explain_json": "{\n  \"query_block\": {\n    \"select_id\": 1,\n    \"cost_info\": {\n      \"query_cost\": \"48.65\"\n    },\n    \"ordering_operation\": {\n      \"using_filesort\": true,\n      \"table\": {\n        \"table_name\": \"orders\",\n        \"access_type\": \"ref\",\n        \"possible_keys\": [\n          \"fk_orders_user\"\n        ],\n        \"key\": \"fk_orders_user\",\n        \"used_key_parts\": [\n          \"user_id\"\n        ],\n        \"key_length\": \"8\",\n        \"ref\": [\n          \"const\"\n        ],\n        \"rows_examined_per_scan\": 239,\n        \"rows_produced_per_join\": 119,\n        \"filtered\": \"50.00\",\n        \"cost_info\": {\n          \"read_cost\": \"24.75\",\n          \"eval_cost\": \"11.95\",\n          \"prefix_cost\": \"48.65\",\n          \"data_read_per_join\": \"592K\"\n        },\n        \"used_columns\": [\n          \"id\",\n          \"user_id\",\n          \"status\",\n          \"order_type\",\n          \"table_number\",\n          \"recipient_name\",\n          \"shipping_phone\",\n          \"shipping_address\",\n          \"payment_method\",\n          \"note\",\n          \"confirmed_by\",\n          \"confirmed_at\",\n          \"cancelled_at\",\n          \"completed_at\",\n          \"created_at\",\n          \"updated_at\"\n        ],\n        \"attached_condition\": \"(`byteme_g23`.`orders`.`status` in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED'))\"\n      }\n    }\n  }\n}"
+      },
+      "filtered_plan": {
+        "sql": "SELECT id,user_id,status,order_type,created_at,updated_at FROM orders WHERE user_id=8 AND status='PENDING' AND order_type='DINE_IN' ORDER BY created_at DESC,id DESC LIMIT 20",
+        "explain_analyze": "-> Limit: 20 row(s)  (cost=25 rows=20) (actual time=0.334..0.336 rows=20 loops=1)\n    -> Sort: orders.created_at DESC, orders.id DESC, limit input to 20 row(s) per chunk  (cost=25 rows=239) (actual time=0.333..0.334 rows=20 loops=1)\n        -> Filter: ((orders.order_type = 'DINE_IN') and (orders.`status` = 'PENDING'))  (cost=25 rows=239) (actual time=0.0412..0.303 rows=120 loops=1)\n            -> Index lookup on orders using fk_orders_user (user_id=8)  (cost=25 rows=239) (actual time=0.0387..0.244 rows=239 loops=1)",
+        "explain_json": "{\n  \"query_block\": {\n    \"select_id\": 1,\n    \"cost_info\": {\n      \"query_cost\": \"48.65\"\n    },\n    \"ordering_operation\": {\n      \"using_filesort\": true,\n      \"table\": {\n        \"table_name\": \"orders\",\n        \"access_type\": \"ref\",\n        \"possible_keys\": [\n          \"fk_orders_user\"\n        ],\n        \"key\": \"fk_orders_user\",\n        \"used_key_parts\": [\n          \"user_id\"\n        ],\n        \"key_length\": \"8\",\n        \"ref\": [\n          \"const\"\n        ],\n        \"rows_examined_per_scan\": 239,\n        \"rows_produced_per_join\": 2,\n        \"filtered\": \"1.00\",\n        \"cost_info\": {\n          \"read_cost\": \"24.75\",\n          \"eval_cost\": \"0.24\",\n          \"prefix_cost\": \"48.65\",\n          \"data_read_per_join\": \"11K\"\n        },\n        \"used_columns\": [\n          \"id\",\n          \"user_id\",\n          \"status\",\n          \"order_type\",\n          \"created_at\",\n          \"updated_at\"\n        ],\n        \"attached_condition\": \"((`byteme_g23`.`orders`.`order_type` = 'DINE_IN') and (`byteme_g23`.`orders`.`status` = 'PENDING'))\"\n      }\n    }\n  }\n}"
+      },
+      "count_plan": {
+        "sql": "SELECT COUNT(*) FROM orders WHERE user_id=8 AND status IN ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED')",
+        "explain_analyze": "-> Aggregate: count(0)  (cost=48.7 rows=1) (actual time=0.311..0.311 rows=1 loops=1)\n    -> Filter: (orders.`status` in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED'))  (cost=36.7 rows=120) (actual time=0.0477..0.302 rows=239 loops=1)\n        -> Index lookup on orders using fk_orders_user (user_id=8)  (cost=36.7 rows=239) (actual time=0.0458..0.203 rows=239 loops=1)",
+        "explain_json": "{\n  \"query_block\": {\n    \"select_id\": 1,\n    \"cost_info\": {\n      \"query_cost\": \"48.65\"\n    },\n    \"table\": {\n      \"table_name\": \"orders\",\n      \"access_type\": \"ref\",\n      \"possible_keys\": [\n        \"fk_orders_user\"\n      ],\n      \"key\": \"fk_orders_user\",\n      \"used_key_parts\": [\n        \"user_id\"\n      ],\n      \"key_length\": \"8\",\n      \"ref\": [\n        \"const\"\n      ],\n      \"rows_examined_per_scan\": 239,\n      \"rows_produced_per_join\": 119,\n      \"filtered\": \"50.00\",\n      \"cost_info\": {\n        \"read_cost\": \"24.75\",\n        \"eval_cost\": \"11.95\",\n        \"prefix_cost\": \"48.65\",\n        \"data_read_per_join\": \"592K\"\n      },\n      \"used_columns\": [\n        \"user_id\",\n        \"status\"\n      ],\n      \"attached_condition\": \"(`byteme_g23`.`orders`.`status` in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED'))\"\n    }\n  }\n}"
+      }
+    }
+  ],
+  "offset_page_plan": {
+    "sql": "SELECT id,user_id,status,order_type,created_at,updated_at FROM orders WHERE user_id=8 AND status IN ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED') ORDER BY created_at DESC,id DESC LIMIT 100,20",
+    "explain_analyze": "-> Limit/Offset: 20/100 row(s)  (cost=36.7 rows=20) (actual time=0.415..0.417 rows=20 loops=1)\n    -> Sort: orders.created_at DESC, orders.id DESC, limit input to 120 row(s) per chunk  (cost=36.7 rows=239) (actual time=0.407..0.413 rows=120 loops=1)\n        -> Filter: (orders.`status` in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED'))  (cost=36.7 rows=239) (actual time=0.0386..0.332 rows=239 loops=1)\n            -> Index lookup on orders using fk_orders_user (user_id=8)  (cost=36.7 rows=239) (actual time=0.0367..0.227 rows=239 loops=1)",
+    "explain_json": "{\n  \"query_block\": {\n    \"select_id\": 1,\n    \"cost_info\": {\n      \"query_cost\": \"48.65\"\n    },\n    \"ordering_operation\": {\n      \"using_filesort\": true,\n      \"table\": {\n        \"table_name\": \"orders\",\n        \"access_type\": \"ref\",\n        \"possible_keys\": [\n          \"fk_orders_user\"\n        ],\n        \"key\": \"fk_orders_user\",\n        \"used_key_parts\": [\n          \"user_id\"\n        ],\n        \"key_length\": \"8\",\n        \"ref\": [\n          \"const\"\n        ],\n        \"rows_examined_per_scan\": 239,\n        \"rows_produced_per_join\": 119,\n        \"filtered\": \"50.00\",\n        \"cost_info\": {\n          \"read_cost\": \"24.75\",\n          \"eval_cost\": \"11.95\",\n          \"prefix_cost\": \"48.65\",\n          \"data_read_per_join\": \"592K\"\n        },\n        \"used_columns\": [\n          \"id\",\n          \"user_id\",\n          \"status\",\n          \"order_type\",\n          \"created_at\",\n          \"updated_at\"\n        ],\n        \"attached_condition\": \"(`byteme_g23`.`orders`.`status` in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED'))\"\n      }\n    }\n  }\n}"
+  },
+  "show_index": "orders\t0\tPRIMARY\t1\tid\tA\t4990\tNULL\tNULL\t\tBTREE\t\t\tYES\tNULL\norders\t1\tfk_orders_user\t1\tuser_id\tA\t21\tNULL\tNULL\t\tBTREE\t\t\tYES\tNULL\norders\t1\tfk_orders_confirmed_by\t1\tconfirmed_by\tA\t1\tNULL\tNULL\tYES\tBTREE\t\t\tYES\tNULL",
+  "classification": "INCONCLUSIVE",
+  "finding": "Plans and query counts were measured, but G2.3 is not an official workload benchmark and has no bottleneck threshold."
+}

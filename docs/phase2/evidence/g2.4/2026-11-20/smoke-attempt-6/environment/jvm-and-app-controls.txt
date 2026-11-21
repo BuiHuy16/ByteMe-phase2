@@ -1,0 +1,38 @@
+﻿JAVA_TOOL_OPTIONS=-Xms512m -Xmx768m -XX:+UseG1GC -Xlog:gc*:stdout:time,level,tags
+SERVER_TOMCAT_THREADS_MAX=200
+SERVER_TOMCAT_THREADS_MIN_SPARE=10
+SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=10
+SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=10
+Picked up JAVA_TOOL_OPTIONS: -Xms512m -Xmx768m -XX:+UseG1GC -Xlog:gc*:stdout:time,level,tags
+[2026-11-19T18:38:50.134+0000][info][gc,init] CardTable entry size: 512
+[2026-11-19T18:38:50.134+0000][info][gc     ] Using G1
+[2026-11-19T18:38:50.138+0000][info][gc,init] Version: 21.0.13+9-LTS (release)
+[2026-11-19T18:38:50.138+0000][info][gc,init] CPUs: 12 total, 2 available
+[2026-11-19T18:38:50.138+0000][info][gc,init] Memory: 1280M
+[2026-11-19T18:38:50.138+0000][info][gc,init] Large Page Support: Disabled
+[2026-11-19T18:38:50.138+0000][info][gc,init] NUMA Support: Disabled
+[2026-11-19T18:38:50.138+0000][info][gc,init] Compressed Oops: Enabled (32-bit)
+[2026-11-19T18:38:50.138+0000][info][gc,init] Heap Region Size: 1M
+[2026-11-19T18:38:50.138+0000][info][gc,init] Heap Min Capacity: 512M
+[2026-11-19T18:38:50.138+0000][info][gc,init] Heap Initial Capacity: 512M
+[2026-11-19T18:38:50.138+0000][info][gc,init] Heap Max Capacity: 768M
+[2026-11-19T18:38:50.138+0000][info][gc,init] Pre-touch: Disabled
+[2026-11-19T18:38:50.138+0000][info][gc,init] Parallel Workers: 2
+[2026-11-19T18:38:50.138+0000][info][gc,init] Concurrent Workers: 1
+[2026-11-19T18:38:50.138+0000][info][gc,init] Concurrent Refinement Workers: 2
+[2026-11-19T18:38:50.138+0000][info][gc,init] Periodic GC: Disabled
+[2026-11-19T18:38:50.146+0000][info][gc,metaspace] CDS archive(s) mapped at: [0x00007622df000000-0x00007622dfbaf000-0x00007622dfbaf000), size 12251136, SharedBaseAddress: 0x00007622df000000, ArchiveRelocationMode: 1.
+[2026-11-19T18:38:50.146+0000][info][gc,metaspace] Compressed class space mapped at: 0x00007622e0000000-0x0000762320000000, reserved size: 1073741824
+[2026-11-19T18:38:50.146+0000][info][gc,metaspace] Narrow klass base: 0x00007622df000000, Narrow klass shift: 0, Narrow klass range: 0x100000000
+VM settings:
+    Max. Heap Size (Estimated): 768.00M
+    Using VM: OpenJDK 64-Bit Server VM
+System.Management.Automation.RemoteException
+openjdk version "21.0.13" 2026-10-20 LTS
+OpenJDK Runtime Environment Temurin-21.0.13+9 (build 21.0.13+9-LTS)
+OpenJDK 64-Bit Server VM Temurin-21.0.13+9 (build 21.0.13+9-LTS, mixed mode, sharing)
+[2026-11-19T18:38:50.161+0000][info][gc,heap,exit] Heap
+[2026-11-19T18:38:50.161+0000][info][gc,heap,exit]  garbage-first heap   total 525312K, used 3047K [0x00000000d0000000, 0x0000000100000000)
+[2026-11-19T18:38:50.161+0000][info][gc,heap,exit]   region size 1024K, 2 young (2048K), 0 survivors (0K)
+[2026-11-19T18:38:50.161+0000][info][gc,heap,exit]  Metaspace       used 134K, committed 192K, reserved 1114112K
+[2026-11-19T18:38:50.161+0000][info][gc,heap,exit]   class space    used 8K, committed 64K, reserved 1048576K

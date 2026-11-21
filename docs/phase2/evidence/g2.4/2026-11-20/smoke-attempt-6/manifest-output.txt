@@ -1,0 +1,1 @@
+﻿artifacts=46 manifest=D:\projects\main projects\ByteMe-phase2\docs\phase2\evidence\g2.4\2026-11-20\smoke-attempt-6\SHA256SUMS.txt

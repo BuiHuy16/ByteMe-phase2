@@ -1,0 +1,163 @@
+﻿python : test_real_cross_uid_denial_cpu_rss_and_driver_continuation 
+(test_proc_io.LinuxProcIntegrationTests.test_real_cross_uid_denial_cpu_rss_and_driver_continuation) ... skipped 
+'requires real Linux procfs'
+At line:2 char:127
++ ... | Out-Null; python -m unittest discover -s benchmarks/phase2/kaggle/t ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (test_real_cross...l Linux procfs':String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+test_real_current_process_io (test_proc_io.LinuxProcIntegrationTests.test_real_current_process_io) ... skipped 
+'requires real Linux procfs'
+test_denied_io_keeps_cpu_rss_without_fake_zero 
+(test_proc_io.ProcIOTests.test_denied_io_keeps_cpu_rss_without_fake_zero) ... ok
+test_normal_io_is_collected (test_proc_io.ProcIOTests.test_normal_io_is_collected) ... ok
+test_unavailable_io_start_stop_and_validation (test_proc_io.ProcIOTests.test_unavailable_io_start_stop_and_validation) 
+... ok
+test_w1_driver_completes_when_only_io_is_denied 
+(test_proc_io.ProcIOTests.test_w1_driver_completes_when_only_io_is_denied) ... ok
+test_directory_path_traversal_is_rejected 
+(test_remediation.ArchiveSafetyTests.test_directory_path_traversal_is_rejected) ... ok
+test_duplicate_directory_entries_are_accepted 
+(test_remediation.ArchiveSafetyTests.test_duplicate_directory_entries_are_accepted) ... ok
+test_duplicate_regular_file_is_rejected (test_remediation.ArchiveSafetyTests.test_duplicate_regular_file_is_rejected) 
+... ok
+test_path_escape_hardlink_is_rejected (test_remediation.ArchiveSafetyTests.test_path_escape_hardlink_is_rejected) ... 
+ok
+test_path_escape_symlink_is_rejected (test_remediation.ArchiveSafetyTests.test_path_escape_symlink_is_rejected) ... ok
+test_regular_directory_is_extracted (test_remediation.ArchiveSafetyTests.test_regular_directory_is_extracted) ... ok
+test_regular_file_is_extracted (test_remediation.ArchiveSafetyTests.test_regular_file_is_extracted) ... ok
+test_safe_hardlink_is_extracted (test_remediation.ArchiveSafetyTests.test_safe_hardlink_is_extracted) ... skipped 
+'os.link requires elevated privileges on Windows'
+test_special_file_is_rejected (test_remediation.ArchiveSafetyTests.test_special_file_is_rejected) ... ok
+test_post_workload_still_rejects_orphan 
+(test_remediation.DatasetSemanticsTests.test_post_workload_still_rejects_orphan) ... ok
+test_post_workload_valid_mutation_passes 
+(test_remediation.DatasetSemanticsTests.test_post_workload_valid_mutation_passes) ... ok
+test_same_mutation_is_not_valid_initial_state 
+(test_remediation.DatasetSemanticsTests.test_same_mutation_is_not_valid_initial_state) ... ok
+test_cgroup_v2_limits_are_resolved (test_remediation.HardwareComparatorTests.test_cgroup_v2_limits_are_resolved) ... ok
+test_different_libaio_hash_is_not_comparable 
+(test_remediation.HardwareComparatorTests.test_different_libaio_hash_is_not_comparable) ... ok
+test_different_treatment_sha_is_allowed_but_hardware_difference_is_not 
+(test_remediation.HardwareComparatorTests.test_different_treatment_sha_is_allowed_but_hardware_difference_is_not) ... 
+ok
+test_missing_quota_evidence_is_rejected 
+(test_remediation.HardwareComparatorTests.test_missing_quota_evidence_is_rejected) ... ok
+test_ldd_preflight_reports_missing_libraries_and_uses_environment 
+(test_remediation.OfflineDependencyTests.test_ldd_preflight_reports_missing_libraries_and_uses_environment) ... ok
+test_locked_libaio_elf_is_accepted (test_remediation.OfflineDependencyTests.test_locked_libaio_elf_is_accepted) ... ok
+test_missing_libaio_abi_marker_is_rejected 
+(test_remediation.OfflineDependencyTests.test_missing_libaio_abi_marker_is_rejected) ... ok
+test_wrong_elf_architecture_is_rejected 
+(test_remediation.OfflineDependencyTests.test_wrong_elf_architecture_is_rejected) ... ok
+test_bootstrap_does_not_modify_kaggle_input_root 
+(test_remediation.PrepareKaggleInputTests.test_bootstrap_does_not_modify_kaggle_input_root)
+prepare_kaggle_input must not write into the source input root. ... ok
+test_both_extracted_java_and_k6_accepted 
+(test_remediation.PrepareKaggleInputTests.test_both_extracted_java_and_k6_accepted)
+Both Java and k6 auto-extracted (no archives) works in combination. ... ok
+test_bundle_baseline_sha_mismatch_raises 
+(test_remediation.PrepareKaggleInputTests.test_bundle_baseline_sha_mismatch_raises)
+bundle-manifest.json with wrong protocol_baseline_sha is rejected. ... ok
+test_duplicate_java_sources_raises (test_remediation.PrepareKaggleInputTests.test_duplicate_java_sources_raises)
+Both archive and extracted Java present raises RuntimeError (ambiguous). ... ok
+test_java_archive_is_accepted (test_remediation.PrepareKaggleInputTests.test_java_archive_is_accepted)
+Java archive is extracted, executable found, version verified. ... ok
+test_k6_extracted_is_accepted (test_remediation.PrepareKaggleInputTests.test_k6_extracted_is_accepted)
+Kaggle auto-extracted k6 (no archive) is accepted. ... ok
+test_kaggle_session_preserves_prepared_input_root 
+(test_remediation.PrepareKaggleInputTests.test_kaggle_session_preserves_prepared_input_root)
+KaggleSession(input_root=prepared) must not reset to /kaggle/input. ... ok
+test_libaio_package_checksum_mismatch_raises 
+(test_remediation.PrepareKaggleInputTests.test_libaio_package_checksum_mismatch_raises)
+libaio .deb with wrong SHA-256 is rejected. ... ok
+test_missing_bundle_manifest_raises (test_remediation.PrepareKaggleInputTests.test_missing_bundle_manifest_raises)
+No bundle-manifest.json raises RuntimeError. ... ok
+test_missing_java_raises (test_remediation.PrepareKaggleInputTests.test_missing_java_raises)
+No Java source (archive or extracted) raises RuntimeError. ... ok
+test_missing_libaio_deb_raises (test_remediation.PrepareKaggleInputTests.test_missing_libaio_deb_raises)
+No libaio .deb raises RuntimeError. ... ok
+test_missing_mysql_archive_raises (test_remediation.PrepareKaggleInputTests.test_missing_mysql_archive_raises)
+No MySQL archive raises RuntimeError. ... ok
+test_no_stale_staging_from_previous_session 
+(test_remediation.PrepareKaggleInputTests.test_no_stale_staging_from_previous_session)
+prepare_kaggle_input fingerprints inputs; different inputs produce a different dir. ... ok
+test_preflight_fail_does_not_start_mysql 
+(test_remediation.PrepareKaggleInputTests.test_preflight_fail_does_not_start_mysql)
+run_smoke fails at preflight (before MySQL) when probe.is_kaggle is False. ... ok
+test_prepare_is_idempotent (test_remediation.PrepareKaggleInputTests.test_prepare_is_idempotent)
+Calling prepare_kaggle_input twice with same inputs returns same directory. ... ok
+test_prepare_kaggle_input_cleans_up_on_error 
+(test_remediation.PrepareKaggleInputTests.test_prepare_kaggle_input_cleans_up_on_error)
+If prepare fails mid-way, no partial .tmp- directory is left in working root. ... ok
+test_regression_extracted_java_no_longer_raises_no_exact_java 
+(test_remediation.PrepareKaggleInputTests.test_regression_extracted_java_no_longer_raises_no_exact_java)
+Regression: prepare_kaggle_input must accept Kaggle auto-extracted Java (no archive). ... ok
+test_session_input_root_matches_prepare_output 
+(test_remediation.PrepareKaggleInputTests.test_session_input_root_matches_prepare_output)
+session.input_root must equal the resolved prepared path from prepare_kaggle_input. ... ok
+test_wrong_java_version_raises (test_remediation.PrepareKaggleInputTests.test_wrong_java_version_raises)
+Java executable reporting wrong version is rejected. ... ok
+test_bundle_layout_resolves_phase2_and_preflights_all_runtime_inputs 
+(test_remediation.ReliabilityTests.test_bundle_layout_resolves_phase2_and_preflights_all_runtime_inputs) ... ok
+test_cleanup_error_is_reported (test_remediation.ReliabilityTests.test_cleanup_error_is_reported) ... ok
+test_failure_still_creates_zip_and_cleanup_failure_forces_fail 
+(test_remediation.ReliabilityTests.test_failure_still_creates_zip_and_cleanup_failure_forces_fail) ... ok
+test_mysql_directory_permission_denied_fails_closed 
+(test_remediation.ReliabilityTests.test_mysql_directory_permission_denied_fails_closed) ... ok
+test_mysql_early_exit_diagnostics_survive_cleanup_and_zip 
+(test_remediation.ReliabilityTests.test_mysql_early_exit_diagnostics_survive_cleanup_and_zip) ... ok
+test_mysql_startup_root_failure_regression_runs_init_and_server_demoted 
+(test_remediation.ReliabilityTests.test_mysql_startup_root_failure_regression_runs_init_and_server_demoted) ... ok
+test_nonroot_mysql_identity_keeps_current_uid_gid 
+(test_remediation.ReliabilityTests.test_nonroot_mysql_identity_keeps_current_uid_gid) ... ok
+test_notebook_bootstrap_precedes_session_and_smoke 
+(test_remediation.ReliabilityTests.test_notebook_bootstrap_precedes_session_and_smoke) ... ok
+test_reset_checksum_failure_forces_smoke_fail 
+(test_remediation.ReliabilityTests.test_reset_checksum_failure_forces_smoke_fail) ... ok
+test_root_account_with_root_gid_fails_closed 
+(test_remediation.ReliabilityTests.test_root_account_with_root_gid_fails_closed) ... ok
+test_root_mysql_identity_drops_privileges_and_records_uid_gid 
+(test_remediation.ReliabilityTests.test_root_mysql_identity_drops_privileges_and_records_uid_gid) ... ok
+test_root_without_nonroot_account_fails_closed 
+(test_remediation.ReliabilityTests.test_root_without_nonroot_account_fails_closed) ... ok
+test_secret_scan_detects_jwt_and_private_key 
+(test_remediation.ReliabilityTests.test_secret_scan_detects_jwt_and_private_key) ... ok
+test_header_only_resource_telemetry_is_rejected 
+(test_remediation.SmokeValidationTests.test_header_only_resource_telemetry_is_rejected) ... ok
+test_k6_exit_zero_but_failed_check_is_rejected 
+(test_remediation.SmokeValidationTests.test_k6_exit_zero_but_failed_check_is_rejected) ... ok
+test_request_count_mismatch_is_rejected 
+(test_remediation.SmokeValidationTests.test_request_count_mismatch_is_rejected) ... ok
+test_unexpected_and_transport_failures_are_rejected 
+(test_remediation.SmokeValidationTests.test_unexpected_and_transport_failures_are_rejected) ... ok
+test_valid_k6_summaries_pass (test_remediation.SmokeValidationTests.test_valid_k6_summaries_pass) ... ok
+test_w3_baseline_defects_do_not_fail_valid_harness 
+(test_remediation.SmokeValidationTests.test_w3_baseline_defects_do_not_fail_valid_harness) ... ok
+test_all_http_checks_failed_despite_zero_k6_exit 
+(test_sampler_lifecycle.DriverTests.test_all_http_checks_failed_despite_zero_k6_exit) ... ok
+test_backend_dead_before_workload_records_evidence_and_no_launch 
+(test_sampler_lifecycle.DriverTests.test_backend_dead_before_workload_records_evidence_and_no_launch) ... ok
+test_backend_dies_during_workload_driver_stopped_first 
+(test_sampler_lifecycle.DriverTests.test_backend_dies_during_workload_driver_stopped_first) ... ok
+test_cleanup_does_not_stop_services_when_driver_cannot_be_reaped 
+(test_sampler_lifecycle.DriverTests.test_cleanup_does_not_stop_services_when_driver_cannot_be_reaped) ... ok
+test_sampler_failure_reaps_driver_preserves_primary_and_services 
+(test_sampler_lifecycle.DriverTests.test_sampler_failure_reaps_driver_preserves_primary_and_services) ... ok
+test_smoke_traceback_in_zip_and_secret_redacted 
+(test_sampler_lifecycle.DriverTests.test_smoke_traceback_in_zip_and_secret_redacted) ... ok
+test_workload_wait_exception_reaps_driver 
+(test_sampler_lifecycle.DriverTests.test_workload_wait_exception_reaps_driver) ... ok
+test_background_exception_is_observable (test_sampler_lifecycle.SamplerTests.test_background_exception_is_observable) 
+... ok
+test_initial_sample_failure_survives_stop 
+(test_sampler_lifecycle.SamplerTests.test_initial_sample_failure_survives_stop) ... ok
+test_normal_start_stop (test_sampler_lifecycle.SamplerTests.test_normal_start_stop) ... ok
+test_stop_before_start_and_repeated_stop 
+(test_sampler_lifecycle.SamplerTests.test_stop_before_start_and_repeated_stop) ... ok
+
+----------------------------------------------------------------------
+Ran 75 tests in 5.291s
+
+OK (skipped=3)

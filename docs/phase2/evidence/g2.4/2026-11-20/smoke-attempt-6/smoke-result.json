@@ -1,0 +1,12 @@
+﻿{
+    "started_at_utc":  "2026-11-19T18:37:59.8726132Z",
+    "finished_at_utc":  "2026-11-19T18:39:59.9252748Z",
+    "project":  "byteme-g24-smoke",
+    "k6_image":  "grafana/k6:0.55.2",
+    "official_benchmark":  false,
+    "status":  "PASS",
+    "error":  null,
+    "initial_dataset_sha256":  "1563f0bc27189c805d600347a497830593289542cfc3543d3b73d29117961e50",
+    "reset_dataset_sha256":  "1563f0bc27189c805d600347a497830593289542cfc3543d3b73d29117961e50",
+    "reset_matches_initial":  true
+}

@@ -1,0 +1,8 @@
+﻿backend_container=d2b61ad8fbba
+backend_image_id=sha256:bbecdb9859d26a492a621a67b562683757b0c83dc2c45a209c637a9e34e7fb6a
+backend_nano_cpus=2000000000
+backend_memory_limit=1342177280
+mysql_container=e6ead664462b
+mysql_image_id=sha256:a81d043930e51745522bd5c430961cf8286f0a23f0a9a2a6e0108f7ea71b0902
+mysql_nano_cpus=2000000000
+mysql_memory_limit=1610612736

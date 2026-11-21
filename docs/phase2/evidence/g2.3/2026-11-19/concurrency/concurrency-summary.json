@@ -1,0 +1,73 @@
+{
+  "started_at_utc": "2026-11-19T17:57:22.460988+00:00",
+  "finished_at_utc": "2026-11-19T17:59:58.838366+00:00",
+  "base_url": "http://127.0.0.1:18081",
+  "compose_project": "byteme-g23",
+  "rounds_per_scenario": 15,
+  "concurrency_level": 2,
+  "summaries": [
+    {
+      "scenario": "C1",
+      "classification": "CONFIRMED DEFECT",
+      "rounds_executed": 15,
+      "invariant_violation_rounds": [
+        2,
+        3,
+        4,
+        8,
+        9,
+        10
+      ],
+      "server_or_transport_error_rounds": [],
+      "notable_observation_rounds": []
+    },
+    {
+      "scenario": "C2",
+      "classification": "INCONCLUSIVE",
+      "rounds_executed": 15,
+      "invariant_violation_rounds": [],
+      "server_or_transport_error_rounds": [
+        7,
+        13
+      ],
+      "notable_observation_rounds": []
+    },
+    {
+      "scenario": "C3",
+      "classification": "OBSERVED CORRECT",
+      "rounds_executed": 15,
+      "invariant_violation_rounds": [],
+      "server_or_transport_error_rounds": [],
+      "notable_observation_rounds": []
+    },
+    {
+      "scenario": "C4",
+      "classification": "INCONCLUSIVE",
+      "rounds_executed": 15,
+      "invariant_violation_rounds": [],
+      "server_or_transport_error_rounds": [],
+      "notable_observation_rounds": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        11,
+        12,
+        14,
+        15
+      ]
+    },
+    {
+      "scenario": "C5",
+      "classification": "OBSERVED CORRECT",
+      "rounds_executed": 15,
+      "invariant_violation_rounds": [],
+      "server_or_transport_error_rounds": [],
+      "notable_observation_rounds": []
+    }
+  ]
+}

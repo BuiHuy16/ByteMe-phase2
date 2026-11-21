@@ -1,0 +1,1383 @@
+{
+  "run": "api_test_4d8655b48e6e",
+  "baseUrl": "http://127.0.0.1:18080",
+  "timestamp": "2026-11-19T11:30:06.623995+07:00",
+  "passed": 196,
+  "failed": 0,
+  "cleanupVerified": true,
+  "fatal": null,
+  "results": [
+    {
+      "group": "Infrastructure",
+      "case": "Backend health",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Infrastructure",
+      "case": "Swagger",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Infrastructure",
+      "case": "OpenAPI",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Auth",
+      "case": "Register a",
+      "pass": true,
+      "expected": "HTTP 201",
+      "actual": "HTTP 201"
+    },
+    {
+      "group": "Auth",
+      "case": "Registration creates CUSTOMER/ACTIVE",
+      "pass": true,
+      "expected": "CUSTOMER/ACTIVE",
+      "actual": "CUSTOMER/ACTIVE"
+    },
+    {
+      "group": "Auth",
+      "case": "Register b",
+      "pass": true,
+      "expected": "HTTP 201",
+      "actual": "HTTP 201"
+    },
+    {
+      "group": "Auth",
+      "case": "Registration creates CUSTOMER/ACTIVE",
+      "pass": true,
+      "expected": "CUSTOMER/ACTIVE",
+      "actual": "CUSTOMER/ACTIVE"
+    },
+    {
+      "group": "Auth",
+      "case": "Register employee",
+      "pass": true,
+      "expected": "HTTP 201",
+      "actual": "HTTP 201"
+    },
+    {
+      "group": "Auth",
+      "case": "Registration creates CUSTOMER/ACTIVE",
+      "pass": true,
+      "expected": "CUSTOMER/ACTIVE",
+      "actual": "CUSTOMER/ACTIVE"
+    },
+    {
+      "group": "Auth",
+      "case": "Register admin",
+      "pass": true,
+      "expected": "HTTP 201",
+      "actual": "HTTP 201"
+    },
+    {
+      "group": "Auth",
+      "case": "Registration creates CUSTOMER/ACTIVE",
+      "pass": true,
+      "expected": "CUSTOMER/ACTIVE",
+      "actual": "CUSTOMER/ACTIVE"
+    },
+    {
+      "group": "Auth",
+      "case": "Register inactive",
+      "pass": true,
+      "expected": "HTTP 201",
+      "actual": "HTTP 201"
+    },
+    {
+      "group": "Auth",
+      "case": "Registration creates CUSTOMER/ACTIVE",
+      "pass": true,
+      "expected": "CUSTOMER/ACTIVE",
+      "actual": "CUSTOMER/ACTIVE"
+    },
+    {
+      "group": "Auth",
+      "case": "Register quota",
+      "pass": true,
+      "expected": "HTTP 201",
+      "actual": "HTTP 201"
+    },
+    {
+      "group": "Auth",
+      "case": "Registration creates CUSTOMER/ACTIVE",
+      "pass": true,
+      "expected": "CUSTOMER/ACTIVE",
+      "actual": "CUSTOMER/ACTIVE"
+    },
+    {
+      "group": "Auth",
+      "case": "Duplicate email",
+      "pass": true,
+      "expected": "HTTP 409 ACCOUNT_CONFLICT",
+      "actual": "HTTP 409 ACCOUNT_CONFLICT"
+    },
+    {
+      "group": "Auth",
+      "case": "Duplicate phone",
+      "pass": true,
+      "expected": "HTTP 409 ACCOUNT_CONFLICT",
+      "actual": "HTTP 409 ACCOUNT_CONFLICT"
+    },
+    {
+      "group": "Auth",
+      "case": "Invalid email",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Auth",
+      "case": "Invalid phone",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Auth",
+      "case": "Password mismatch",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 PASSWORD_MISMATCH"
+    },
+    {
+      "group": "Auth",
+      "case": "Short password",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Auth",
+      "case": "Role escalation in registration",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Auth",
+      "case": "Login a",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Auth",
+      "case": "Token response disables caching",
+      "pass": true,
+      "expected": "no-store",
+      "actual": "no-store"
+    },
+    {
+      "group": "Auth",
+      "case": "Login b",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Auth",
+      "case": "Token response disables caching",
+      "pass": true,
+      "expected": "no-store",
+      "actual": "no-store"
+    },
+    {
+      "group": "Auth",
+      "case": "Login employee",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Auth",
+      "case": "Token response disables caching",
+      "pass": true,
+      "expected": "no-store",
+      "actual": "no-store"
+    },
+    {
+      "group": "Auth",
+      "case": "Login admin",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Auth",
+      "case": "Token response disables caching",
+      "pass": true,
+      "expected": "no-store",
+      "actual": "no-store"
+    },
+    {
+      "group": "Auth",
+      "case": "Wrong password",
+      "pass": true,
+      "expected": "HTTP 401 INVALID_CREDENTIALS",
+      "actual": "HTTP 401 INVALID_CREDENTIALS"
+    },
+    {
+      "group": "Auth",
+      "case": "Inactive account",
+      "pass": true,
+      "expected": "HTTP 403 ACCOUNT_NOT_ACTIVE",
+      "actual": "HTTP 403 ACCOUNT_NOT_ACTIVE"
+    },
+    {
+      "group": "Auth",
+      "case": "Unknown account",
+      "pass": true,
+      "expected": "HTTP 401 INVALID_CREDENTIALS",
+      "actual": "HTTP 401 INVALID_CREDENTIALS"
+    },
+    {
+      "group": "Auth",
+      "case": "Malformed auth JSON",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Auth",
+      "case": "Auth rejects unknown fields",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Food",
+      "case": "Create primary",
+      "pass": true,
+      "expected": "HTTP 201",
+      "actual": "HTTP 201"
+    },
+    {
+      "group": "Food",
+      "case": "Create secondary",
+      "pass": true,
+      "expected": "HTTP 201",
+      "actual": "HTTP 201"
+    },
+    {
+      "group": "Food",
+      "case": "Create inactive",
+      "pass": true,
+      "expected": "HTTP 201",
+      "actual": "HTTP 201"
+    },
+    {
+      "group": "Food",
+      "case": "Create permission",
+      "pass": true,
+      "expected": "HTTP 201",
+      "actual": "HTTP 201"
+    },
+    {
+      "group": "Food",
+      "case": "Create other category",
+      "pass": true,
+      "expected": "HTTP 201",
+      "actual": "HTTP 201"
+    },
+    {
+      "group": "Food",
+      "case": "Public active menu",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Food",
+      "case": "Menu excludes inactive food",
+      "pass": true,
+      "expected": "inactive excluded",
+      "actual": "excluded"
+    },
+    {
+      "group": "Food",
+      "case": "Public detail",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Food",
+      "case": "Inactive detail",
+      "pass": true,
+      "expected": "HTTP 404",
+      "actual": "HTTP 404 FOOD_NOT_FOUND"
+    },
+    {
+      "group": "Food",
+      "case": "Missing food",
+      "pass": true,
+      "expected": "HTTP 404",
+      "actual": "HTTP 404 FOOD_NOT_FOUND"
+    },
+    {
+      "group": "Food",
+      "case": "Invalid food ID",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Food",
+      "case": "Missing category",
+      "pass": true,
+      "expected": "HTTP 404",
+      "actual": "HTTP 404 CATEGORY_NOT_FOUND"
+    },
+    {
+      "group": "Food",
+      "case": "Search by name",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Food",
+      "case": "Search finds fixture",
+      "pass": true,
+      "expected": "primary included",
+      "actual": "found"
+    },
+    {
+      "group": "Food",
+      "case": "Search without category",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Food",
+      "case": "Search returns all matching active foods in ID order",
+      "pass": true,
+      "expected": "[19, 20, 22, 23]",
+      "actual": "[19, 20, 22, 23]"
+    },
+    {
+      "group": "Food",
+      "case": "Search with category",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Food",
+      "case": "Search applies category filter and returns an unpaginated array",
+      "pass": true,
+      "expected": "[19, 20, 22]",
+      "actual": "[19, 20, 22]"
+    },
+    {
+      "group": "Food",
+      "case": "Search without matches",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Food",
+      "case": "Search without matches returns an empty array",
+      "pass": true,
+      "expected": "[]",
+      "actual": "[]"
+    },
+    {
+      "group": "Food",
+      "case": "Blank search",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Food",
+      "case": "Long search",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Food",
+      "case": "Food write without JWT POST",
+      "pass": true,
+      "expected": "HTTP 401",
+      "actual": "HTTP 401 UNAUTHENTICATED"
+    },
+    {
+      "group": "Food",
+      "case": "Food write without JWT PUT",
+      "pass": true,
+      "expected": "HTTP 401",
+      "actual": "HTTP 401 UNAUTHENTICATED"
+    },
+    {
+      "group": "Food",
+      "case": "Food write without JWT DELETE",
+      "pass": true,
+      "expected": "HTTP 401",
+      "actual": "HTTP 401 UNAUTHENTICATED"
+    },
+    {
+      "group": "Food",
+      "case": "Non-admin Food write a POST",
+      "pass": true,
+      "expected": "HTTP 403",
+      "actual": "HTTP 403 FORBIDDEN"
+    },
+    {
+      "group": "Food",
+      "case": "Non-admin Food write a PUT",
+      "pass": true,
+      "expected": "HTTP 403",
+      "actual": "HTTP 403 FORBIDDEN"
+    },
+    {
+      "group": "Food",
+      "case": "Non-admin Food write a DELETE",
+      "pass": true,
+      "expected": "HTTP 403",
+      "actual": "HTTP 403 FORBIDDEN"
+    },
+    {
+      "group": "Food",
+      "case": "Non-admin Food write employee POST",
+      "pass": true,
+      "expected": "HTTP 403",
+      "actual": "HTTP 403 FORBIDDEN"
+    },
+    {
+      "group": "Food",
+      "case": "Non-admin Food write employee PUT",
+      "pass": true,
+      "expected": "HTTP 403",
+      "actual": "HTTP 403 FORBIDDEN"
+    },
+    {
+      "group": "Food",
+      "case": "Non-admin Food write employee DELETE",
+      "pass": true,
+      "expected": "HTTP 403",
+      "actual": "HTTP 403 FORBIDDEN"
+    },
+    {
+      "group": "Food",
+      "case": "Duplicate name same category",
+      "pass": true,
+      "expected": "HTTP 409",
+      "actual": "HTTP 409 FOOD_NAME_CONFLICT"
+    },
+    {
+      "group": "Food",
+      "case": "Duplicate name different category",
+      "pass": true,
+      "expected": "HTTP 409",
+      "actual": "HTTP 409 FOOD_NAME_CONFLICT"
+    },
+    {
+      "group": "Food",
+      "case": "Duplicate trimmed name",
+      "pass": true,
+      "expected": "HTTP 409",
+      "actual": "HTTP 409 FOOD_NAME_CONFLICT"
+    },
+    {
+      "group": "Food",
+      "case": "Zero price",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Food",
+      "case": "Negative stock",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Food",
+      "case": "Fractional stock",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Food",
+      "case": "Blank name",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Food",
+      "case": "Name exceeds column limit",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Food",
+      "case": "Unknown status",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Food",
+      "case": "Price between zero and one",
+      "pass": true,
+      "expected": "HTTP 201",
+      "actual": "HTTP 201"
+    },
+    {
+      "group": "Food",
+      "case": "Admin updates food",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Food",
+      "case": "Update without optional stock",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Food",
+      "case": "Omitted stock preserves current stock",
+      "pass": true,
+      "expected": "20",
+      "actual": "20"
+    },
+    {
+      "group": "Food",
+      "case": "Restore isolated food fixture stock",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Cart",
+      "case": "Cart requires JWT",
+      "pass": true,
+      "expected": "HTTP 401",
+      "actual": "HTTP 401 UNAUTHENTICATED"
+    },
+    {
+      "group": "Cart",
+      "case": "Invalid JWT",
+      "pass": true,
+      "expected": "HTTP 401",
+      "actual": "HTTP 401 UNAUTHENTICATED"
+    },
+    {
+      "group": "Cart",
+      "case": "employee cannot access cart",
+      "pass": true,
+      "expected": "HTTP 403",
+      "actual": "HTTP 403 FORBIDDEN"
+    },
+    {
+      "group": "Cart",
+      "case": "admin cannot access cart",
+      "pass": true,
+      "expected": "HTTP 403",
+      "actual": "HTTP 403 FORBIDDEN"
+    },
+    {
+      "group": "Cart",
+      "case": "Cart without saved cart",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Cart",
+      "case": "Missing cart reads as empty",
+      "pass": true,
+      "expected": "[]",
+      "actual": "{'id': None, 'userId': 9, 'items': []}"
+    },
+    {
+      "group": "Cart",
+      "case": "Reading cart does not create one",
+      "pass": true,
+      "expected": "0",
+      "actual": "0"
+    },
+    {
+      "group": "Cart",
+      "case": "Checkout without saved cart",
+      "pass": true,
+      "expected": "HTTP 400 EMPTY_CART",
+      "actual": "HTTP 400 EMPTY_CART"
+    },
+    {
+      "group": "Cart",
+      "case": "Reject invalid cart line {\"foodId\": 19, \"quantity\": 0}",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Cart",
+      "case": "Reject invalid cart line {\"foodId\": 19, \"quantity\": -1}",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Cart",
+      "case": "Reject invalid cart line {\"foodId\": 0, \"quantity\": 1}",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Cart",
+      "case": "Reject invalid cart line {\"foodId\": 19}",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Cart",
+      "case": "Reject invalid cart line {\"foodId\": 19, \"quantity\": 1.5}",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Cart",
+      "case": "Add 1 item(s) to a cart",
+      "pass": true,
+      "expected": "HTTP 409",
+      "actual": "HTTP 409 FOOD_UNAVAILABLE"
+    },
+    {
+      "group": "Cart",
+      "case": "Add 1 item(s) to a cart",
+      "pass": true,
+      "expected": "HTTP 404",
+      "actual": "HTTP 404 FOOD_NOT_FOUND"
+    },
+    {
+      "group": "Cart",
+      "case": "Add 2 item(s) to a cart",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Cart",
+      "case": "Add 1 item(s) to a cart",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Cart",
+      "case": "Repeated addition merges quantity",
+      "pass": true,
+      "expected": "one line, quantity 3",
+      "actual": "1 line(s), quantity 3"
+    },
+    {
+      "group": "Cart",
+      "case": "Add 1 item(s) to b cart",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Cart",
+      "case": "X-User-Id cannot spoof owner",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Cart",
+      "case": "Cart belongs to JWT subject",
+      "pass": true,
+      "expected": "9",
+      "actual": "9"
+    },
+    {
+      "group": "Cart",
+      "case": "Other owner cannot modify item PUT",
+      "pass": true,
+      "expected": "HTTP 404",
+      "actual": "HTTP 404 CART_ITEM_NOT_FOUND"
+    },
+    {
+      "group": "Cart",
+      "case": "Other owner cannot modify item DELETE",
+      "pass": true,
+      "expected": "HTTP 404",
+      "actual": "HTTP 404 CART_ITEM_NOT_FOUND"
+    },
+    {
+      "group": "Cart",
+      "case": "Set quantity",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Cart",
+      "case": "PUT replaces quantity",
+      "pass": true,
+      "expected": "2",
+      "actual": "2"
+    },
+    {
+      "group": "Cart",
+      "case": "Reject zero update",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Cart",
+      "case": "Missing cart item",
+      "pass": true,
+      "expected": "HTTP 404",
+      "actual": "HTTP 404 CART_ITEM_NOT_FOUND"
+    },
+    {
+      "group": "Order",
+      "case": "employee cannot create order",
+      "pass": true,
+      "expected": "HTTP 403",
+      "actual": "HTTP 403 FORBIDDEN"
+    },
+    {
+      "group": "Order",
+      "case": "admin cannot create order",
+      "pass": true,
+      "expected": "HTTP 403",
+      "actual": "HTTP 403 FORBIDDEN"
+    },
+    {
+      "group": "Order",
+      "case": "Missing serving information",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Order",
+      "case": "DINE_IN without table",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Order",
+      "case": "DINE_IN cannot use COD",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Order",
+      "case": "DELIVERY cannot use CASH",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Order",
+      "case": "DELIVERY cannot include table",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Order",
+      "case": "Unknown status enum",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Order",
+      "case": "Create DINE_IN order",
+      "pass": true,
+      "expected": "HTTP 201",
+      "actual": "HTTP 201"
+    },
+    {
+      "group": "Order",
+      "case": "Location points at created order",
+      "pass": true,
+      "expected": "Location ends with order ID",
+      "actual": "/api/orders/1009"
+    },
+    {
+      "group": "Order",
+      "case": "Client cannot override order owner",
+      "pass": true,
+      "expected": "9",
+      "actual": "9"
+    },
+    {
+      "group": "Order",
+      "case": "Client cannot override cart items",
+      "pass": true,
+      "expected": "19",
+      "actual": "[19]"
+    },
+    {
+      "group": "Order",
+      "case": "Server computes total",
+      "pass": true,
+      "expected": "50000",
+      "actual": "50000.0"
+    },
+    {
+      "group": "Order",
+      "case": "Checkout decreases stock",
+      "pass": true,
+      "expected": "18",
+      "actual": "18"
+    },
+    {
+      "group": "Order",
+      "case": "Cart after checkout",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Order",
+      "case": "Checkout clears cart",
+      "pass": true,
+      "expected": "[]",
+      "actual": "0"
+    },
+    {
+      "group": "Order",
+      "case": "Empty cart prevents another order",
+      "pass": true,
+      "expected": "HTTP 400 EMPTY_CART",
+      "actual": "HTTP 400 EMPTY_CART"
+    },
+    {
+      "group": "Order",
+      "case": "Owner reads order",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Order",
+      "case": "Other owner blocked GET",
+      "pass": true,
+      "expected": "HTTP 403 FORBIDDEN",
+      "actual": "HTTP 403 FORBIDDEN"
+    },
+    {
+      "group": "Order",
+      "case": "Other owner blocked DELETE",
+      "pass": true,
+      "expected": "HTTP 403 FORBIDDEN",
+      "actual": "HTTP 403 FORBIDDEN"
+    },
+    {
+      "group": "Order",
+      "case": "Admin cannot read orders",
+      "pass": true,
+      "expected": "HTTP 403",
+      "actual": "HTTP 403 FORBIDDEN"
+    },
+    {
+      "group": "Order",
+      "case": "Customer cannot confirm",
+      "pass": true,
+      "expected": "HTTP 403",
+      "actual": "HTTP 403 FORBIDDEN"
+    },
+    {
+      "group": "Order",
+      "case": "Customer cannot update status",
+      "pass": true,
+      "expected": "HTTP 403",
+      "actual": "HTTP 403 FORBIDDEN"
+    },
+    {
+      "group": "Order",
+      "case": "Reject invalid order filter page=-1",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Order",
+      "case": "Reject invalid order filter size=0",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Order",
+      "case": "Reject invalid order filter size=101",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Order",
+      "case": "Reject invalid order filter status=UNKNOWN",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Order",
+      "case": "Reject invalid order filter orderType=0",
+      "pass": true,
+      "expected": "HTTP 400",
+      "actual": "HTTP 400 VALIDATION_ERROR"
+    },
+    {
+      "group": "Order",
+      "case": "Unknown order",
+      "pass": true,
+      "expected": "HTTP 404 ORDER_NOT_FOUND",
+      "actual": "HTTP 404 ORDER_NOT_FOUND"
+    },
+    {
+      "group": "Order",
+      "case": "Customer order page",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Order",
+      "case": "List scoped to owner",
+      "pass": true,
+      "expected": "owner only",
+      "actual": "1"
+    },
+    {
+      "group": "Order",
+      "case": "Employee default order page",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Order",
+      "case": "Employee defaults to active statuses",
+      "pass": true,
+      "expected": "only active statuses",
+      "actual": "['CONFIRMED', 'PENDING', 'PROCESSING', 'SHIPPING']"
+    },
+    {
+      "group": "Order",
+      "case": "Change menu price after checkout",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Order",
+      "case": "Read historical snapshot",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Order",
+      "case": "Order price remains unchanged",
+      "pass": true,
+      "expected": "50000",
+      "actual": "50000.0"
+    },
+    {
+      "group": "Order",
+      "case": "Cancel pending order",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Order",
+      "case": "Cancellation restores stock",
+      "pass": true,
+      "expected": "20",
+      "actual": "20"
+    },
+    {
+      "group": "Order",
+      "case": "Repeated cancellation rejected",
+      "pass": true,
+      "expected": "HTTP 409 INVALID_ORDER_TRANSITION",
+      "actual": "HTTP 409 INVALID_ORDER_TRANSITION"
+    },
+    {
+      "group": "Order",
+      "case": "Cancellation cannot restore twice",
+      "pass": true,
+      "expected": "20",
+      "actual": "20"
+    },
+    {
+      "group": "Order",
+      "case": "Add 1 item(s) to a cart",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Order",
+      "case": "Create DINE_IN order",
+      "pass": true,
+      "expected": "HTTP 201",
+      "actual": "HTTP 201"
+    },
+    {
+      "group": "Order",
+      "case": "Location points at created order",
+      "pass": true,
+      "expected": "Location ends with order ID",
+      "actual": "/api/orders/1010"
+    },
+    {
+      "group": "Order",
+      "case": "Reject skipped PENDING transition",
+      "pass": true,
+      "expected": "HTTP 409",
+      "actual": "HTTP 409 INVALID_ORDER_TRANSITION"
+    },
+    {
+      "group": "Order",
+      "case": "Employee confirms",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Order",
+      "case": "Confirmation records actor/time",
+      "pass": true,
+      "expected": "employee ID and timestamp",
+      "actual": "11"
+    },
+    {
+      "group": "Order",
+      "case": "Customer cannot cancel confirmed order",
+      "pass": true,
+      "expected": "HTTP 409",
+      "actual": "HTTP 409 INVALID_ORDER_TRANSITION"
+    },
+    {
+      "group": "Order",
+      "case": "Employee starts processing",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Order",
+      "case": "Dine-in cannot enter SHIPPING",
+      "pass": true,
+      "expected": "HTTP 409",
+      "actual": "HTTP 409 INVALID_ORDER_TRANSITION"
+    },
+    {
+      "group": "Order",
+      "case": "Employee completes DINE_IN",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Order",
+      "case": "Completion has timestamp",
+      "pass": true,
+      "expected": "completedAt present",
+      "actual": "True"
+    },
+    {
+      "group": "Order",
+      "case": "Terminal status cannot change",
+      "pass": true,
+      "expected": "HTTP 409",
+      "actual": "HTTP 409 INVALID_ORDER_TRANSITION"
+    },
+    {
+      "group": "Order",
+      "case": "Add 1 item(s) to a cart",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Order",
+      "case": "Create DELIVERY order",
+      "pass": true,
+      "expected": "HTTP 201",
+      "actual": "HTTP 201"
+    },
+    {
+      "group": "Order",
+      "case": "Location points at created order",
+      "pass": true,
+      "expected": "Location ends with order ID",
+      "actual": "/api/orders/1011"
+    },
+    {
+      "group": "Order",
+      "case": "Reject skipped PENDING transition",
+      "pass": true,
+      "expected": "HTTP 409",
+      "actual": "HTTP 409 INVALID_ORDER_TRANSITION"
+    },
+    {
+      "group": "Order",
+      "case": "Employee confirms",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Order",
+      "case": "Confirmation records actor/time",
+      "pass": true,
+      "expected": "employee ID and timestamp",
+      "actual": "11"
+    },
+    {
+      "group": "Order",
+      "case": "Customer cannot cancel confirmed order",
+      "pass": true,
+      "expected": "HTTP 409",
+      "actual": "HTTP 409 INVALID_ORDER_TRANSITION"
+    },
+    {
+      "group": "Order",
+      "case": "Employee starts processing",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Order",
+      "case": "Delivery cannot skip SHIPPING",
+      "pass": true,
+      "expected": "HTTP 409",
+      "actual": "HTTP 409 INVALID_ORDER_TRANSITION"
+    },
+    {
+      "group": "Order",
+      "case": "Delivery ships",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Order",
+      "case": "Employee completes DELIVERY",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Order",
+      "case": "Completion has timestamp",
+      "pass": true,
+      "expected": "completedAt present",
+      "actual": "True"
+    },
+    {
+      "group": "Order",
+      "case": "Terminal status cannot change",
+      "pass": true,
+      "expected": "HTTP 409",
+      "actual": "HTTP 409 INVALID_ORDER_TRANSITION"
+    },
+    {
+      "group": "Checkout failures",
+      "case": "Clear fixture cart",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Checkout failures",
+      "case": "Add 21 item(s) to a cart",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Checkout failures",
+      "case": "Insufficient stock",
+      "pass": true,
+      "expected": "HTTP 409 INSUFFICIENT_STOCK",
+      "actual": "HTTP 409 INSUFFICIENT_STOCK"
+    },
+    {
+      "group": "Checkout failures",
+      "case": "Stock error names the food",
+      "pass": true,
+      "expected": "api_test_4d8655b48e6e primary",
+      "actual": "Món \"api_test_4d8655b48e6e primary\" không đủ tồn kho."
+    },
+    {
+      "group": "Checkout failures",
+      "case": "Failed checkout leaves stock",
+      "pass": true,
+      "expected": "20",
+      "actual": "20"
+    },
+    {
+      "group": "Checkout failures",
+      "case": "Failed checkout creates no order",
+      "pass": true,
+      "expected": "3",
+      "actual": "3"
+    },
+    {
+      "group": "Checkout failures",
+      "case": "Cart retained after failed checkout",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Checkout failures",
+      "case": "Failed checkout retains quantity",
+      "pass": true,
+      "expected": "21",
+      "actual": "21"
+    },
+    {
+      "group": "Checkout failures",
+      "case": "Stop selling cart food",
+      "pass": true,
+      "expected": "HTTP 204",
+      "actual": "HTTP 204"
+    },
+    {
+      "group": "Checkout failures",
+      "case": "Inactive food blocks checkout",
+      "pass": true,
+      "expected": "HTTP 409 FOOD_UNAVAILABLE",
+      "actual": "HTTP 409 FOOD_UNAVAILABLE"
+    },
+    {
+      "group": "Checkout failures",
+      "case": "Unavailable error names the food",
+      "pass": true,
+      "expected": "api_test_4d8655b48e6e primary",
+      "actual": "Món \"api_test_4d8655b48e6e primary\" đã ngừng bán."
+    },
+    {
+      "group": "Checkout failures",
+      "case": "Clear fixture cart",
+      "pass": true,
+      "expected": "HTTP 200",
+      "actual": "HTTP 200"
+    },
+    {
+      "group": "Auth rate limit",
+      "case": "Email login limit attempt 1",
+      "pass": true,
+      "expected": "HTTP 401",
+      "actual": "HTTP 401 INVALID_CREDENTIALS"
+    },
+    {
+      "group": "Auth rate limit",
+      "case": "Email login limit attempt 2",
+      "pass": true,
+      "expected": "HTTP 401",
+      "actual": "HTTP 401 INVALID_CREDENTIALS"
+    },
+    {
+      "group": "Auth rate limit",
+      "case": "Email login limit attempt 3",
+      "pass": true,
+      "expected": "HTTP 401",
+      "actual": "HTTP 401 INVALID_CREDENTIALS"
+    },
+    {
+      "group": "Auth rate limit",
+      "case": "Email login limit attempt 4",
+      "pass": true,
+      "expected": "HTTP 401",
+      "actual": "HTTP 401 INVALID_CREDENTIALS"
+    },
+    {
+      "group": "Auth rate limit",
+      "case": "Email login limit attempt 5",
+      "pass": true,
+      "expected": "HTTP 401",
+      "actual": "HTTP 401 INVALID_CREDENTIALS"
+    },
+    {
+      "group": "Auth rate limit",
+      "case": "Email login limit attempt 6",
+      "pass": true,
+      "expected": "HTTP 401",
+      "actual": "HTTP 401 INVALID_CREDENTIALS"
+    },
+    {
+      "group": "Auth rate limit",
+      "case": "Email login limit attempt 7",
+      "pass": true,
+      "expected": "HTTP 401",
+      "actual": "HTTP 401 INVALID_CREDENTIALS"
+    },
+    {
+      "group": "Auth rate limit",
+      "case": "Email login limit attempt 8",
+      "pass": true,
+      "expected": "HTTP 401",
+      "actual": "HTTP 401 INVALID_CREDENTIALS"
+    },
+    {
+      "group": "Auth rate limit",
+      "case": "Email login limit attempt 9",
+      "pass": true,
+      "expected": "HTTP 401",
+      "actual": "HTTP 401 INVALID_CREDENTIALS"
+    },
+    {
+      "group": "Auth rate limit",
+      "case": "Email login limit attempt 10",
+      "pass": true,
+      "expected": "HTTP 401",
+      "actual": "HTTP 401 INVALID_CREDENTIALS"
+    },
+    {
+      "group": "Auth rate limit",
+      "case": "Email login limit attempt 11",
+      "pass": true,
+      "expected": "HTTP 429",
+      "actual": "HTTP 429 LOGIN_RATE_LIMITED"
+    },
+    {
+      "group": "Cleanup",
+      "case": "Fixture cleanup restores row counts and total stock",
+      "pass": true,
+      "expected": "{'users': 8, 'categories': 6, 'foods': 18, 'carts': 5, 'cart_items': 6, 'orders': 8, 'order_items': 16, 'stock_total': 846}",
+      "actual": "{'users': 8, 'categories': 6, 'foods': 18, 'carts': 5, 'cart_items': 6, 'orders': 8, 'order_items': 16, 'stock_total': 846}"
+    }
+  ]
+}

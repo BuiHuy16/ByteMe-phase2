@@ -1,0 +1,80 @@
+{
+  "investigation": "Q2",
+  "levels": [
+    {
+      "food_rows_in_fixture": 100,
+      "total_food_rows": 100,
+      "api_plain": {
+        "http_status": 200,
+        "elapsed_ms": 27.617,
+        "result_count": 10
+      },
+      "api_category": {
+        "http_status": 200,
+        "elapsed_ms": 12.745,
+        "result_count": 10
+      },
+      "plain_plan": {
+        "sql": "SELECT id,category_id,name,description,price,image_url,stock_quantity,status,created_at,updated_at FROM foods WHERE status='ACTIVE' AND (LOWER(name) LIKE '%needle%' OR LOWER(description) LIKE '%needle%') ORDER BY id",
+        "explain_analyze": "-> Filter: ((foods.`status` = 'ACTIVE') and ((lower(foods.`name`) like '%needle%') or (lower(foods.`description`) like '%needle%')))  (cost=10.2 rows=10) (actual time=0.59..1.15 rows=10 loops=1)\n    -> Index scan on foods using PRIMARY  (cost=10.2 rows=100) (actual time=0.0347..0.079 rows=100 loops=1)",
+        "explain_json": "{\n  \"query_block\": {\n    \"select_id\": 1,\n    \"cost_info\": {\n      \"query_cost\": \"10.25\"\n    },\n    \"ordering_operation\": {\n      \"using_filesort\": false,\n      \"table\": {\n        \"table_name\": \"foods\",\n        \"access_type\": \"index\",\n        \"key\": \"PRIMARY\",\n        \"used_key_parts\": [\n          \"id\"\n        ],\n        \"key_length\": \"8\",\n        \"rows_examined_per_scan\": 100,\n        \"rows_produced_per_join\": 10,\n        \"filtered\": \"10.00\",\n        \"cost_info\": {\n          \"read_cost\": \"9.25\",\n          \"eval_cost\": \"1.00\",\n          \"prefix_cost\": \"10.25\",\n          \"data_read_per_join\": \"87K\"\n        },\n        \"used_columns\": [\n          \"id\",\n          \"category_id\",\n          \"name\",\n          \"description\",\n          \"price\",\n          \"image_url\",\n          \"stock_quantity\",\n          \"status\",\n          \"created_at\",\n          \"updated_at\"\n        ],\n        \"attached_condition\": \"((`byteme_g23`.`foods`.`status` = 'ACTIVE') and ((lower(`byteme_g23`.`foods`.`name`) like '%needle%') or (lower(`byteme_g23`.`foods`.`description`) like '%needle%')))\"\n      }\n    }\n  }\n}"
+      },
+      "category_plan": {
+        "sql": "SELECT id,category_id,name,description,price,image_url,stock_quantity,status,created_at,updated_at FROM foods WHERE status='ACTIVE' AND category_id=77 AND (LOWER(name) LIKE '%needle%' OR LOWER(description) LIKE '%needle%') ORDER BY id",
+        "explain_analyze": "-> Filter: ((foods.category_id = 77) and (foods.`status` = 'ACTIVE') and ((lower(foods.`name`) like '%needle%') or (lower(foods.`description`) like '%needle%')))  (cost=10.2 rows=10) (actual time=0.0163..0.106 rows=10 loops=1)\n    -> Index scan on foods using PRIMARY  (cost=10.2 rows=100) (actual time=0.0107..0.0496 rows=100 loops=1)",
+        "explain_json": "{\n  \"query_block\": {\n    \"select_id\": 1,\n    \"cost_info\": {\n      \"query_cost\": \"10.25\"\n    },\n    \"ordering_operation\": {\n      \"using_filesort\": false,\n      \"table\": {\n        \"table_name\": \"foods\",\n        \"access_type\": \"index\",\n        \"possible_keys\": [\n          \"fk_foods_category\"\n        ],\n        \"key\": \"PRIMARY\",\n        \"used_key_parts\": [\n          \"id\"\n        ],\n        \"key_length\": \"8\",\n        \"rows_examined_per_scan\": 100,\n        \"rows_produced_per_join\": 10,\n        \"filtered\": \"10.00\",\n        \"cost_info\": {\n          \"read_cost\": \"9.25\",\n          \"eval_cost\": \"1.00\",\n          \"prefix_cost\": \"10.25\",\n          \"data_read_per_join\": \"87K\"\n        },\n        \"used_columns\": [\n          \"id\",\n          \"category_id\",\n          \"name\",\n          \"description\",\n          \"price\",\n          \"image_url\",\n          \"stock_quantity\",\n          \"status\",\n          \"created_at\",\n          \"updated_at\"\n        ],\n        \"attached_condition\": \"((`byteme_g23`.`foods`.`category_id` = 77) and (`byteme_g23`.`foods`.`status` = 'ACTIVE') and ((lower(`byteme_g23`.`foods`.`name`) like '%needle%') or (lower(`byteme_g23`.`foods`.`description`) like '%needle%')))\"\n      }\n    }\n  }\n}"
+      }
+    },
+    {
+      "food_rows_in_fixture": 1000,
+      "total_food_rows": 1000,
+      "api_plain": {
+        "http_status": 200,
+        "elapsed_ms": 14.509,
+        "result_count": 100
+      },
+      "api_category": {
+        "http_status": 200,
+        "elapsed_ms": 14.319,
+        "result_count": 100
+      },
+      "plain_plan": {
+        "sql": "SELECT id,category_id,name,description,price,image_url,stock_quantity,status,created_at,updated_at FROM foods WHERE status='ACTIVE' AND (LOWER(name) LIKE '%needle%' OR LOWER(description) LIKE '%needle%') ORDER BY id",
+        "explain_analyze": "-> Filter: ((foods.`status` = 'ACTIVE') and ((lower(foods.`name`) like '%needle%') or (lower(foods.`description`) like '%needle%')))  (cost=102 rows=100) (actual time=0.0192..0.777 rows=100 loops=1)\n    -> Index scan on foods using PRIMARY  (cost=102 rows=1000) (actual time=0.0135..0.335 rows=1000 loops=1)",
+        "explain_json": "{\n  \"query_block\": {\n    \"select_id\": 1,\n    \"cost_info\": {\n      \"query_cost\": \"102.25\"\n    },\n    \"ordering_operation\": {\n      \"using_filesort\": false,\n      \"table\": {\n        \"table_name\": \"foods\",\n        \"access_type\": \"index\",\n        \"key\": \"PRIMARY\",\n        \"used_key_parts\": [\n          \"id\"\n        ],\n        \"key_length\": \"8\",\n        \"rows_examined_per_scan\": 1000,\n        \"rows_produced_per_join\": 100,\n        \"filtered\": \"10.00\",\n        \"cost_info\": {\n          \"read_cost\": \"92.25\",\n          \"eval_cost\": \"10.00\",\n          \"prefix_cost\": \"102.25\",\n          \"data_read_per_join\": \"872K\"\n        },\n        \"used_columns\": [\n          \"id\",\n          \"category_id\",\n          \"name\",\n          \"description\",\n          \"price\",\n          \"image_url\",\n          \"stock_quantity\",\n          \"status\",\n          \"created_at\",\n          \"updated_at\"\n        ],\n        \"attached_condition\": \"((`byteme_g23`.`foods`.`status` = 'ACTIVE') and ((lower(`byteme_g23`.`foods`.`name`) like '%needle%') or (lower(`byteme_g23`.`foods`.`description`) like '%needle%')))\"\n      }\n    }\n  }\n}"
+      },
+      "category_plan": {
+        "sql": "SELECT id,category_id,name,description,price,image_url,stock_quantity,status,created_at,updated_at FROM foods WHERE status='ACTIVE' AND category_id=77 AND (LOWER(name) LIKE '%needle%' OR LOWER(description) LIKE '%needle%') ORDER BY id",
+        "explain_analyze": "-> Filter: ((foods.category_id = 77) and (foods.`status` = 'ACTIVE') and ((lower(foods.`name`) like '%needle%') or (lower(foods.`description`) like '%needle%')))  (cost=102 rows=100) (actual time=0.0158..0.813 rows=100 loops=1)\n    -> Index scan on foods using PRIMARY  (cost=102 rows=1000) (actual time=0.0104..0.345 rows=1000 loops=1)",
+        "explain_json": "{\n  \"query_block\": {\n    \"select_id\": 1,\n    \"cost_info\": {\n      \"query_cost\": \"102.25\"\n    },\n    \"ordering_operation\": {\n      \"using_filesort\": false,\n      \"table\": {\n        \"table_name\": \"foods\",\n        \"access_type\": \"index\",\n        \"possible_keys\": [\n          \"fk_foods_category\"\n        ],\n        \"key\": \"PRIMARY\",\n        \"used_key_parts\": [\n          \"id\"\n        ],\n        \"key_length\": \"8\",\n        \"rows_examined_per_scan\": 1000,\n        \"rows_produced_per_join\": 100,\n        \"filtered\": \"10.00\",\n        \"cost_info\": {\n          \"read_cost\": \"92.25\",\n          \"eval_cost\": \"10.00\",\n          \"prefix_cost\": \"102.25\",\n          \"data_read_per_join\": \"872K\"\n        },\n        \"used_columns\": [\n          \"id\",\n          \"category_id\",\n          \"name\",\n          \"description\",\n          \"price\",\n          \"image_url\",\n          \"stock_quantity\",\n          \"status\",\n          \"created_at\",\n          \"updated_at\"\n        ],\n        \"attached_condition\": \"((`byteme_g23`.`foods`.`category_id` = 77) and (`byteme_g23`.`foods`.`status` = 'ACTIVE') and ((lower(`byteme_g23`.`foods`.`name`) like '%needle%') or (lower(`byteme_g23`.`foods`.`description`) like '%needle%')))\"\n      }\n    }\n  }\n}"
+      }
+    },
+    {
+      "food_rows_in_fixture": 5000,
+      "total_food_rows": 5000,
+      "api_plain": {
+        "http_status": 200,
+        "elapsed_ms": 53.742,
+        "result_count": 500
+      },
+      "api_category": {
+        "http_status": 200,
+        "elapsed_ms": 44.223,
+        "result_count": 500
+      },
+      "plain_plan": {
+        "sql": "SELECT id,category_id,name,description,price,image_url,stock_quantity,status,created_at,updated_at FROM foods WHERE status='ACTIVE' AND (LOWER(name) LIKE '%needle%' OR LOWER(description) LIKE '%needle%') ORDER BY id",
+        "explain_analyze": "-> Filter: ((foods.`status` = 'ACTIVE') and ((lower(foods.`name`) like '%needle%') or (lower(foods.`description`) like '%needle%')))  (cost=518 rows=494) (actual time=0.0263..4.29 rows=500 loops=1)\n    -> Index scan on foods using PRIMARY  (cost=518 rows=4941) (actual time=0.0199..1.87 rows=5000 loops=1)",
+        "explain_json": "{\n  \"query_block\": {\n    \"select_id\": 1,\n    \"cost_info\": {\n      \"query_cost\": \"518.35\"\n    },\n    \"ordering_operation\": {\n      \"using_filesort\": false,\n      \"table\": {\n        \"table_name\": \"foods\",\n        \"access_type\": \"index\",\n        \"key\": \"PRIMARY\",\n        \"used_key_parts\": [\n          \"id\"\n        ],\n        \"key_length\": \"8\",\n        \"rows_examined_per_scan\": 4941,\n        \"rows_produced_per_join\": 494,\n        \"filtered\": \"10.00\",\n        \"cost_info\": {\n          \"read_cost\": \"468.94\",\n          \"eval_cost\": \"49.41\",\n          \"prefix_cost\": \"518.35\",\n          \"data_read_per_join\": \"4M\"\n        },\n        \"used_columns\": [\n          \"id\",\n          \"category_id\",\n          \"name\",\n          \"description\",\n          \"price\",\n          \"image_url\",\n          \"stock_quantity\",\n          \"status\",\n          \"created_at\",\n          \"updated_at\"\n        ],\n        \"attached_condition\": \"((`byteme_g23`.`foods`.`status` = 'ACTIVE') and ((lower(`byteme_g23`.`foods`.`name`) like '%needle%') or (lower(`byteme_g23`.`foods`.`description`) like '%needle%')))\"\n      }\n    }\n  }\n}"
+      },
+      "category_plan": {
+        "sql": "SELECT id,category_id,name,description,price,image_url,stock_quantity,status,created_at,updated_at FROM foods WHERE status='ACTIVE' AND category_id=77 AND (LOWER(name) LIKE '%needle%' OR LOWER(description) LIKE '%needle%') ORDER BY id",
+        "explain_analyze": "-> Filter: ((foods.category_id = 77) and (foods.`status` = 'ACTIVE') and ((lower(foods.`name`) like '%needle%') or (lower(foods.`description`) like '%needle%')))  (cost=518 rows=494) (actual time=0.0167..4.32 rows=500 loops=1)\n    -> Index scan on foods using PRIMARY  (cost=518 rows=4941) (actual time=0.0107..1.78 rows=5000 loops=1)",
+        "explain_json": "{\n  \"query_block\": {\n    \"select_id\": 1,\n    \"cost_info\": {\n      \"query_cost\": \"518.35\"\n    },\n    \"ordering_operation\": {\n      \"using_filesort\": false,\n      \"table\": {\n        \"table_name\": \"foods\",\n        \"access_type\": \"index\",\n        \"possible_keys\": [\n          \"fk_foods_category\"\n        ],\n        \"key\": \"PRIMARY\",\n        \"used_key_parts\": [\n          \"id\"\n        ],\n        \"key_length\": \"8\",\n        \"rows_examined_per_scan\": 4941,\n        \"rows_produced_per_join\": 494,\n        \"filtered\": \"10.00\",\n        \"cost_info\": {\n          \"read_cost\": \"468.94\",\n          \"eval_cost\": \"49.41\",\n          \"prefix_cost\": \"518.35\",\n          \"data_read_per_join\": \"4M\"\n        },\n        \"used_columns\": [\n          \"id\",\n          \"category_id\",\n          \"name\",\n          \"description\",\n          \"price\",\n          \"image_url\",\n          \"stock_quantity\",\n          \"status\",\n          \"created_at\",\n          \"updated_at\"\n        ],\n        \"attached_condition\": \"((`byteme_g23`.`foods`.`category_id` = 77) and (`byteme_g23`.`foods`.`status` = 'ACTIVE') and ((lower(`byteme_g23`.`foods`.`name`) like '%needle%') or (lower(`byteme_g23`.`foods`.`description`) like '%needle%')))\"\n      }\n    }\n  }\n}"
+      }
+    }
+  ],
+  "show_index": "foods\t0\tPRIMARY\t1\tid\tA\t4941\tNULL\tNULL\t\tBTREE\t\t\tYES\tNULL\nfoods\t0\tuq_foods_name\t1\tname\tA\t4941\tNULL\tNULL\t\tBTREE\t\t\tYES\tNULL\nfoods\t1\tfk_foods_category\t1\tcategory_id\tA\t1\tNULL\tNULL\t\tBTREE\t\t\tYES\tNULL",
+  "classification": "INCONCLUSIVE",
+  "finding": "Execution-plan/index facts are diagnostic; no representative workload or official benchmark threshold was defined."
+}

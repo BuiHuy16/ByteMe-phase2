@@ -1,0 +1,8 @@
+﻿users	8
+categories	6
+foods	18
+carts	5
+cart_items	6
+orders	8
+order_items	16
+stock_total	846

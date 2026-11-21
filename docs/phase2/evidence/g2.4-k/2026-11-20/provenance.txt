@@ -1,0 +1,7 @@
+﻿captured_at_utc=2026-11-20T07:05:35.7862854Z
+repository_head=24b3ace314365bc2b727928fae2243c605b4c87c
+baseline_sha=510f6415b6af535ceec77213f0b0c7d5082123f7
+baseline_is_ancestor_exit=0
+baseline_to_head_executable_diff_exit=0
+worktree_executable_diff_exit=0
+historical_notebook_status=

@@ -1,0 +1,5 @@
+﻿2026-11-19T18:37:14.8830807Z	1	curl: (52) Empty reply from server |000
+2026-11-19T18:37:16.9065137Z	2	curl: (52) Empty reply from server |000
+2026-11-19T18:37:18.9311193Z	3	curl: (52) Empty reply from server |000
+2026-11-19T18:37:20.9551730Z	4	curl: (52) Empty reply from server |000
+2026-11-19T18:37:23.1695384Z	5	{"status":"UP"}|200

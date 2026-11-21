@@ -1,0 +1,23 @@
+﻿run=api_test_4d8655b48e6e
+baseUrl=http://127.0.0.1:18080
+passed=196
+failed=0
+cleanupVerified=True
+fatal=
+group=Auth checks=32 passed=32 failed=0
+group=Auth rate limit checks=11 passed=11 failed=0
+group=Cart checks=27 passed=27 failed=0
+group=Checkout failures checks=12 passed=12 failed=0
+group=Cleanup checks=1 passed=1 failed=0
+group=Food checks=45 passed=45 failed=0
+group=Infrastructure checks=3 passed=3 failed=0
+group=Order checks=65 passed=65 failed=0
+http_status=200 count=42
+http_status=201 count=15
+http_status=204 count=1
+http_status=400 count=35
+http_status=401 count=17
+http_status=403 count=16
+http_status=404 count=8
+http_status=409 count=17
+http_status=429 count=1

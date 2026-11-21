@@ -1,0 +1,11 @@
+{
+  "zip": "D:\\projects\\main projects\\ByteMe-phase2\\kaggle\\byteme-g24k-proc-io-20261121.zip",
+  "zip_sha256": "3b737c8d1d16ad79b4f60d2d69414d2b7cf34f61727b6700dc66d83bc15c2831",
+  "bytes": 60010420,
+  "entries": 20,
+  "jar_sha256": "eed3d70045a6884f36f1fc398ccc1de6f6fc8c661f170df08905c0bf76195311",
+  "provenance": "PASS",
+  "manifest_extracted_checksums": "PASS",
+  "local_linux_smoke": "BLOCKED: Java 21.0.13, MySQL 8.4.13, k6 0.55.2 unavailable",
+  "kaggle_smoke": "PENDING"
+}
