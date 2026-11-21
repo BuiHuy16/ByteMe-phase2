@@ -39,15 +39,19 @@ Notebook thu thập CPU model, core count, RAM quota chính xác, OS/kernel và 
 
 Initial fixture validation yêu cầu exact initial order/item counts và cart rỗng. Post-workload validation cho phép các canceled order và empty cart row hợp lệ, nhưng vẫn yêu cầu read fixtures bất biến, chính xác user/category/food cardinality, khôi phục shared-stock, quantity dương/stock không âm và không có orphan order/cart items. Sau đó, reset phải vượt qua initial rules và tái tạo đúng original logical checksum.
 
+Initial prepare phát hành actor token một lần; reset W1, reset W2 và final reset tái tạo đúng fixture nhưng tái sử dụng token ban đầu trong cùng backend lifecycle. Mỗi reset kiểm tra actor ID/role và xác minh trực tiếp mọi token qua endpoint được bảo vệ, đồng thời manifest ghi số login/reused token/live validation. Authentication thật bị 401 hoặc role/status sai làm run fail; runner không retry, sleep hay fallback sang login. Quy trình này là một phần của harness source hash và phải giống nhau cho BEFORE/AFTER.
+
 Exit code k6 bằng 0 là chưa đủ: runner parse W1/W2 summaries và assert chính xác smoke check/request counts, không có HTTP/workload/unexpected/server errors, raw output không rỗng và có resource samples cho backend, MySQL cùng driver. Các W3 baseline violation và HTTP 500 đã ghi nhận vẫn là defect evidence; thiếu rounds/responses/final state là harness failure.
 
-Profile `standard` vẫn gồm 5.000 read foods, 500 orders, 20 write actors và bốn contention actors. G2.4-K chỉ chạy `smoke`; thực thi standard thuộc G2.5.
+Profile `standard` vẫn gồm 5.000 read foods, 500 orders, 20 write actors và bốn contention actors. G2.4-K chỉ chạy `smoke`; G2.5 dùng notebook riêng `kaggle/script/byteme_phase2_g25_official.ipynb` và entrypoint `run_official()` để thực thi đúng một standard run trong mỗi Kaggle session.
 
 ## Nhóm so sánh before/after
 
-Chạy `compare_manifests.py` trên các file `manifest/run-manifest.json` thu được. Tool từ chối cgroup CPU quota, effective cpuset, memory limit, resolved limits, kernel/runtime-image identity, CPU model, visible cores/RAM, OS image, phiên bản Java/MySQL/k6, binary hashes, libaio package/library hashes, configuration/workload hashes hay dataset checksum bị thiếu hoặc khác nhau. Application SHA được báo cáo như treatment pair và được kỳ vọng khác nhau giữa before/after. Tuyệt đối không gộp các session chỉ vì cả hai đều mang nhãn “Kaggle CPU”.
+Chạy `compare_manifests.py` trên các file `manifest/run-manifest.json` thu được. Tool từ chối cgroup CPU quota, effective cpuset, memory limit, resolved limits, kernel/runtime-image identity, CPU model, visible cores/RAM, OS image, phiên bản Java/MySQL/k6, binary hashes, libaio package/library hashes, configuration/workload hashes hay dataset checksum bị thiếu hoặc khác nhau. Riêng `hardware.memory_total_bytes` được phép chênh tối đa 1 MiB: Linux host-visible `MemTotal` có thể dao động vài page theo kernel/host accounting, trong khi benchmark bị giới hạn bởi cgroup; vì vậy memory cgroup limit và resolved limit vẫn phải khớp chính xác. Phần đường dẫn run-specific trong output phiên bản MySQL được bỏ qua khi so sánh; chuỗi phiên bản còn lại và SHA-256 của `mysqld` vẫn phải khớp. Application SHA được báo cáo như treatment pair và được kỳ vọng khác nhau giữa before/after. Tuyệt đối không gộp các session chỉ vì cả hai đều mang nhãn “Kaggle CPU”.
 
-Các parameter đo chính thức vẫn là warm-up 60 giây, W1/W2 180 giây, cooldown 30 giây, W1 arrival rates 10/5/5 RPS, W2 10 VUs, W3 15 rounds, tối thiểu ba và mục tiêu năm independent run. Notebook smoke chỉ sử dụng smoke profile và hai W3 rounds.
+Các parameter đo chính thức là warm-up read-only 60 giây ở 2/1/1 RPS (food list/search/order list), W1/W2 180 giây, cooldown 30 giây, W1 arrival rates 10/5/5 RPS, W2 10 VUs, W3 15 rounds, tối thiểu ba và mục tiêu năm independent run. Warm-up có raw/summary/telemetry riêng và không được đưa vào metric chính thức. Notebook smoke chỉ sử dụng smoke profile và hai W3 rounds.
+
+Official runner phân biệt tính hợp lệ của harness với kết quả ứng dụng. HTTP/performance errors và W3 invariant violations được giữ làm baseline outcome; thiếu phase, sai load/duration, reset checksum, telemetry, cleanup, secret scan hoặc evidence integrity làm run không hợp lệ. `official_benchmark=true` chỉ được ghi sau khi protocol, cleanup và validation hoàn tất.
 
 ## Các giới hạn đã biết
 

@@ -6,7 +6,7 @@ Thư mục này chuẩn bị protocol before/after dùng chung. Thư mục **kh�
 
 Nền tảng chính cho benchmark before/after chính thức theo yêu cầu của giảng viên là Kaggle CPU thông qua adapter user-space G2.4-K. Local Windows + Docker Desktop vẫn là nền tảng xác minh development/integration và giữ nguyên evidence chuẩn bị G2.4 đã PASS. Tuyệt đối không so sánh trực tiếp kết quả Local với Kaggle.
 
-Các Kaggle session chỉ có thể so sánh khi CPU model, core/RAM quota, OS image, portable toolchain binaries, locked offline dependencies, configuration, workload và dataset locks đã thu thập đều khớp nhau. Kaggle runtime validation vẫn PENDING cho đến khi một session thực tế tạo được evidence bundle PASS.
+Các Kaggle session chỉ có thể so sánh khi CPU model, core/RAM quota, OS image, portable toolchain binaries, locked offline dependencies, configuration, workload và dataset locks đã thu thập đều khớp nhau. `MemTotal` host-visible được phép lệch tối đa 1 MiB do khác biệt nhỏ trong kernel/host memory accounting; memory cgroup limit và resolved limit vẫn phải khớp chính xác. Kaggle runtime validation vẫn PENDING cho đến khi một session thực tế tạo được evidence bundle PASS.
 
 ## Các file
 
@@ -39,12 +39,16 @@ Các Kaggle session chỉ có thể so sánh khi CPU model, core/RAM quota, OS i
 
 Users, categories, foods, orders và order items được sinh lại từ profile. Logical checksums chủ động loại trừ password hashes, JWTs và generated timestamps. Actor tokens tạm thời nằm trong `.local/phase2-benchmark/` và tuyệt đối không được lưu vào archive.
 
+Trong một run, initial prepare đăng nhập đúng một lần cho mỗi actor. Các reset tiếp theo vẫn đăng ký lại toàn bộ user/fixture và kiểm tra logical checksum, nhưng tái sử dụng token ban đầu sau khi xác minh ID/role và gọi endpoint được bảo vệ cho từng token. Cách này tránh để reset phụ thuộc vào IP login quota 100 request/900 giây; token bị hết hạn, sai role hoặc bị từ chối authentication làm harness fail ngay, không fallback sang login và không retry/sleep. Cùng implementation và evidence fields `preparation_authentication` phải được dùng cho BEFORE và AFTER.
+
 ## Protocol G2.5 dùng chung (không chạy trong G2.4/G2.4-K)
 
 1. Tạo run ID mới, duy nhất và một runtime cô lập: user-space MySQL datadir trên Kaggle hoặc Compose project/volume chuyên dụng cho xác minh Local.
 2. Build source SHA đã chọn và ghi lại JAR hash; khi dùng Local Docker, ghi thêm image/base-image IDs.
 3. Chuẩn bị `standard`; lưu cardinality và logical checksums.
-4. Kiểm tra readiness, sau đó warm-up 60 giây với rate thấp. Loại bỏ các metric warm-up.
+4. Kiểm tra readiness, sau đó warm-up read-only 60 giây bằng food list 2 RPS, food search
+   1 RPS và order list 1 RPS (tổng 4 RPS). Lưu raw/summary/telemetry dưới artifact `warmup/`
+   riêng và loại bỏ toàn bộ metric warm-up khỏi percentile/throughput chính thức.
 5. Chạy W1 trong 180 giây bằng constant arrival rates: food list 10 RPS, search 5 RPS, order list 5 RPS. Khóa page size (đề xuất 20; thêm một diagnostic run riêng cho 50).
 6. Reset và xác minh dataset.
 7. Chạy W2 trong 180 giây với 10 constant VUs, không vượt quá 20 actor chuyên dụng.
