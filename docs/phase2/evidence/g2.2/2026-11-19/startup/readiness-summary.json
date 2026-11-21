@@ -1,0 +1,25 @@
+﻿{
+    "actuatorStatus":  200,
+    "actuatorBody":  [
+                         123,
+                         34,
+                         115,
+                         116,
+                         97,
+                         116,
+                         117,
+                         115,
+                         34,
+                         58,
+                         34,
+                         85,
+                         80,
+                         34,
+                         125
+                     ],
+    "foodsStatus":  200,
+    "foodCount":  17,
+    "firstFoodId":  1,
+    "firstFoodName":  "Phá» bÃ² tÃ¡i",
+    "rsaCheckExit":  0
+}

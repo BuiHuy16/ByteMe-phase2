@@ -1,0 +1,801 @@
+{
+  "scenario": "C2",
+  "method_limitations": [
+    "Barrier synchronizes client worker release, not an in-transaction database barrier.",
+    "HTTP timestamps prove near-simultaneous client attempts but do not prove transaction overlap.",
+    "No application synchronization hook or source/config change was used."
+  ],
+  "rounds": [
+    {
+      "round": 1,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 2
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:57:54.657175+00:00",
+          "ended_at_utc": "2026-11-19T17:57:54.685024+00:00",
+          "elapsed_ms": 27.44,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONCURRENT_UPDATE",
+            "status": 409,
+            "message": "Dữ liệu đang được cập nhật đồng thời, vui lòng thử lại."
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:57:54.657175+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:57:54.657175+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:57:54.657175+00:00",
+          "ended_at_utc": "2026-11-19T17:57:54.689794+00:00",
+          "elapsed_ms": 32.177,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 31,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:57:54.657175+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:57:54.657175+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "violations": []
+    },
+    {
+      "round": 2,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 2
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:57:56.281764+00:00",
+          "ended_at_utc": "2026-11-19T17:57:56.317500+00:00",
+          "elapsed_ms": 35.844,
+          "http_status": 400,
+          "error": null,
+          "body": {
+            "code": "EMPTY_CART",
+            "status": 400,
+            "message": "Giỏ hàng đang rỗng."
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:57:56.281764+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:57:56.281764+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:57:56.281764+00:00",
+          "ended_at_utc": "2026-11-19T17:57:56.313990+00:00",
+          "elapsed_ms": 31.899,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 32,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:57:56.281764+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:57:56.281764+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "violations": []
+    },
+    {
+      "round": 3,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 2
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:57:57.872895+00:00",
+          "ended_at_utc": "2026-11-19T17:57:57.902173+00:00",
+          "elapsed_ms": 28.856,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 33,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:57:57.872895+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:57:57.872895+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:57:57.872895+00:00",
+          "ended_at_utc": "2026-11-19T17:57:57.905404+00:00",
+          "elapsed_ms": 32.055,
+          "http_status": 400,
+          "error": null,
+          "body": {
+            "code": "EMPTY_CART",
+            "status": 400,
+            "message": "Giỏ hàng đang rỗng."
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:57:57.872895+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:57:57.872895+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "violations": []
+    },
+    {
+      "round": 4,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 2
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:57:59.472220+00:00",
+          "ended_at_utc": "2026-11-19T17:57:59.503818+00:00",
+          "elapsed_ms": 31.654,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 34,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:57:59.471219+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:57:59.472220+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:57:59.472220+00:00",
+          "ended_at_utc": "2026-11-19T17:57:59.500865+00:00",
+          "elapsed_ms": 28.195,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONCURRENT_UPDATE",
+            "status": 409,
+            "message": "Dữ liệu đang được cập nhật đồng thời, vui lòng thử lại."
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:57:59.472220+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:57:59.472220+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "violations": []
+    },
+    {
+      "round": 5,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 2
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:01.440346+00:00",
+          "ended_at_utc": "2026-11-19T17:58:01.464965+00:00",
+          "elapsed_ms": 24.657,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONCURRENT_UPDATE",
+            "status": 409,
+            "message": "Dữ liệu đang được cập nhật đồng thời, vui lòng thử lại."
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:01.439815+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:01.440346+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:01.440346+00:00",
+          "ended_at_utc": "2026-11-19T17:58:01.468835+00:00",
+          "elapsed_ms": 28.558,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 37,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:01.440346+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:01.440346+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "violations": []
+    },
+    {
+      "round": 6,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 2
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:03.229235+00:00",
+          "ended_at_utc": "2026-11-19T17:58:03.256790+00:00",
+          "elapsed_ms": 26.752,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONCURRENT_UPDATE",
+            "status": 409,
+            "message": "Dữ liệu đang được cập nhật đồng thời, vui lòng thử lại."
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:03.229235+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:03.229235+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:03.229235+00:00",
+          "ended_at_utc": "2026-11-19T17:58:03.260058+00:00",
+          "elapsed_ms": 30.203,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 38,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:03.229235+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:03.229235+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "violations": []
+    },
+    {
+      "round": 7,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 2
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:05.129903+00:00",
+          "ended_at_utc": "2026-11-19T17:58:05.167020+00:00",
+          "elapsed_ms": 37.532,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 40,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:05.128919+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:05.129903+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:05.128919+00:00",
+          "ended_at_utc": "2026-11-19T17:58:05.187129+00:00",
+          "elapsed_ms": 57.489,
+          "http_status": 500,
+          "error": null,
+          "body": {
+            "code": "INTERNAL_ERROR",
+            "status": 500,
+            "message": "Đã xảy ra lỗi hệ thống."
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:05.128919+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:05.128919+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "violations": []
+    },
+    {
+      "round": 8,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 2
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:06.825620+00:00",
+          "ended_at_utc": "2026-11-19T17:58:06.869735+00:00",
+          "elapsed_ms": 41.11,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONCURRENT_UPDATE",
+            "status": 409,
+            "message": "Dữ liệu đang được cập nhật đồng thời, vui lòng thử lại."
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:06.824879+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:06.825620+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:06.825620+00:00",
+          "ended_at_utc": "2026-11-19T17:58:06.877880+00:00",
+          "elapsed_ms": 50.617,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 42,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:06.825620+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:06.825620+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "violations": []
+    },
+    {
+      "round": 9,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 2
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:08.988240+00:00",
+          "ended_at_utc": "2026-11-19T17:58:09.037143+00:00",
+          "elapsed_ms": 48.462,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONCURRENT_UPDATE",
+            "status": 409,
+            "message": "Dữ liệu đang được cập nhật đồng thời, vui lòng thử lại."
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:08.984849+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:08.988240+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:08.986218+00:00",
+          "ended_at_utc": "2026-11-19T17:58:09.043110+00:00",
+          "elapsed_ms": 56.282,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 45,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:08.986218+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:08.986218+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "violations": []
+    },
+    {
+      "round": 10,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 2
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:10.770268+00:00",
+          "ended_at_utc": "2026-11-19T17:58:10.795838+00:00",
+          "elapsed_ms": 25.402,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 47,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:10.769173+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:10.770268+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:10.770268+00:00",
+          "ended_at_utc": "2026-11-19T17:58:10.792984+00:00",
+          "elapsed_ms": 22.146,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONCURRENT_UPDATE",
+            "status": 409,
+            "message": "Dữ liệu đang được cập nhật đồng thời, vui lòng thử lại."
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:10.770268+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:10.770268+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "violations": []
+    },
+    {
+      "round": 11,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 2
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:12.640458+00:00",
+          "ended_at_utc": "2026-11-19T17:58:12.673500+00:00",
+          "elapsed_ms": 32.913,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 48,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:12.639933+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:12.640458+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:12.639933+00:00",
+          "ended_at_utc": "2026-11-19T17:58:12.670196+00:00",
+          "elapsed_ms": 29.947,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONCURRENT_UPDATE",
+            "status": 409,
+            "message": "Dữ liệu đang được cập nhật đồng thời, vui lòng thử lại."
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:12.639933+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:12.639933+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "violations": []
+    },
+    {
+      "round": 12,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 2
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:14.487917+00:00",
+          "ended_at_utc": "2026-11-19T17:58:14.519285+00:00",
+          "elapsed_ms": 30.977,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 50,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:14.484826+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:14.487917+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:14.486878+00:00",
+          "ended_at_utc": "2026-11-19T17:58:14.514933+00:00",
+          "elapsed_ms": 27.701,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONCURRENT_UPDATE",
+            "status": 409,
+            "message": "Dữ liệu đang được cập nhật đồng thời, vui lòng thử lại."
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:14.485895+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:14.486878+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "violations": []
+    },
+    {
+      "round": 13,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 2
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:16.427846+00:00",
+          "ended_at_utc": "2026-11-19T17:58:16.460142+00:00",
+          "elapsed_ms": 31.682,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 52,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:16.427846+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:16.427846+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:16.428849+00:00",
+          "ended_at_utc": "2026-11-19T17:58:16.469661+00:00",
+          "elapsed_ms": 41.354,
+          "http_status": 500,
+          "error": null,
+          "body": {
+            "code": "INTERNAL_ERROR",
+            "status": 500,
+            "message": "Đã xảy ra lỗi hệ thống."
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:16.427846+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:16.427846+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "violations": []
+    },
+    {
+      "round": 14,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 2
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:18.339485+00:00",
+          "ended_at_utc": "2026-11-19T17:58:18.398792+00:00",
+          "elapsed_ms": 59.008,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 55,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:18.339485+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:18.339485+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:18.340137+00:00",
+          "ended_at_utc": "2026-11-19T17:58:18.365273+00:00",
+          "elapsed_ms": 25.187,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONCURRENT_UPDATE",
+            "status": 409,
+            "message": "Dữ liệu đang được cập nhật đồng thời, vui lòng thử lại."
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:18.339485+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:18.340137+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "violations": []
+    },
+    {
+      "round": 15,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 2
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:20.361161+00:00",
+          "ended_at_utc": "2026-11-19T17:58:20.387332+00:00",
+          "elapsed_ms": 25.565,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONCURRENT_UPDATE",
+            "status": 409,
+            "message": "Dữ liệu đang được cập nhật đồng thời, vui lòng thử lại."
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:20.359311+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:20.361161+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:20.360583+00:00",
+          "ended_at_utc": "2026-11-19T17:58:20.393420+00:00",
+          "elapsed_ms": 32.519,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 57,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:20.360583+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:20.360583+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "violations": []
+    }
+  ],
+  "summary": {
+    "scenario": "C2",
+    "classification": "INCONCLUSIVE",
+    "rounds_executed": 15,
+    "invariant_violation_rounds": [],
+    "server_or_transport_error_rounds": [
+      7,
+      13
+    ],
+    "notable_observation_rounds": []
+  }
+}

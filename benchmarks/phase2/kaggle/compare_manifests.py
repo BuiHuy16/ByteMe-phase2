@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import re
 
 
 COMPARISON_FIELDS = (
@@ -31,6 +32,11 @@ COMPARISON_FIELDS = (
     "toolchain.java_executable_sha256",
     "toolchain.mysqld_executable_sha256",
     "toolchain.k6_executable_sha256",
+    "toolchain.libaio_package_version",
+    "toolchain.libaio_package_sha256",
+    "toolchain.libaio_library_sha256",
+    "toolchain.libaio_library_soname",
+    "toolchain.libaio_compatibility_soname",
     "locks.configuration_sha256",
     "locks.workload_source_sha256",
     "locks.dataset_sha256",
@@ -43,12 +49,26 @@ PROVENANCE_FIELDS = (
     "source.application_jar_sha256",
 )
 
+# Linux MemTotal can differ by a few pages because of host/kernel memory
+# accounting. The effective cgroup memory limit remains an exact comparison
+# field, so this tolerance applies only to the host-visible total.
+MEMORY_TOTAL_TOLERANCE_BYTES = 1024 * 1024
+
 
 def value(document: dict, path: str):
     current = document
     for part in path.split("."):
         current = current[part]
     return current
+
+
+def comparison_value(field: str, item):
+    """Strip run-specific executable paths from MySQL's version command output."""
+    if field == "toolchain.mysql_version" and isinstance(item, str):
+        match = re.search(r"\sVer\s+(.+)$", item)
+        if match:
+            return match.group(1)
+    return item
 
 
 def compare_documents(documents: list[dict]) -> dict:
@@ -70,7 +90,21 @@ def compare_documents(documents: list[dict]) -> dict:
                 expected, actual = value(reference, field), value(document, field)
             except (KeyError, TypeError):
                 continue
-            if actual != expected:
+            if field == "hardware.memory_total_bytes":
+                if (type(expected) is not int or type(actual) is not int):
+                    mismatches.append({"manifest": index, "field": field,
+                                       "reason": "invalid_value", "reference": expected,
+                                       "actual": actual})
+                    continue
+                difference = abs(actual - expected)
+                if difference > MEMORY_TOTAL_TOLERANCE_BYTES:
+                    mismatches.append({"manifest": index, "field": field,
+                                       "reason": "tolerance_exceeded", "reference": expected,
+                                       "actual": actual,
+                                       "absolute_difference_bytes": difference,
+                                       "tolerance_bytes": MEMORY_TOTAL_TOLERANCE_BYTES})
+                continue
+            if comparison_value(field, actual) != comparison_value(field, expected):
                 mismatches.append({"manifest": index, "field": field,
                                    "reference": expected, "actual": actual})
     return {"comparable": not mismatches,
@@ -87,7 +121,7 @@ def main() -> int:
     documents = [json.loads(pathlib.Path(item).read_text(encoding="utf-8-sig")) for item in args.manifests]
     result = {"manifests": args.manifests, **compare_documents(documents)}
     print(json.dumps(result, indent=2, ensure_ascii=False))
-    return 0 if not mismatches else 2
+    return 0 if result["comparable"] else 2
 
 
 if __name__ == "__main__":

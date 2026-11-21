@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: org.example.AuthWebAndServiceTest
+-------------------------------------------------------------------------------
+Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.631 s -- in org.example.AuthWebAndServiceTest

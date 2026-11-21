@@ -92,7 +92,8 @@ def reset_database(args) -> None:
     """)
 
 
-def register(args, label: str, phone_index: int, password: str, role: str = "CUSTOMER") -> dict:
+def register(args, label: str, phone_index: int, password: str, role: str = "CUSTOMER",
+             reusable: dict | None = None) -> dict:
     email = f"bench.{label}@example.test"
     phone = f"09{phone_index:08d}"
     result = api(args.base_url, "POST", "/api/auth/register", {
@@ -104,16 +105,77 @@ def register(args, label: str, phone_index: int, password: str, role: str = "CUS
     user_id = int(mysql(args, f"SELECT id FROM users WHERE email='{email}';").splitlines()[-1])
     if role != "CUSTOMER":
         mysql(args, f"UPDATE users SET role='{role}' WHERE id={user_id};")
+    if reusable is not None:
+        expected = {"id": user_id, "label": label, "role": role}
+        actual = {key: reusable.get(key) for key in expected}
+        if actual != expected or not isinstance(reusable.get("token"), str) or not reusable["token"]:
+            raise RuntimeError(f"reusable actor identity mismatch for {label}: {actual} != {expected}")
+        return {**expected, "token": reusable["token"]}
     login = api(args.base_url, "POST", "/api/auth/token", {"email": email, "password": password})
     if login["status"] != 200:
         raise RuntimeError(f"login {label}: HTTP {login['status']} {login['body']}")
     return {"id": user_id, "label": label, "role": role, "token": login["body"]["accessToken"]}
 
 
-def prepare(args, profile: dict) -> None:
+def actor_specs(profile: dict) -> list[tuple[str, int, str]]:
+    return ([('admin', 1, 'ADMIN'), ('read', 2, 'CUSTOMER')]
+            + [(f"write{i:02d}", 100 + i, "CUSTOMER") for i in range(profile["write_actors"])]
+            + [(label, 500 + i, "CUSTOMER") for i, label in enumerate(
+                ("c1a", "c1b", "c2", "c4")[:profile["contention_actors"]])])
+
+
+def flatten_actors(document: dict) -> list[dict]:
+    return ([document.get("admin", {}), document.get("read", {})]
+            + list(document.get("write", [])) + list(document.get("contention", [])))
+
+
+def load_reusable_actors(path: pathlib.Path, profile_name: str, profile: dict) -> dict[str, dict] | None:
+    if not path.is_file():
+        return None
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"existing runtime actor fixture is unreadable: {path}") from exc
+    if document.get("profile") != profile_name:
+        raise RuntimeError(f"existing runtime actor profile mismatch: {document.get('profile')} != {profile_name}")
+    actors = flatten_actors(document)
+    expected = {label: role for label, _, role in actor_specs(profile)}
+    actual: dict[str, dict] = {}
+    for actor in actors:
+        label = actor.get("label")
+        if not isinstance(label, str) or label in actual:
+            raise RuntimeError(f"existing runtime actor fixture has invalid/duplicate label: {label!r}")
+        actual[label] = actor
+    if set(actual) != set(expected):
+        raise RuntimeError(f"existing runtime actor labels mismatch: {sorted(actual)} != {sorted(expected)}")
+    for label, role in expected.items():
+        actor = actual[label]
+        if actor.get("role") != role or not isinstance(actor.get("id"), int) or actor["id"] <= 0:
+            raise RuntimeError(f"existing runtime actor identity invalid: {label}")
+        if not isinstance(actor.get("token"), str) or not actor["token"]:
+            raise RuntimeError(f"existing runtime actor token missing: {label}")
+    return actual
+
+
+def validate_reused_tokens(args, actors: list[dict]) -> None:
+    for actor in actors:
+        if actor["role"] == "ADMIN":
+            path, expected_status = "/api/orders?page=0&size=1", 403
+        else:
+            path, expected_status = "/api/cart", 200
+        result = api(args.base_url, "GET", path, token=actor["token"])
+        if result["status"] != expected_status:
+            raise RuntimeError(
+                f"reused token validation {actor['label']}: HTTP {result['status']} "
+                f"expected {expected_status} {result['body']}")
+
+
+def prepare(args, profile: dict) -> dict:
     password = os.environ.get("BENCH_ACTOR_PASSWORD")
     if not password:
         raise SystemExit("BENCH_ACTOR_PASSWORD is required and is never written to evidence")
+    runtime_path = pathlib.Path(args.runtime_actors)
+    reusable = load_reusable_actors(runtime_path, args.profile, profile)
     reset_database(args)
 
     category_rows = [
@@ -132,12 +194,14 @@ def prepare(args, profile: dict) -> None:
         )
     batches(args, food_rows)
 
-    admin = register(args, "admin", 1, password, "ADMIN")
-    read_actor = register(args, "read", 2, password)
-    write_actors = [register(args, f"write{i:02d}", 100 + i, password)
+    admin = register(args, "admin", 1, password, "ADMIN", reusable.get("admin") if reusable else None)
+    read_actor = register(args, "read", 2, password, reusable=reusable.get("read") if reusable else None)
+    write_actors = [register(args, f"write{i:02d}", 100 + i, password,
+                             reusable=reusable.get(f"write{i:02d}") if reusable else None)
                     for i in range(profile["write_actors"])]
     contention_labels = ("c1a", "c1b", "c2", "c4")
-    contention = [register(args, label, 500 + i, password)
+    contention = [register(args, label, 500 + i, password,
+                           reusable=reusable.get(label) if reusable else None)
                   for i, label in enumerate(contention_labels[:profile["contention_actors"]])]
 
     next_food = profile["read_foods"] + 1
@@ -183,9 +247,19 @@ def prepare(args, profile: dict) -> None:
                         "description": "contention fixture", "price": 15000,
                         "initial_stock": profile["shared_stock"], "status": "ACTIVE"},
     }
-    runtime_path = pathlib.Path(args.runtime_actors)
+    all_actors = flatten_actors(actors)
+    if reusable:
+        validate_reused_tokens(args, all_actors)
     runtime_path.parent.mkdir(parents=True, exist_ok=True)
     runtime_path.write_text(json.dumps(actors, ensure_ascii=False, indent=2), encoding="utf-8")
+    actor_count = len(all_actors)
+    return {
+        "token_strategy": "initial_login" if reusable is None else "reuse_initial_tokens",
+        "actor_count": actor_count,
+        "login_requests": actor_count if reusable is None else 0,
+        "reused_tokens": 0 if reusable is None else actor_count,
+        "live_token_validations": 0 if reusable is None else actor_count,
+    }
 
 
 def table_digest(args, table: str, columns: str) -> str:
@@ -308,10 +382,11 @@ def main() -> int:
         env_lines = pathlib.Path(args.env_file).read_text(encoding="utf-8").splitlines()
         db_name = next(line.split("=", 1)[1] for line in env_lines if line.startswith("DB_NAME="))
     require_isolated(args.project, db_name)
-    if args.mode == "prepare":
-        prepare(args, profile)
+    preparation = prepare(args, profile) if args.mode == "prepare" else None
     validation_phase = "initial" if args.mode == "prepare" else "post_workload"
     manifest = build_manifest(args, profile, validation_phase)
+    if preparation is not None:
+        manifest["preparation_authentication"] = preparation
     out = pathlib.Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")

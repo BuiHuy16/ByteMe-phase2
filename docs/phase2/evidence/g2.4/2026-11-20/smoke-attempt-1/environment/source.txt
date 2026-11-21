@@ -1,0 +1,8 @@
+﻿captured_at_utc=2026-11-19T18:24:44.8692137Z
+git_sha=510f6415b6af535ceec77213f0b0c7d5082123f7
+git_branch=main
+git_status_begin
+?? benchmarks/
+?? docs/phase2/
+git_status_end
+executable_diff_exit=0

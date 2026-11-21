@@ -1,0 +1,68 @@
+{
+  "workload": "W1-smoke",
+  "platform": "local-docker",
+  "configuration_sha256": "d5841d80e0776b4eb6a07a26ed0095dce6940e04e2d12ebcaa52c64b43c99e60",
+  "dataset_sha256": "1563f0bc27189c805d600347a497830593289542cfc3543d3b73d29117961e50",
+  "valid_runs": 1,
+  "rejected_runs": [],
+  "per_run": [
+    {
+      "path": "docs\\phase2\\evidence\\g2.4\\2026-11-20\\smoke-attempt-4\\w1\\summary.json",
+      "values": {
+        "latency_p50_ms": 52.357348,
+        "latency_p95_ms": 162.90191475,
+        "latency_p99_ms": 189.38412935000002,
+        "request_rate_rps": 22.827950995191944,
+        "http_failure_rate": 0.0
+      }
+    }
+  ],
+  "aggregate": {
+    "latency_p50_ms": {
+      "runs": 1,
+      "median": 52.357348,
+      "mean": 52.357348,
+      "min": 52.357348,
+      "max": 52.357348,
+      "population_stddev": 0.0,
+      "coefficient_of_variation": 0.0
+    },
+    "latency_p95_ms": {
+      "runs": 1,
+      "median": 162.90191475,
+      "mean": 162.90191475,
+      "min": 162.90191475,
+      "max": 162.90191475,
+      "population_stddev": 0.0,
+      "coefficient_of_variation": 0.0
+    },
+    "latency_p99_ms": {
+      "runs": 1,
+      "median": 189.38412935000002,
+      "mean": 189.38412935000002,
+      "min": 189.38412935000002,
+      "max": 189.38412935000002,
+      "population_stddev": 0.0,
+      "coefficient_of_variation": 0.0
+    },
+    "request_rate_rps": {
+      "runs": 1,
+      "median": 22.827950995191944,
+      "mean": 22.827950995191944,
+      "min": 22.827950995191944,
+      "max": 22.827950995191944,
+      "population_stddev": 0.0,
+      "coefficient_of_variation": 0.0
+    },
+    "http_failure_rate": {
+      "runs": 1,
+      "median": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "population_stddev": 0.0,
+      "coefficient_of_variation": null
+    }
+  },
+  "note": "The caller must supply summaries whose workload, dataset and configuration match these locked identities."
+}

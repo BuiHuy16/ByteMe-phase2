@@ -1,0 +1,41 @@
+Captured: 2026-11-19 (Asia/Saigon, UTC+07:00)
+Repository: D:/projects/main projects/ByteMe-phase2
+Branch: main
+HEAD: 510f6415b6af535ceec77213f0b0c7d5082123f7
+HEAD subject: docs: viết lại README súc tích, loại bỏ văn phong AI slop
+HEAD parent: 5a7bf4004abad672b92b7be1e3d83e8d19e81470
+Repository shallow: false
+
+Configured remotes:
+origin https://github.com/BuiHuy16/ByteMe-phase2.git (fetch)
+origin https://github.com/BuiHuy16/ByteMe-phase2.git (push)
+
+No upstream remote/ref is configured. Original upstream identity is PENDING.
+
+Relevant refs:
+refs/heads/main            510f6415b6af535ceec77213f0b0c7d5082123f7
+refs/heads/master          510f6415b6af535ceec77213f0b0c7d5082123f7
+refs/heads/phase1-baseline 510f6415b6af535ceec77213f0b0c7d5082123f7
+refs/remotes/origin/master 510f6415b6af535ceec77213f0b0c7d5082123f7
+Tags: none
+
+Requested object 510f6415b6af535ceec77213f0b0c7d5082123f7:
+type: commit
+relation to HEAD: identical SHA; ancestor checks return 0 in both directions
+committed paths from candidate to HEAD: none
+
+Initial working tree:
+tracked modifications: none
+staged modifications: none
+untracked: docs/phase2/ assessment files only
+
+Recent provenance classification:
+510f6415b6af535ceec77213f0b0c7d5082123f7: README.md only
+5a7bf4004abad672b92b7be1e3d83e8d19e81470: docs/architecture-single-restaurant.md only
+1ee1cbf7b8d6d37f71c8a30ef57e0d68a3497763: 67 source/test files reorganized package-by-layer
+
+Conclusion:
+- No source/config drift exists between current HEAD and phase1-baseline branch.
+- Candidate includes architectural refactor 1ee1cbf... relative to cfe2222...
+- Whether that refactor belongs to Phase 1 or Phase 2 cannot be proven from available refs; status PENDING.
+

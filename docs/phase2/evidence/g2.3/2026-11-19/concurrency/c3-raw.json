@@ -1,0 +1,828 @@
+{
+  "scenario": "C3",
+  "method_limitations": [
+    "Barrier synchronizes client worker release, not an in-transaction database barrier.",
+    "HTTP timestamps prove near-simultaneous client attempts but do not prove transaction overlap.",
+    "No application synchronization hook or source/config change was used."
+  ],
+  "rounds": [
+    {
+      "round": 1,
+      "order_id": 58,
+      "initial": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:22.449876+00:00",
+          "ended_at_utc": "2026-11-19T17:58:22.496852+00:00",
+          "elapsed_ms": 46.251,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 58,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:22.449876+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:22.449876+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:22.450918+00:00",
+          "ended_at_utc": "2026-11-19T17:58:22.490110+00:00",
+          "elapsed_ms": 38.868,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 58,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:22.449876+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:22.450918+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0,
+        "order_status": "CANCELLED"
+      },
+      "violations": []
+    },
+    {
+      "round": 2,
+      "order_id": 59,
+      "initial": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:25.007219+00:00",
+          "ended_at_utc": "2026-11-19T17:58:25.054097+00:00",
+          "elapsed_ms": 43.001,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 59,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:25.007219+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:25.007219+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:25.011974+00:00",
+          "ended_at_utc": "2026-11-19T17:58:25.058614+00:00",
+          "elapsed_ms": 46.983,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 59,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:25.007219+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:25.011974+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0,
+        "order_status": "CANCELLED"
+      },
+      "violations": []
+    },
+    {
+      "round": 3,
+      "order_id": 60,
+      "initial": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:27.554053+00:00",
+          "ended_at_utc": "2026-11-19T17:58:27.585678+00:00",
+          "elapsed_ms": 31.887,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "INVALID_ORDER_TRANSITION",
+            "status": 409,
+            "message": "Không thể chuyển trạng thái đơn hàng."
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:27.553526+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:27.554053+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:27.554589+00:00",
+          "ended_at_utc": "2026-11-19T17:58:27.573048+00:00",
+          "elapsed_ms": 18.698,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 60,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:27.554053+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:27.554053+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0,
+        "order_status": "CANCELLED"
+      },
+      "violations": []
+    },
+    {
+      "round": 4,
+      "order_id": 61,
+      "initial": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:30.335800+00:00",
+          "ended_at_utc": "2026-11-19T17:58:30.362927+00:00",
+          "elapsed_ms": 28.432,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 61,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:30.335256+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:30.335800+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:30.335800+00:00",
+          "ended_at_utc": "2026-11-19T17:58:30.360996+00:00",
+          "elapsed_ms": 25.759,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 61,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:30.335256+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:30.335800+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0,
+        "order_status": "CANCELLED"
+      },
+      "violations": []
+    },
+    {
+      "round": 5,
+      "order_id": 62,
+      "initial": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:32.636973+00:00",
+          "ended_at_utc": "2026-11-19T17:58:32.671439+00:00",
+          "elapsed_ms": 31.79,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 62,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:32.636973+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:32.636973+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:32.636973+00:00",
+          "ended_at_utc": "2026-11-19T17:58:32.685451+00:00",
+          "elapsed_ms": 45.697,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 62,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:32.636973+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:32.636973+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0,
+        "order_status": "CANCELLED"
+      },
+      "violations": []
+    },
+    {
+      "round": 6,
+      "order_id": 63,
+      "initial": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:35.030229+00:00",
+          "ended_at_utc": "2026-11-19T17:58:35.067533+00:00",
+          "elapsed_ms": 34.465,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 63,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:35.030229+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:35.030229+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:35.030229+00:00",
+          "ended_at_utc": "2026-11-19T17:58:35.060111+00:00",
+          "elapsed_ms": 26.107,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 63,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:35.030229+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:35.030229+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0,
+        "order_status": "CANCELLED"
+      },
+      "violations": []
+    },
+    {
+      "round": 7,
+      "order_id": 64,
+      "initial": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:37.533741+00:00",
+          "ended_at_utc": "2026-11-19T17:58:37.578569+00:00",
+          "elapsed_ms": 45.158,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 64,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:37.533168+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:37.533741+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:37.534341+00:00",
+          "ended_at_utc": "2026-11-19T17:58:37.584409+00:00",
+          "elapsed_ms": 50.281,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 64,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:37.533741+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:37.534341+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0,
+        "order_status": "CANCELLED"
+      },
+      "violations": []
+    },
+    {
+      "round": 8,
+      "order_id": 65,
+      "initial": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:39.956086+00:00",
+          "ended_at_utc": "2026-11-19T17:58:39.992476+00:00",
+          "elapsed_ms": 35.867,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 65,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:39.956086+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:39.956086+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:39.956086+00:00",
+          "ended_at_utc": "2026-11-19T17:58:39.990416+00:00",
+          "elapsed_ms": 33.674,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 65,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:39.956086+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:39.956086+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0,
+        "order_status": "CANCELLED"
+      },
+      "violations": []
+    },
+    {
+      "round": 9,
+      "order_id": 66,
+      "initial": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:42.268060+00:00",
+          "ended_at_utc": "2026-11-19T17:58:42.300194+00:00",
+          "elapsed_ms": 30.892,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 66,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:42.268060+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:42.268060+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:42.269813+00:00",
+          "ended_at_utc": "2026-11-19T17:58:42.292860+00:00",
+          "elapsed_ms": 23.036,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 66,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:42.268060+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:42.269813+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0,
+        "order_status": "CANCELLED"
+      },
+      "violations": []
+    },
+    {
+      "round": 10,
+      "order_id": 67,
+      "initial": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:44.477652+00:00",
+          "ended_at_utc": "2026-11-19T17:58:44.499215+00:00",
+          "elapsed_ms": 21.136,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 67,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:44.477652+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:44.477652+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:44.477652+00:00",
+          "ended_at_utc": "2026-11-19T17:58:44.514618+00:00",
+          "elapsed_ms": 36.741,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "INVALID_ORDER_TRANSITION",
+            "status": 409,
+            "message": "Không thể chuyển trạng thái đơn hàng."
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:44.477652+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:44.477652+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0,
+        "order_status": "CANCELLED"
+      },
+      "violations": []
+    },
+    {
+      "round": 11,
+      "order_id": 68,
+      "initial": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:47.127778+00:00",
+          "ended_at_utc": "2026-11-19T17:58:47.149275+00:00",
+          "elapsed_ms": 21.789,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 68,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:47.127213+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:47.127778+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:47.127213+00:00",
+          "ended_at_utc": "2026-11-19T17:58:47.158268+00:00",
+          "elapsed_ms": 30.753,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 68,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:47.127213+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:47.127213+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0,
+        "order_status": "CANCELLED"
+      },
+      "violations": []
+    },
+    {
+      "round": 12,
+      "order_id": 69,
+      "initial": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:49.519549+00:00",
+          "ended_at_utc": "2026-11-19T17:58:49.566967+00:00",
+          "elapsed_ms": 46.295,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 69,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:49.517793+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:49.519549+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:49.520835+00:00",
+          "ended_at_utc": "2026-11-19T17:58:49.560149+00:00",
+          "elapsed_ms": 38.818,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 69,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:49.519549+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:49.520835+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0,
+        "order_status": "CANCELLED"
+      },
+      "violations": []
+    },
+    {
+      "round": 13,
+      "order_id": 70,
+      "initial": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:51.995728+00:00",
+          "ended_at_utc": "2026-11-19T17:58:52.056135+00:00",
+          "elapsed_ms": 56.942,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 70,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:51.995728+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:51.995728+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:51.995728+00:00",
+          "ended_at_utc": "2026-11-19T17:58:52.037985+00:00",
+          "elapsed_ms": 39.465,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 70,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:51.995728+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:51.995728+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0,
+        "order_status": "CANCELLED"
+      },
+      "violations": []
+    },
+    {
+      "round": 14,
+      "order_id": 71,
+      "initial": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:54.460132+00:00",
+          "ended_at_utc": "2026-11-19T17:58:54.502524+00:00",
+          "elapsed_ms": 37.908,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 71,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:54.460132+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:54.460132+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:54.460132+00:00",
+          "ended_at_utc": "2026-11-19T17:58:54.520440+00:00",
+          "elapsed_ms": 56.204,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 71,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:54.460132+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:54.460132+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0,
+        "order_status": "CANCELLED"
+      },
+      "violations": []
+    },
+    {
+      "round": 15,
+      "order_id": 72,
+      "initial": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 8,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:56.866177+00:00",
+          "ended_at_utc": "2026-11-19T17:58:56.908433+00:00",
+          "elapsed_ms": 42.47,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 72,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:56.862041+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:56.866177+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:56.866177+00:00",
+          "ended_at_utc": "2026-11-19T17:58:56.926597+00:00",
+          "elapsed_ms": 60.817,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 72,
+            "status": "CANCELLED",
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:56.865725+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:56.865725+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 2,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0,
+        "order_status": "CANCELLED"
+      },
+      "violations": []
+    }
+  ],
+  "summary": {
+    "scenario": "C3",
+    "classification": "OBSERVED CORRECT",
+    "rounds_executed": 15,
+    "invariant_violation_rounds": [],
+    "server_or_transport_error_rounds": [],
+    "notable_observation_rounds": []
+  }
+}

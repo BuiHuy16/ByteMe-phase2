@@ -1,0 +1,96 @@
+﻿{
+    "schema_version": 2,
+    "protocol_baseline_sha": "510f6415b6af535ceec77213f0b0c7d5082123f7",
+    "repository_sha": "c65d4ff96765d63d7664b87b72d4c6cb420281d9",
+    "application_sha": "510f6415b6af535ceec77213f0b0c7d5082123f7",
+    "application_jar_sha256": "e78b394dfe118cd6a8ce33797842ad1fbd09bfe23a169fb3e71662dfc55c3ee3",
+    "build_provenance_path": "build/build-provenance.json",
+    "generated_at_utc": "2026-11-20T16:55:29.3927000Z",
+    "files": [
+        {
+            "path": "application.jar",
+            "sha256": "e78b394dfe118cd6a8ce33797842ad1fbd09bfe23a169fb3e71662dfc55c3ee3",
+            "bytes": 66980148
+        },
+        {
+            "path": "benchmark-kit/benchmarks/phase2/kaggle/compare_manifests.py",
+            "sha256": "c6a43234eadd3914e30a3eb8be5b3ce300ed5d7e0a06e9f5ff7493884b06d4cb",
+            "bytes": 3528
+        },
+        {
+            "path": "benchmark-kit/benchmarks/phase2/kaggle/configuration-lock.json",
+            "sha256": "fef0fcf03b4dadd66a7b1f8619da9263e1500bf8b903f760aad3abd541b89620",
+            "bytes": 2502
+        },
+        {
+            "path": "benchmark-kit/benchmarks/phase2/kaggle/generate_notebook.py",
+            "sha256": "5d9166ab3c64bbcd51cb8d5c23e3395119dc9642f1037c6e72b3afac5366c695",
+            "bytes": 5400
+        },
+        {
+            "path": "benchmark-kit/benchmarks/phase2/kaggle/kaggle_runtime.py",
+            "sha256": "d3f1942ce5779640d25f1bb5b8d17c231f5875d5605e2b5b9aa90b0aba87a317",
+            "bytes": 75681
+        },
+        {
+            "path": "benchmark-kit/benchmarks/phase2/kaggle/prepare_bundle.ps1",
+            "sha256": "0507cad9f54c676c4be74098a23948139d9a14d2b2ddcb6759d91ae6c29d1da5",
+            "bytes": 5634
+        },
+        {
+            "path": "benchmark-kit/benchmarks/phase2/kaggle/README.md",
+            "sha256": "ee0f1efcb6768ec192b2918fe63a481befe753a999d95ed8246429ad529b467b",
+            "bytes": 6110
+        },
+        {
+            "path": "benchmark-kit/benchmarks/phase2/kaggle/tests/test_remediation.py",
+            "sha256": "350e7cfa45e1ebd728a6cc0b2fca8d7da9059dfe14ab2a5a3dae46b95de5a330",
+            "bytes": 46877
+        },
+        {
+            "path": "benchmark-kit/benchmarks/phase2/prepare_dataset.py",
+            "sha256": "24631a9c84bf2fe4416aac18dab6f51f709681266c246b965b54bc7fb476356d",
+            "bytes": 16982
+        },
+        {
+            "path": "benchmark-kit/benchmarks/phase2/profiles.json",
+            "sha256": "441b521d864799a4779caede7595b4b0322265f47936f134d00c4aeb329dad3b",
+            "bytes": 432
+        },
+        {
+            "path": "benchmark-kit/benchmarks/phase2/README.md",
+            "sha256": "0e9b026aac399e715b4844433398c90132a87daba00fba20f38c91a88e88138a",
+            "bytes": 7061
+        },
+        {
+            "path": "benchmark-kit/benchmarks/phase2/workloads/w1_read.js",
+            "sha256": "50e0e4386d5561d3c405a5a0ee33f9d9a3ac9846727bbdd360a67460285c739b",
+            "bytes": 3280
+        },
+        {
+            "path": "benchmark-kit/benchmarks/phase2/workloads/w2_write.js",
+            "sha256": "8d491590d16176a4a506cc9c938b1a8aadfadce67807f3d054ca2ce9252a6969",
+            "bytes": 4376
+        },
+        {
+            "path": "benchmark-kit/benchmarks/phase2/workloads/w3_contention.py",
+            "sha256": "6c5f96c8ae95b1c800e173be900f3703008ecd1cd01a1b319910f2628b79dc60",
+            "bytes": 10823
+        },
+        {
+            "path": "build/build-provenance.json",
+            "sha256": "0caacf1be7cfe2d00793ca676ff1f8fac0d0359e1f4aa4ff526a2959b00824c2",
+            "bytes": 1898
+        },
+        {
+            "path": "build/maven-build.txt",
+            "sha256": "b940076cd84fb30abe92d1a1c4145530e20b42a47e0dab23fad8472b24b6bd37",
+            "bytes": 4458
+        },
+        {
+            "path": "schema.sql",
+            "sha256": "287a0b47c078386182ff1ccc691c7ab2d908e30fb0c578531d9e56f4ee7aa870",
+            "bytes": 6636
+        }
+    ]
+}

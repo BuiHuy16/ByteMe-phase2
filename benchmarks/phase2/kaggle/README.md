@@ -1,46 +1,62 @@
-# ByteMe G2.4-K — Kaggle CPU adaptation
+# ByteMe G2.4-K — Thích ứng cho Kaggle CPU
 
-This adapter keeps the G2.4 workload and dataset semantics while replacing Docker-specific execution with loopback, user-space processes. It does not change application source, schema, seed or the historical upstream notebook.
+### Proc I/O trên runtime hạn chế quyền
 
-## Status
+CPU/RSS vẫn bắt buộc cho backend, MySQL và driver. Nếu Linux từ chối đọc
+`/proc/<pid>/io`, các cột `read_bytes`/`write_bytes` trong TSV ghi `NA`;
+file cùng tên với suffix `.unavailable.jsonl` ghi timestamp, label, PID và lý do.
+Validator từ chối CPU/RSS thiếu hoặc không hợp lệ và I/O `NA` không có evidence.
+I/O là telemetry bổ sung, chưa có yêu cầu bắt buộc khả dụng trong configuration
+lock; không dùng `NA` như số 0 khi phân tích before/after. CPU/RSS hoàn chỉnh
+không có nghĩa I/O hoàn chỉnh. Không thay đổi quyền MySQL hoặc bảo mật procfs.
 
-The notebook and scripts have been statically validated locally. No Kaggle credentials/runtime are available in the preparation environment, so **Kaggle runtime validation is PENDING**. Do not report a smoke PASS until `smoke-result.json` from a real Kaggle session says `PASS`.
+Adapter này giữ nguyên semantics của workload và dataset G2.4, đồng thời thay cách thực thi phụ thuộc Docker bằng các user-space process chạy trên loopback. Adapter không thay đổi application source, schema, seed hoặc notebook upstream lịch sử.
 
-## Inputs
+## Trạng thái
 
-1. After the official regression gate, build and package directly from the verified executable tree:
+Notebook và các script đã được static validation trên Local. Môi trường chuẩn bị không có Kaggle credentials/runtime, vì vậy **Kaggle runtime validation vẫn PENDING**. Không được báo cáo smoke PASS cho đến khi `smoke-result.json` từ một Kaggle session thực tế ghi nhận `PASS`.
+
+## Input
+
+1. Sau official regression gate, build và package trực tiếp từ executable tree đã được xác minh:
 
    ```powershell
    ./benchmarks/phase2/kaggle/prepare_bundle.ps1 -ExpectedApplicationSha 510f6415b6af535ceec77213f0b0c7d5082123f7
    ```
 
-   The builder rejects staged, unstaged or untracked executable drift, runs Maven Wrapper `clean package`, and records source/tree identity, Java/Maven output, build command/exit and JAR SHA-256. For a future Phase 2 treatment, pass that reviewed application SHA; the benchmark workload remains independently hashed.
+   Builder từ chối executable drift ở staged, unstaged hoặc untracked, chạy Maven Wrapper `clean package`, đồng thời ghi lại source/tree identity, Java/Maven output, build command/exit và JAR SHA-256. Đối với treatment Pha 2 trong tương lai, hãy truyền application SHA đã được review; benchmark workload vẫn được hash độc lập.
 
-2. Add exact portable Linux x86_64 archives for Java 21.0.13, MySQL 8.4.13 and k6 0.55.2 to a private Kaggle Dataset. The adapter accepts a system binary only when its reported version contains the exact locked value. It never silently substitutes a different version.
-3. Upload `kaggle/script/byteme_phase2_g24k.ipynb`; select Accelerator `None`; attach the bundle/toolchain datasets. Internet may remain off when all archives are attached.
+2. Thêm các archive portable Linux x86_64 chính xác cho Java 21.0.13, MySQL 8.4.13 và k6 0.55.2 vào private Kaggle Toolchain Dataset. Thêm cả gói Ubuntu Noble chính thức `libaio1t64_0.3.113-6build1.1_amd64.deb` với SHA-256 `433212b33e26d424605c01cec1de33b63f2cc12870987b4cb7b3625baba66a19`. Adapter chỉ chấp nhận binary/package khi version và hash khớp configuration lock.
+3. Upload `kaggle/script/byteme_phase2_g24k.ipynb`; chọn Accelerator `None`; attach bundle dataset và toolchain dataset. Có thể tắt Internet khi mọi artifact đã được attach.
 
-MySQL runs from its generic binary distribution under `/kaggle/working`, bound to `127.0.0.1:13309`; Docker and root/apt are not required. If a portable binary has missing shared libraries, the run fails closed and records the blocker.
+MySQL chạy từ generic binary distribution trong `/kaggle/working`, bind vào `127.0.0.1:13309`; không yêu cầu Docker hoặc quyền root/apt. Runner dùng `dpkg-deb --extract` để giải nén `libaio1t64` vào run directory, xác minh package metadata/checksum và ELF64 x86-64 ABI, tạo user-space compatibility symlink `libaio.so.1`, rồi chỉ thêm thư mục đó vào `LD_LIBRARY_PATH` của MySQL. `ldd` phải xác nhận không còn dependency `not found` trước khi initialize database.
 
-## Notebook phases
+Nếu MySQL thoát trong startup hoặc không đạt readiness, đọc `logs/mysql-startup.stderr.log`, `logs/mysql-startup.stdout.log`, `logs/mysql.log` và `environment/mysql-startup-failure.json` trong evidence ZIP. JSON ghi exit code/signal, trạng thái port/socket/datadir và các cgroup memory/OOM counters khả dụng trước cleanup; các dữ liệu này chưa tự xác định nguyên nhân nếu log không nêu rõ.
 
-The notebook captures CPU model, core count, exact RAM quota, OS/kernel and capabilities; verifies every bundle file; resolves exact tool versions; initializes isolated MySQL; starts the baseline JAR with the configuration lock; prepares smoke fixtures; executes W1/W2/W3; captures raw k6, process/system resources, JVM/GC, DB status/query digests and final invariants; resets to the initial logical checksum; removes runtime secrets; creates `SHA256SUMS.txt` and an evidence ZIP.
+## Các giai đoạn của notebook
 
-Initial fixture validation requires exact initial order/item counts and empty carts. Post-workload validation permits legitimate canceled orders and empty cart rows while still requiring immutable read fixtures, exact user/category/food cardinality, shared-stock restoration, positive quantities/non-negative stock and no orphan order/cart items. Reset then has to pass the initial rules and reproduce the original logical checksum.
+Notebook thu thập CPU model, core count, RAM quota chính xác, OS/kernel và capabilities; xác minh mọi bundle file; resolve phiên bản tool chính xác; khởi tạo MySQL cô lập; khởi động baseline JAR với configuration lock; chuẩn bị smoke fixtures; thực thi W1/W2/W3; thu k6 raw data, process/system resources, JVM/GC, DB status/query digests và final invariants; reset về initial logical checksum; xóa runtime secrets; tạo `SHA256SUMS.txt` và evidence ZIP.
 
-A zero k6 exit code is insufficient: the runner parses W1/W2 summaries and asserts exact smoke check/request counts, zero HTTP/workload/unexpected/server errors, non-empty raw output and resource samples for backend, MySQL and driver. W3 baseline violations and recorded HTTP 500s remain defect evidence; missing rounds/responses/final state are harness failures.
+Initial fixture validation yêu cầu exact initial order/item counts và cart rỗng. Post-workload validation cho phép các canceled order và empty cart row hợp lệ, nhưng vẫn yêu cầu read fixtures bất biến, chính xác user/category/food cardinality, khôi phục shared-stock, quantity dương/stock không âm và không có orphan order/cart items. Sau đó, reset phải vượt qua initial rules và tái tạo đúng original logical checksum.
 
-The `standard` profile remains 5,000 read foods, 500 orders, 20 write actors and four contention actors. G2.4-K runs only `smoke`; standard execution belongs to G2.5.
+Initial prepare phát hành actor token một lần; reset W1, reset W2 và final reset tái tạo đúng fixture nhưng tái sử dụng token ban đầu trong cùng backend lifecycle. Mỗi reset kiểm tra actor ID/role và xác minh trực tiếp mọi token qua endpoint được bảo vệ, đồng thời manifest ghi số login/reused token/live validation. Authentication thật bị 401 hoặc role/status sai làm run fail; runner không retry, sleep hay fallback sang login. Quy trình này là một phần của harness source hash và phải giống nhau cho BEFORE/AFTER.
 
-## Before/after grouping
+Exit code k6 bằng 0 là chưa đủ: runner parse W1/W2 summaries và assert chính xác smoke check/request counts, không có HTTP/workload/unexpected/server errors, raw output không rỗng và có resource samples cho backend, MySQL cùng driver. Các W3 baseline violation và HTTP 500 đã ghi nhận vẫn là defect evidence; thiếu rounds/responses/final state là harness failure.
 
-Run `compare_manifests.py` on the resulting `manifest/run-manifest.json` files. It rejects missing or different cgroup CPU quota, effective cpuset, memory limit, resolved limits, kernel/runtime-image identity, CPU model, visible cores/RAM, OS image, Java/MySQL/k6 versions or binary hashes, configuration/workload hashes or dataset checksum. Application SHA is reported as the treatment pair and is expected to differ for before/after. Never merge sessions merely because both are labelled “Kaggle CPU”.
+Profile `standard` vẫn gồm 5.000 read foods, 500 orders, 20 write actors và bốn contention actors. G2.4-K chỉ chạy `smoke`; G2.5 dùng notebook riêng `kaggle/script/byteme_phase2_g25_official.ipynb` và entrypoint `run_official()` để thực thi đúng một standard run trong mỗi Kaggle session.
 
-Official measurement parameters remain warm-up 60 s, W1/W2 180 s, cooldown 30 s, W1 arrival rates 10/5/5 RPS, W2 10 VUs, W3 15 rounds, minimum three and target five independent runs. The notebook smoke uses the smoke profile and two W3 rounds only.
+## Nhóm so sánh before/after
 
-## Known limitations
+Chạy `compare_manifests.py` trên các file `manifest/run-manifest.json` thu được. Tool từ chối cgroup CPU quota, effective cpuset, memory limit, resolved limits, kernel/runtime-image identity, CPU model, visible cores/RAM, OS image, phiên bản Java/MySQL/k6, binary hashes, libaio package/library hashes, configuration/workload hashes hay dataset checksum bị thiếu hoặc khác nhau. Riêng `hardware.memory_total_bytes` được phép chênh tối đa 1 MiB: Linux host-visible `MemTotal` có thể dao động vài page theo kernel/host accounting, trong khi benchmark bị giới hạn bởi cgroup; vì vậy memory cgroup limit và resolved limit vẫn phải khớp chính xác. Phần đường dẫn run-specific trong output phiên bản MySQL được bỏ qua khi so sánh; chuỗi phiên bản còn lại và SHA-256 của `mysqld` vẫn phải khớp. Application SHA được báo cáo như treatment pair và được kỳ vọng khác nhau giữa before/after. Tuyệt đối không gộp các session chỉ vì cả hai đều mang nhãn “Kaggle CPU”.
 
-- Live Hikari gauges remain unavailable; Hikari configuration and MySQL connection behavior are captured.
-- CPU quota/model can vary between Kaggle sessions; manifests must match before aggregation.
-- Kaggle session lifetime and attached-dataset storage are external constraints. Download the evidence ZIP before the session ends.
-- The adapter does not use the historical notebook's moving apt packages, 50→200→500 VU workload or unverified thresholds.
-- Cleanup, secret scan, manifest/checksum and evidence packaging are part of smoke success. Cleanup failure forces `FAIL`; the runner still creates a failure evidence ZIP whenever filesystem access permits.
+Các parameter đo chính thức là warm-up read-only 60 giây ở 2/1/1 RPS (food list/search/order list), W1/W2 180 giây, cooldown 30 giây, W1 arrival rates 10/5/5 RPS, W2 10 VUs, W3 15 rounds, tối thiểu ba và mục tiêu năm independent run. Warm-up có raw/summary/telemetry riêng và không được đưa vào metric chính thức. Notebook smoke chỉ sử dụng smoke profile và hai W3 rounds.
+
+Official runner phân biệt tính hợp lệ của harness với kết quả ứng dụng. HTTP/performance errors và W3 invariant violations được giữ làm baseline outcome; thiếu phase, sai load/duration, reset checksum, telemetry, cleanup, secret scan hoặc evidence integrity làm run không hợp lệ. `official_benchmark=true` chỉ được ghi sau khi protocol, cleanup và validation hoàn tất.
+
+## Các giới hạn đã biết
+
+- Live Hikari gauges vẫn chưa khả dụng; Hikari configuration và MySQL connection behavior được thu thập.
+- CPU quota/model có thể thay đổi giữa các Kaggle session; manifest phải khớp trước khi tổng hợp.
+- Kaggle session lifetime và attached-dataset storage là các ràng buộc bên ngoài. Hãy tải evidence ZIP trước khi session kết thúc.
+- Adapter không sử dụng moving apt packages, workload 50→200→500 VU hoặc unverified thresholds của notebook lịch sử.
+- Cleanup, secret scan, manifest/checksum và evidence packaging là một phần của smoke success. Cleanup failure buộc trạng thái `FAIL`; runner vẫn tạo failure evidence ZIP bất cứ khi nào filesystem access cho phép.

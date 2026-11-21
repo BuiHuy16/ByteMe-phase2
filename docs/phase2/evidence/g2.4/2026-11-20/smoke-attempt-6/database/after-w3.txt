@@ -1,0 +1,99 @@
+﻿captured_at_utc	mysql_version	database_name
+2026-11-19 18:39:41.793360	8.4.13	byteme_g24_smoke
+Variable_name	Value
+Com_delete	25
+Com_insert	178
+Com_select	339
+Com_update	28
+Connections	82
+Created_tmp_disk_tables	0
+Created_tmp_tables	6
+Innodb_buffer_pool_read_requests	29322
+Innodb_buffer_pool_reads	890
+Innodb_row_lock_current_waits	0
+Innodb_row_lock_time	33
+Innodb_row_lock_waits	5
+Queries	1029
+Questions	1003
+Slow_queries	0
+Threads_connected	11
+Threads_running	2
+DIGEST	DIGEST_TEXT	COUNT_STAR	SUM_TIMER_WAIT_MS	SUM_ROWS_AFFECTED	SUM_ROWS_SENT	SUM_ROWS_EXAMINED	SUM_CREATED_TMP_DISK_TABLES	SUM_NO_INDEX_USED
+158bfe3d4b4b0a372a4acdb38affe2cb4f6b3cb21a9af0ea9fad9a9a083ac18a	SET `autocommit` = ?	126	13.644	0	0	0	0	0
+44e35cee979ba420eb49a8471f852bbe15b403c89742704817dfbaace0d99dbb	SELECT @@`version_comment` LIMIT ?	65	6.954	0	65	65	0	0
+96f36f24e442149c203327a3e3962ba34082ab2851b1dabe4cb03011afef3e14	INSERT INTO `foods` ( `id` , `category_id` , NAME , DESCRIPTION , `price` , `stock_quantity` , STATUS ) VALUES (...)	63	4.930	63	0	0	0	0
+f2b9be5f0f32ca7507e4ddf133cd2fad0993a1c26fde9caa6f067b1af2b7603c	COMMIT	60	654.930	0	0	0	0	0
+f4757c7eabd5cf1c761189dd2dc1d5c17ee80bf086369b45651204a8079e5f07	SELECT `i1_0` . `order_id` , `i1_0` . `id` , `i1_0` . `food_id` , `i1_0` . `food_name` , `i1_0` . `quantity` , `i1_0` . `unit_price` FROM `order_items` `i1_0` WHERE `i1_0` . `order_id` = ? ORDER BY `i1_0` . `id`	42	10.209	0	82	1604	0	0
+edc5d6763b9e4fc2b80b27694ac3fdecf1b9846515c211176f5336d4b545336a	INSERT INTO `order_items` ( `order_id` , `food_id` , `food_name` , `unit_price` , `quantity` , `created_at` ) VALUES ( @?, ... )	40	2.600	40	0	0	0	0
+4ad55ffc7725a5aa7ac65ba0a60d7948aaf6ff9c1d72e28817834b8b42bd6d08	SELECT `c1_0` . `id` , `c1_0` . `user_id` FROM `carts` `c1_0` WHERE `c1_0` . `user_id` = ?	36	7.687	0	26	26	0	0
+fc0f28109264a2cc97dd059503a9c368c5cbd02f705c19bf4bdb4e8a8a2c05ac	SELECT `f1_0` . `id` , `f1_0` . `category_id` , `f1_0` . `description` , `f1_0` . `image_url` , `f1_0` . `name` , `f1_0` . `price` , `f1_0` . `status` , `f1_0` . `stock_quantity` FROM `foods` `f1_0` WHERE `f1_0` . `id` = ?	26	6.396	0	26	26	0	0
+664a2aec28f52c38fac12d5adf14d7f8da06346ba3a594072cc152ad9bcecb59	SET SESSION TRANSACTION READ WRITE	22	1.604	0	0	0	0	0
+9cf78ec1ee2746bb4c688b21593f69a1eba7026ba2277d7717cd8defb167449a	SET SESSION TRANSACTION READ ONLY	22	4.019	0	0	0	0	0
+0bfc9058adf072ed8365e00af37b384aa30215d59737995b3c4ac9a4bcbb3c8f	SET @? = `LAST_INSERT_ID` ( )	20	0.665	0	0	0	0	0
+34a94c1f0b7d7c08365c2977b39fe37e8dd9577c4133c12a19588d1abec22148	INSERT INTO `orders` ( `user_id` , STATUS , `order_type` , `table_number` , `payment_method` , `created_at` , `updated_at` ) VALUES (...)	20	2.264	20	0	0	0	0
+ede658e5eed842fe74ea948accf032ca5b111d7e3dce9387f7540ba1c11fa74e	UPDATE `foods` SET `category_id` = ? , DESCRIPTION = ? , `image_url` = ? , NAME = ? , `price` = ? , STATUS = ? , `stock_quantity` = ? WHERE `id` = ?	16	20.268	15	0	15	0	0
+d1b44b0c19af710b5a679907e284acd2ddc285201794bc69a2389d77baedddae	SELECT ?	15	0.983	0	15	15	0	0
+fec274f4fef10f8750723a3dcdd284724593e8c257da94568b6a9fd328e39bfd	SELECT `i1_0` . `cart_id` , `i1_0` . `id` , `i1_0` . `food_id` , `i1_0` . `quantity` FROM `cart_items` `i1_0` WHERE `i1_0` . `cart_id` = ? ORDER BY `i1_0` . `id`	14	3.468	0	14	28	0	0
+1e4555dea2f41dab945cf6d6c20f94ec15d76bb51a671c70c1b1f64b58882586	INSERT INTO `order_items` ( `food_id` , `food_name` , `order_id` , `quantity` , `unit_price` ) VALUES (...)	12	29.568	12	0	0	0	0
+9550a9b12b3ac7da5a7af68361380d0281c40d24f348df44c915f963157d5490	INSERT INTO `orders` ( `cancelled_at` , `completed_at` , `confirmed_at` , `confirmed_by` , `created_at` , `note` , `order_type` , `payment_method` , `recipient_name` , `shipping_address` , `shipping_phone` , STATUS , `table_number` , `updated_at` , `user_id` ) VALUES (...)	12	3.347	12	0	0	0	0
+bc086daa5b8c33e65a31316eb9eb1ea5958dddec515886aa12244fa3ed8ad57a	SELECT COALESCE ( SUM ( `oi` . `quantity` ) , ? ) FROM `order_items` `oi` JOIN `orders` `o` ON `o` . `id` = `oi` . `order_id` WHERE `o` . `user_id` IN (...) AND `oi` . `food_id` = ?	12	2.006	0	12	16	0	0
+bf8cb94e2156077f248851793030cb6cd638af68ee64fad87087d79ffd5e10c6	SELECT `f1_0` . `id` , `f1_0` . `category_id` , `f1_0` . `description` , `f1_0` . `image_url` , `f1_0` . `name` , `f1_0` . `price` , `f1_0` . `status` , `f1_0` . `stock_quantity` FROM `foods` `f1_0` WHERE `f1_0` . `id` IN (...)	12	2.881	0	12	12	0	0
+d01a9a689612b64a02022ad8261630f18219024e8b3fda94f95a1e0709eadbfb	SELECT `stock_quantity` FROM `foods` WHERE `id` = ?	12	1.370	0	12	12	0	0
+dc34e59533795022b6c155c5972c90e7d9a7a068b09daa9f0cda500a594b5a79	SELECT COUNT ( * ) FROM `orders` WHERE `user_id` IN (...)	12	2.167	0	12	8	0	0
+f0497a45db794602c298e50624ec942f8391057690eb3de070fce6964d2683a5	SELECT COUNT ( * ) FROM `cart_items` `ci` JOIN `carts` `c` ON `c` . `id` = `ci` . `cart_id` WHERE `c` . `user_id` IN (...)	12	1.996	0	12	12	0	0
+be16b197dda8ef4f2fe5a682c58ed97c957313374429e5af02ac03d11238cd74	DELETE FROM `cart_items` WHERE `id` = ?	11	3.810	10	0	10	0	0
+26b37dcffc78145962ce1bdda892cbf4232003531f0bf4cfb227ecbe6a9f81a0	INSERT INTO `carts` ( `user_id` ) VALUES (?)	10	2.269	10	0	0	0	0
+704ccdc429d4deb2cf37ec8708e8faae1c46acf5683817670906ba621a14bb85	SET `time_zone` = ?	10	1.550	0	0	0	0	0
+820f99b336fdb17eb70cc829e33c804d0784de4512da1c530f5e2d4ad766a995	INSERT INTO `cart_items` ( `cart_id` , `food_id` , `quantity` ) VALUES (...)	10	3.542	10	0	0	0	0
+c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739	SELECT @@SESSION . `transaction_read_only`	10	1.200	0	10	10	0	0
+c20fcea11911be36651b7ca7bd3712d4ed9ac1134cee9c6620039e1fb13b5eff	SELECT @@SESSION . `auto_increment_increment` AS `auto_increment_increment` , @@`character_set_client` AS `character_set_client` , @@`character_set_connection` AS `character_set_connection` , @@`character_set_results` AS `character_set_results` , @@`character_set_server` AS `character_set_server` , @@`collation_server` AS `collation_server` , @@`collation_connection` AS `collation_connection` , @@`init_connect` AS `init_connect` , @@`interactive_timeout` AS `interactive_timeout` , @@`license` AS	10	3.374	0	10	10	0	0
+ee697e4b4152b6204eb23d2a055339cc8262297cf42467b78c1e241ddfcfbce3	SET `character_set_results` = ?	10	1.271	0	0	0	0	0
+054f60cc31358bc832df03197e56c67cb26aad17780d0beecc054ee00d7fbaa7	SELECT `id` FROM `users` WHERE `email` = ?	8	2.828	0	8	8	0	0
+707c6935663b2730786e568556962ffefb6547993a5bba210d89aa41a9bf6a92	SELECT `u1_0` . `id` , `u1_0` . `email` , `u1_0` . `full_name` , `u1_0` . `password_hash` , `u1_0` . `phone` , `u1_0` . `role` , `u1_0` . `status` FROM `users` `u1_0` WHERE `u1_0` . `email` = ?	8	2.083	0	8	8	0	0
+bc8a2be15335d4f8d8f248d20bc106cf452e50a494a85f382cb10c8911b60388	SELECT `u1_0` . `id` FROM `users` `u1_0` WHERE `u1_0` . `email` = ? OR `u1_0` . `phone` = ? LIMIT ?	8	2.714	0	0	28	0	8
+d077313210ae566939afc464552f9f46db5d167c961daf5508e50fe3ceb33a38	INSERT INTO `users` ( `email` , `full_name` , `password_hash` , `phone` , ROLE , STATUS ) VALUES (...)	8	2.848	8	0	0	0	0
+296c554af15093e86408b5be56ddf78c1972d41529c240ea273e225f328af28e	UPDATE `foods` SET `stock_quantity` = ? WHERE `id` = ?	7	78.315	6	0	7	0	0
+757007eabd1d9020c359c2931850115edc5decb70e89071b14199a7a41ed0a4d	DELETE FROM `carts` WHERE `user_id` IN (...)	7	46.962	8	0	8	0	0
+cc62e59b3158e8c9c3b8f565510c29aed7671dc42d11436ed5f63a82bd690109	DELETE `oi` FROM `order_items` `oi` JOIN `orders` `o` ON `o` . `id` = `oi` . `order_id` WHERE `o` . `user_id` IN (...)	7	66.621	8	0	16	0	0
+d959b451876ce1851d8e0759a4872f444ece40686931d52b51ecaf0d230d9e4c	DELETE FROM `orders` WHERE `user_id` IN (...)	7	37.672	8	0	8	0	0
+f562303865eccf21191036af4c6007f42d323f8f7ca069da623d8339fb8e93e7	DELETE `ci` FROM `cart_items` `ci` JOIN `carts` `c` ON `c` . `id` = `ci` . `cart_id` WHERE `c` . `user_id` IN (...)	7	1.585	0	0	0	0	3
+b0a2105f85f781a2af3593f66431f1528f14f14566499839ea27e23911fb9a5a	SHOW GLOBAL STATUS WHERE `Variable_name` IN (...)	5	13.771	0	75	75	0	5
+203583c749d869c43da247d54ebef246d68418a7803c98a5584e441c1ed756a4	SELECT UTC_TIMESTAMP (?) `captured_at_utc` , `VERSION` ( ) `mysql_version` , SCHEMA ( ) `database_name`	4	0.348	0	4	4	0	0
+b57cf422fbfb5629759554d7a60a31947a2333a6e1b55d7dce60a94aa1eed044	START TRANSACTION	4	0.175	0	0	0	0	0
+055084b8305cd62aac53316bb0750a3eb2bb73fc5ca6050fc5e8d3df46980c84	INSERT INTO `categories` ( `id` , NAME , DESCRIPTION ) VALUES (...)	3	35.806	3	0	0	0	0
+72b24fe867174c7c71dd35712a88fd6a2669102357fc3009cb24e71a611443b5	SELECT `DIGEST` , LEFT ( `DIGEST_TEXT` , ? ) AS `DIGEST_TEXT` , `COUNT_STAR` , `ROUND` ( `SUM_TIMER_WAIT` / ?, ... ) AS `SUM_TIMER_WAIT_MS` , `SUM_ROWS_AFFECTED` , `SUM_ROWS_SENT` , `SUM_ROWS_EXAMINED` , `SUM_CREATED_TMP_DISK_TABLES` , `SUM_NO_INDEX_USED` FROM `performance_schema` . `events_statements_summary_by_digest` WHERE SCHEMA_NAME = SCHEMA ( ) AND `DIGEST` IS NOT NULL ORDER BY `COUNT_STAR` DESC , `DIGEST` LIMIT ?	3	19.789	0	166	332	0	0
+184b29add4f16d8bf1a0b5555672cbcbc559274014eb187fb9e63ab776ba5ff9	SELECT `o1_0` . `id` , `o1_0` . `cancelled_at` , `o1_0` . `completed_at` , `o1_0` . `confirmed_at` , `o1_0` . `confirmed_by` , `o1_0` . `created_at` , `o1_0` . `note` , `o1_0` . `order_type` , `o1_0` . `payment_method` , `o1_0` . `recipient_name` , `o1_0` . `shipping_address` , `o1_0` . `shipping_phone` , `o1_0` . `status` , `o1_0` . `table_number` , `o1_0` . `updated_at` , `o1_0` . `user_id` FROM `orders` `o1_0` WHERE ( ? IS NULL OR `o1_0` . `user_id` = ? ) AND ( ? IS NULL OR `o1_0` . `order_ty	2	1.019	0	40	80	0	2
+19828bc41b89b5ba457bfda1fb8814975781c35430350867e022761c196c6aee	SELECT `f1_0` . `id` FROM `foods` `f1_0` WHERE `f1_0` . `name` = ? AND `f1_0` . `id` != ? LIMIT ?	2	0.461	0	0	0	0	0
+3e67fa9d38d82054e7fc01fe3ee8844dc76faaaefbd74d213a2af42e60e95520	ROLLBACK	2	3.188	0	0	0	0	0
+639f09cc4841cbce8dc66770e9e8265f220ce6feaeec6df1f067c83e232c9370	SELECT COUNT ( `o1_0` . `id` ) FROM `orders` `o1_0` WHERE ( ? IS NULL OR `o1_0` . `user_id` = ? ) AND ( ? IS NULL OR `o1_0` . `order_type` = ? ) AND `o1_0` . `status` IN (...)	2	0.518	0	2	40	0	2
+6c467145bab82a30991a62458c1cc4cd0ccdb09c98917f2bbc7a5ab8cfa6c660	SELECT `f1_0` . `id` , `f1_0` . `category_id` , `f1_0` . `description` , `f1_0` . `image_url` , `f1_0` . `name` , `f1_0` . `price` , `f1_0` . `status` , `f1_0` . `stock_quantity` FROM `foods` `f1_0` WHERE `f1_0` . `status` = ? AND ( ? IS NULL OR `f1_0` . `category_id` = ? ) AND ( `lower` ( `f1_0` . `name` ) LIKE `lower` ( `concat` (...) ) ESCAPE ? OR `lower` ( `f1_0` . `description` ) LIKE `lower` ( `concat` (...) ) ESCAPE ? ) ORDER BY `f1_0` . `id`	2	1.299	0	12	126	0	0
+70c3953a8290b8a80dbcfe7be9a9b41582dc7a4025d5f55e3ca6446d0c9c60bb	UPDATE `cart_items` SET `cart_id` = ? , `food_id` = ? , `quantity` = ? WHERE `id` = ?	2	0.702	2	0	2	0	0
+77399b162c3edb23f125ac8e5552f5459f641ee45cab6709cfe4f96575c099e4	UPDATE `orders` SET `cancelled_at` = ? , `completed_at` = ? , `confirmed_at` = ? , `confirmed_by` = ? , `note` = ? , `order_type` = ? , `payment_method` = ? , `recipient_name` = ? , `shipping_address` = ? , `shipping_phone` = ? , STATUS = ? , `table_number` = ? , `updated_at` = ? , `user_id` = ? WHERE `id` = ?	2	0.604	2	0	2	0	0
+84b06a75b0537666ebe82bc363c9e5bb763403ced608760590ca97954cda9975	SET `FOREIGN_KEY_CHECKS` = ?	2	0.118	0	0	0	0	0
+da5af53bd3624f76f41475806c23853e5cf8c28c863964e343f4874afff63337	SELECT `f1_0` . `id` , `f1_0` . `category_id` , `f1_0` . `description` , `f1_0` . `image_url` , `f1_0` . `name` , `f1_0` . `price` , `f1_0` . `status` , `f1_0` . `stock_quantity` FROM `foods` `f1_0` WHERE `f1_0` . `status` = ? AND ( ? IS NULL OR `f1_0` . `category_id` = ? ) ORDER BY `f1_0` . `id`	2	0.979	0	126	126	0	0
+ea2cd8da57f8f5085628bc166b1fd19040363fc97800ecb4a00c2a5a45045b90	SELECT `o1_0` . `id` , `o1_0` . `cancelled_at` , `o1_0` . `completed_at` , `o1_0` . `confirmed_at` , `o1_0` . `confirmed_by` , `o1_0` . `created_at` , `o1_0` . `note` , `o1_0` . `order_type` , `o1_0` . `payment_method` , `o1_0` . `recipient_name` , `o1_0` . `shipping_address` , `o1_0` . `shipping_phone` , `o1_0` . `status` , `o1_0` . `table_number` , `o1_0` . `updated_at` , `o1_0` . `user_id` FROM `orders` `o1_0` WHERE `o1_0` . `id` = ?	2	0.596	0	2	2	0	0
+f1a962c24933a85ae3eb358492cbd0f1f9ccb8329943181c1815aa7f36c61b0e	SELECT COUNT ( * ) FROM `categories` `c1_0` WHERE `c1_0` . `id` = ?	2	0.614	0	2	2	0	0
+1d677491d0e6d72381bb446f42bcff3f7a51af98ea1a03c314ea8888fd1bea4b	TRUNCATE TABLE `orders`	1	173.493	0	0	0	0	0
+207fe6b5d664af2e353019ee732decdd0c078b4ffb7919d3b67183f5b2f9ac81	TRUNCATE TABLE `foods`	1	194.575	0	0	0	0	0
+34192d9a163956952b6308a1c3df3ee56d778dc1f68ad9e68cb54a2c841b2e63	SELECT `id` , `user_id` , STATUS , `order_type` , COALESCE ( `table_number` , ? ) , `payment_method` , `created_at` FROM `orders` ORDER BY `id`	1	0.195	0	20	20	0	0
+39d93198e9485586aa8c57f911fb13cfc3dcc070479d31c62e7a81cd0ef777f3	SELECT `VERSION` ( ) `mysql_version` , @@`transaction_isolation` `transaction_isolation` , @@`autocommit` `autocommit` , @@`max_connections` `max_connections` , @@`innodb_buffer_pool_size` `innodb_buffer_pool_size` , @@`performance_schema` `performance_schema`	1	0.090	0	1	1	0	0
+5148e1a64ef9b8929d98643cdba7ab3e1eb985434d3c789acb2b4b6990a3b9ab	TRUNCATE TABLE `users`	1	148.801	0	0	0	0	0
+6b3d6518cb70c832227495b30561085316b80e63dfe6e8d0fb99104fbee1d2a6	SELECT `id` , `user_id` FROM `carts` ORDER BY `id`	1	0.195	0	0	0	0	0
+885d633fc9f53bb4ee250bebcc9bdfef462af29ac2633d37264efeba6ed90240	SELECT @@`character_set_database` , @@`sql_mode`	1	0.137	0	1	1	0	0
+8936dfbcc9bfc12c58ae195d70db2d72dedc9a4b147a7e80a4401939d401201c	TRUNCATE TABLE `order_items`	1	197.894	0	0	0	0	0
+8fbe236a5d55c13f7874bdf079e0047c447c97c6b993e01960e8638ca9cab688	SELECT COUNT ( * ) FROM `orders` `o` JOIN `users` `u` ON `u` . `id` = `o` . `user_id` WHERE `u` . `email` = ?	1	0.385	0	1	20	0	0
+9215dd73ff9731d6cca9509ea389ffaccba6086eb8023bae81515e533434c509	TRUNCATE TABLE `carts`	1	137.624	0	0	0	0	0
+a724a21545b602d4ae826ae58bbf526427a94f1e68ebec539ec3c53bfaa88281	SELECT @@SESSION . `transaction_isolation`	1	0.148	0	1	1	0	0
+a92930fe756e56112ab434d2a2ae306e69fb6b622246a99541a51c9f8940ff74	TRUNCATE TABLE `cart_items`	1	182.099	0	0	0	0	0
+b4ba619ea247d3560c848b455c09617d8010a4ed71e125e53b76b5f878ed4a71	SELECT `id` , NAME , COALESCE ( DESCRIPTION , ? ) FROM `categories` ORDER BY `id`	1	0.216	0	3	3	0	0
+b88651b8259a3fa82ae687f9a5335b00a59fea6a90e55efa5efb0ef15d62ce14	SELECT `id` , `full_name` , `email` , `phone` , ROLE , STATUS FROM `users` ORDER BY `id`	1	0.393	0	8	8	0	0
+b88884c9a38570c70dfee8c5311b23cb0d65c62864e057e9f69beab2bb1f5422	SELECT COUNT ( * ) FROM `order_items` `oi` LEFT JOIN `orders` `o` ON `o` . `id` = `oi` . `order_id` WHERE `o` . `id` IS NULL	1	0.589	0	1	80	0	0
+b9b6a34ff13fcb952841100e5020fba63003b71c02b723c441514d1e8cbbfa41	SELECT `stock_quantity` FROM `foods` WHERE NAME = ?	1	0.265	0	1	1	0	0
+ba1a1cfbb255ec82e146498171a2b339c0c6d5222efe1ff9234f43aa56577461	SELECT `WORD` FROM `INFORMATION_SCHEMA` . `KEYWORDS` WHERE `RESERVED` = ? ORDER BY `WORD`	1	2.981	0	262	524	0	0
+ce04eda080d3f5605113e1d0d47c2f20e23b091e2487ba586f07b32cda423942	SELECT SCHEMA ( )	1	0.077	0	1	1	0	0
+d02910cb27a5de30478e4a07091c47b0a86f1b489dd50112a7ef14216bd1c242	UPDATE `users` SET ROLE = ? WHERE `id` = ?	1	10.918	1	0	1	0	0
+d29bd7d32ced52e6d239364b9f34608a3682a7537865508dc2713488bda9e52f	SELECT `id` , `order_id` , `food_id` , `food_name` , `unit_price` , `quantity` FROM `order_items` ORDER BY `id`	1	0.224	0	40	40	0	0
+d41c175e07521b8f698e50dcdfbf3b5626701529f8b87b944654a25812f10cf4	SELECT `id` , `category_id` , NAME , COALESCE ( DESCRIPTION , ? ) , `price` , `stock_quantity` , STATUS FROM `foods` ORDER BY `id`	1	0.309	0	63	63	0	0
+f6fac82868f3fbe6c2aae6ebdfec7669e10b22a49a878b88f11cecd5d43656c5	TRUNCATE TABLE `categories`	1	119.195	0	0	0	0	0
+f78a13c67b30ac1bb949b1c6dd0a36e5e96105f4ef12b655d26f0b05ce88119e	SELECT `id` , `cart_id` , `food_id` , `quantity` FROM `cart_items` ORDER BY `id`	1	0.158	0	0	0	0	0
+ff6428752502f2148732ac53d700f0800a52985b8b0dda320ccdd58dbff8e85f	SELECT ? , COUNT ( * ) FROM `users` UNION ALL SELECT ? , COUNT ( * ) FROM `categories` UNION ALL SELECT ? , COUNT ( * ) FROM `foods` UNION ALL SELECT ? , COUNT ( * ) FROM `carts` UNION ALL SELECT ? , COUNT ( * ) FROM `cart_items` UNION ALL SELECT ? , COUNT ( * ) FROM `orders` UNION ALL SELECT ? , COUNT ( * ) FROM `order_items`	1	1.451	0	7	0	0	0

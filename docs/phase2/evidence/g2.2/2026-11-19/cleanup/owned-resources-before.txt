@@ -1,0 +1,8 @@
+﻿CONTAINER id=5cd7e6750f3c58c1ce22ab420cd96ecb4ed3ef6192c823eeac9f7381a65b8df1 name=byteme-g22-backend-1 project=byteme-g22 service=backend image=sha256:374e18d9da9322de83cfae202353ef6e9f268db6cd6289a295cf5af581da7022 status=running
+  MOUNT type=bind name= destination=/run/auth rw=False
+CONTAINER id=9ddda418fa0c716bc8f38107db877d9216ca28473ae1c7520cdfad132b7584d7 name=byteme-g22-mysql-1 project=byteme-g22 service=mysql image=sha256:a81d043930e51745522bd5c430961cf8286f0a23f0a9a2a6e0108f7ea71b0902 status=running
+  MOUNT type=bind name= destination=/docker-entrypoint-initdb.d/01-schema.sql rw=False
+  MOUNT type=bind name= destination=/opt/byteme/seed.sql rw=False
+  MOUNT type=volume name=byteme-g22_mysql_data destination=/var/lib/mysql rw=True
+NETWORK id=5533010a8f5c1b42702b69e47d29639315f01f3548ae0f0e10a3e2ebb1ce63aa name=byteme-g22_default project=byteme-g22
+VOLUME name=byteme-g22_mysql_data project=byteme-g22 driver=local

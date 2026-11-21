@@ -1,11 +1,37 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "platform": "kaggle-cpu",
   "baseline_sha": "510f6415b6af535ceec77213f0b0c7d5082123f7",
   "expected_versions": {
     "java_contains": "21.0.13",
     "mysql_contains": "8.4.13",
     "k6_contains": "v0.55.2"
+  },
+  "offline_dependencies": {
+    "libaio": {
+      "package": "libaio1t64",
+      "version": "0.3.113-6build1.1",
+      "architecture": "amd64",
+      "filename": "libaio1t64_0.3.113-6build1.1_amd64.deb",
+      "source_url": "https://archive.ubuntu.com/ubuntu/pool/main/liba/libaio/libaio1t64_0.3.113-6build1.1_amd64.deb",
+      "package_sha256": "433212b33e26d424605c01cec1de33b63f2cc12870987b4cb7b3625baba66a19",
+      "library_path": "usr/lib/x86_64-linux-gnu/libaio.so.1t64.0.2",
+      "library_sha256": "9dbba7441fe096f6654bfd31bfdbba52f41a209bd4a560468293c226ff63c998",
+      "compatibility_soname": "libaio.so.1",
+      "elf": {
+        "class": 2,
+        "data": 1,
+        "osabi": 0,
+        "machine": 62,
+        "soname": "libaio.so.1t64",
+        "required_symbol_versions": [
+          "LIBAIO_0.1",
+          "LIBAIO_0.4",
+          "LIBAIO_0.5",
+          "LIBAIO_0.6"
+        ]
+      }
+    }
   },
   "runtime": {
     "mysql_host": "127.0.0.1",
@@ -30,6 +56,9 @@
   },
   "workloads": {
     "warmup_seconds": 60,
+    "warmup_food_list_rps": 2,
+    "warmup_food_search_rps": 1,
+    "warmup_order_list_rps": 1,
     "measurement_seconds": 180,
     "cooldown_seconds": 30,
     "w1_food_list_rps": 10,
@@ -40,6 +69,11 @@
     "w3_rounds": 15,
     "minimum_runs": 3,
     "target_runs": 5
+  },
+  "official_validation": {
+    "minimum_resource_samples_per_label": 2,
+    "k6_duration_tolerance_seconds": 60,
+    "mysql_process_io_may_be_unavailable_with_sidecar_evidence": true
   },
   "smoke": {
     "profile": "smoke",

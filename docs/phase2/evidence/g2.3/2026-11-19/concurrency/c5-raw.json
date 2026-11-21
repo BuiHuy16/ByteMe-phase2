@@ -1,0 +1,783 @@
+{
+  "scenario": "C5",
+  "method_limitations": [
+    "Barrier synchronizes client worker release, not an in-transaction database barrier.",
+    "HTTP timestamps prove near-simultaneous client attempts but do not prove transaction overlap.",
+    "No application synchronization hook or source/config change was used."
+  ],
+  "rounds": [
+    {
+      "round": 1,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 0,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:30.849770+00:00",
+          "ended_at_utc": "2026-11-19T17:59:30.876693+00:00",
+          "elapsed_ms": 27.109,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONFLICT",
+            "status": 409,
+            "message": "Dữ liệu trùng hoặc vi phạm ràng buộc."
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:30.848373+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:30.849770+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:30.848373+00:00",
+          "ended_at_utc": "2026-11-19T17:59:30.871545+00:00",
+          "elapsed_ms": 22.083,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 76,
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:30.848373+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:30.848373+00:00"
+        }
+      ],
+      "final": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 1
+      },
+      "violations": []
+    },
+    {
+      "round": 2,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 0,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:32.808694+00:00",
+          "ended_at_utc": "2026-11-19T17:59:32.836763+00:00",
+          "elapsed_ms": 27.778,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONFLICT",
+            "status": 409,
+            "message": "Dữ liệu trùng hoặc vi phạm ràng buộc."
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:32.808164+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:32.808694+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:32.809221+00:00",
+          "ended_at_utc": "2026-11-19T17:59:32.831315+00:00",
+          "elapsed_ms": 22.507,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 78,
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:32.808694+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:32.809221+00:00"
+        }
+      ],
+      "final": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 1
+      },
+      "violations": []
+    },
+    {
+      "round": 3,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 0,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:34.633075+00:00",
+          "ended_at_utc": "2026-11-19T17:59:34.656849+00:00",
+          "elapsed_ms": 21.93,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 81,
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:34.633075+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:34.633075+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:34.633075+00:00",
+          "ended_at_utc": "2026-11-19T17:59:34.661873+00:00",
+          "elapsed_ms": 26.976,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONFLICT",
+            "status": 409,
+            "message": "Dữ liệu trùng hoặc vi phạm ràng buộc."
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:34.633075+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:34.633075+00:00"
+        }
+      ],
+      "final": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 1
+      },
+      "violations": []
+    },
+    {
+      "round": 4,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 0,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:36.629279+00:00",
+          "ended_at_utc": "2026-11-19T17:59:36.653320+00:00",
+          "elapsed_ms": 23.722,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONFLICT",
+            "status": 409,
+            "message": "Dữ liệu trùng hoặc vi phạm ràng buộc."
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:36.629279+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:36.629279+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:36.629279+00:00",
+          "ended_at_utc": "2026-11-19T17:59:36.648289+00:00",
+          "elapsed_ms": 18.53,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 83,
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:36.629279+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:36.629279+00:00"
+        }
+      ],
+      "final": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 1
+      },
+      "violations": []
+    },
+    {
+      "round": 5,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 0,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:38.556400+00:00",
+          "ended_at_utc": "2026-11-19T17:59:38.601639+00:00",
+          "elapsed_ms": 45.196,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 84,
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:38.553304+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:38.555410+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:38.555410+00:00",
+          "ended_at_utc": "2026-11-19T17:59:38.605748+00:00",
+          "elapsed_ms": 50.337,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONFLICT",
+            "status": 409,
+            "message": "Dữ liệu trùng hoặc vi phạm ràng buộc."
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:38.554406+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:38.555410+00:00"
+        }
+      ],
+      "final": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 1
+      },
+      "violations": []
+    },
+    {
+      "round": 6,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 0,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:40.511601+00:00",
+          "ended_at_utc": "2026-11-19T17:59:40.545889+00:00",
+          "elapsed_ms": 33.43,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONFLICT",
+            "status": 409,
+            "message": "Dữ liệu trùng hoặc vi phạm ràng buộc."
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:40.511601+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:40.511601+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:40.511601+00:00",
+          "ended_at_utc": "2026-11-19T17:59:40.539475+00:00",
+          "elapsed_ms": 25.755,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 86,
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:40.511601+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:40.511601+00:00"
+        }
+      ],
+      "final": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 1
+      },
+      "violations": []
+    },
+    {
+      "round": 7,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 0,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:42.461709+00:00",
+          "ended_at_utc": "2026-11-19T17:59:42.505864+00:00",
+          "elapsed_ms": 44.219,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONFLICT",
+            "status": 409,
+            "message": "Dữ liệu trùng hoặc vi phạm ràng buộc."
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:42.455077+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:42.455077+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:42.462125+00:00",
+          "ended_at_utc": "2026-11-19T17:59:42.501230+00:00",
+          "elapsed_ms": 38.383,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 88,
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:42.455077+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:42.462125+00:00"
+        }
+      ],
+      "final": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 1
+      },
+      "violations": []
+    },
+    {
+      "round": 8,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 0,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:44.572699+00:00",
+          "ended_at_utc": "2026-11-19T17:59:44.625782+00:00",
+          "elapsed_ms": 53.264,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 90,
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:44.572129+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:44.572699+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:44.573039+00:00",
+          "ended_at_utc": "2026-11-19T17:59:44.644434+00:00",
+          "elapsed_ms": 71.828,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONFLICT",
+            "status": 409,
+            "message": "Dữ liệu trùng hoặc vi phạm ràng buộc."
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:44.572699+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:44.573039+00:00"
+        }
+      ],
+      "final": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 1
+      },
+      "violations": []
+    },
+    {
+      "round": 9,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 0,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:46.537412+00:00",
+          "ended_at_utc": "2026-11-19T17:59:46.576695+00:00",
+          "elapsed_ms": 39.163,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONFLICT",
+            "status": 409,
+            "message": "Dữ liệu trùng hoặc vi phạm ràng buộc."
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:46.535413+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:46.537412+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:46.538408+00:00",
+          "ended_at_utc": "2026-11-19T17:59:46.571134+00:00",
+          "elapsed_ms": 32.655,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 92,
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:46.536413+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:46.538408+00:00"
+        }
+      ],
+      "final": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 1
+      },
+      "violations": []
+    },
+    {
+      "round": 10,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 0,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:48.346913+00:00",
+          "ended_at_utc": "2026-11-19T17:59:48.369226+00:00",
+          "elapsed_ms": 22.461,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 94,
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:48.345670+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:48.346913+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:48.345670+00:00",
+          "ended_at_utc": "2026-11-19T17:59:48.375049+00:00",
+          "elapsed_ms": 28.623,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONFLICT",
+            "status": 409,
+            "message": "Dữ liệu trùng hoặc vi phạm ràng buộc."
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:48.345670+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:48.345670+00:00"
+        }
+      ],
+      "final": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 1
+      },
+      "violations": []
+    },
+    {
+      "round": 11,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 0,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:50.042856+00:00",
+          "ended_at_utc": "2026-11-19T17:59:50.088267+00:00",
+          "elapsed_ms": 43.482,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONFLICT",
+            "status": 409,
+            "message": "Dữ liệu trùng hoặc vi phạm ràng buộc."
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:50.042856+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:50.042856+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:50.042856+00:00",
+          "ended_at_utc": "2026-11-19T17:59:50.080214+00:00",
+          "elapsed_ms": 35.619,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 96,
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:50.042856+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:50.042856+00:00"
+        }
+      ],
+      "final": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 1
+      },
+      "violations": []
+    },
+    {
+      "round": 12,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 0,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:51.775352+00:00",
+          "ended_at_utc": "2026-11-19T17:59:51.802243+00:00",
+          "elapsed_ms": 27.006,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONFLICT",
+            "status": 409,
+            "message": "Dữ liệu trùng hoặc vi phạm ràng buộc."
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:51.774839+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:51.775352+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:51.775352+00:00",
+          "ended_at_utc": "2026-11-19T17:59:51.799507+00:00",
+          "elapsed_ms": 23.854,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 98,
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:51.775352+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:51.775352+00:00"
+        }
+      ],
+      "final": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 1
+      },
+      "violations": []
+    },
+    {
+      "round": 13,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 0,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:53.404613+00:00",
+          "ended_at_utc": "2026-11-19T17:59:53.433245+00:00",
+          "elapsed_ms": 29.162,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 100,
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:53.403725+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:53.403725+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:53.404613+00:00",
+          "ended_at_utc": "2026-11-19T17:59:53.436922+00:00",
+          "elapsed_ms": 32.342,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONFLICT",
+            "status": 409,
+            "message": "Dữ liệu trùng hoặc vi phạm ràng buộc."
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:53.403725+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:53.404613+00:00"
+        }
+      ],
+      "final": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 1
+      },
+      "violations": []
+    },
+    {
+      "round": 14,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 0,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:55.378537+00:00",
+          "ended_at_utc": "2026-11-19T17:59:55.413766+00:00",
+          "elapsed_ms": 35.347,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONFLICT",
+            "status": 409,
+            "message": "Dữ liệu trùng hoặc vi phạm ràng buộc."
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:55.377596+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:55.378144+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:55.378537+00:00",
+          "ended_at_utc": "2026-11-19T17:59:55.402776+00:00",
+          "elapsed_ms": 23.952,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 102,
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:55.378144+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:55.378537+00:00"
+        }
+      ],
+      "final": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 1
+      },
+      "violations": []
+    },
+    {
+      "round": 15,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 0,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:57.177888+00:00",
+          "ended_at_utc": "2026-11-19T17:59:57.213671+00:00",
+          "elapsed_ms": 35.273,
+          "http_status": 409,
+          "error": null,
+          "body": {
+            "code": "CONFLICT",
+            "status": 409,
+            "message": "Dữ liệu trùng hoặc vi phạm ràng buộc."
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:57.171598+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:57.177888+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:57.177888+00:00",
+          "ended_at_utc": "2026-11-19T17:59:57.205879+00:00",
+          "elapsed_ms": 28.176,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 104,
+            "item_count": 1
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:57.177280+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:57.177888+00:00"
+        }
+      ],
+      "final": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 1
+      },
+      "violations": []
+    }
+  ],
+  "summary": {
+    "scenario": "C5",
+    "classification": "OBSERVED CORRECT",
+    "rounds_executed": 15,
+    "invariant_violation_rounds": [],
+    "server_or_transport_error_rounds": [],
+    "notable_observation_rounds": []
+  }
+}

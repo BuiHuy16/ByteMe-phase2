@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""User-space Kaggle CPU smoke orchestration for the Phase 2 benchmark kit.
+"""User-space Kaggle CPU smoke and official orchestration for the Phase 2 benchmark kit.
 
 No Docker or root access is assumed. Exact portable toolchain archives may be
 attached as Kaggle inputs; an already installed binary is accepted only when
@@ -10,18 +10,26 @@ from __future__ import annotations
 
 import datetime as dt
 import hashlib
+import importlib.util
 import json
+import math
 import os
 import pathlib
 import platform
+try:
+    import pwd
+except ImportError:  # Windows unit-test host; Kaggle is Linux.
+    pwd = None
 import re
 import secrets
 import shutil
 import signal
+import socket
 import stat
 import subprocess
 import tarfile
 import threading
+import traceback
 import time
 import urllib.error
 import urllib.request
@@ -29,6 +37,14 @@ import zipfile
 
 
 BASELINE_SHA = "510f6415b6af535ceec77213f0b0c7d5082123f7"
+SMOKE_PROJECT = "byteme-g24-kaggle"
+OFFICIAL_PROJECT = "byteme-benchmark-g25-kaggle"
+
+TOOLCHAIN_ARCHIVE_PATTERNS = {
+    "java": ("*jdk*21*.tar.gz", "*jre*21*.tar.gz"),
+    "mysql": ("mysql*8.4*.tar.xz", "mysql*8.4*.tar.gz"),
+    "k6": ("k6*v0.55.2*linux*amd64*.tar.gz", "k6*0.55.2*linux*amd64*.tar.gz"),
+}
 
 
 def utc_now() -> str:
@@ -195,12 +211,16 @@ def safe_extract(archive: pathlib.Path, destination: pathlib.Path) -> None:
     resolved = destination.resolve()
     with tarfile.open(archive) as bundle:
         members = bundle.getmembers()
-        names = set()
+        members_by_path: dict[pathlib.PurePosixPath, tarfile.TarInfo] = {}
         for member in members:
             pure = pathlib.PurePosixPath(member.name)
-            if pure.is_absolute() or ".." in pure.parts or member.name in names:
+            if pure.is_absolute() or ".." in pure.parts:
                 raise RuntimeError(f"unsafe archive member: {member.name}")
-            names.add(member.name)
+            previous = members_by_path.get(pure)
+            if previous is not None and not (previous.isdir() and member.isdir()):
+                raise RuntimeError(f"duplicate archive member: {member.name}")
+            if previous is None:
+                members_by_path[pure] = member
             if not (member.isdir() or member.isfile() or member.issym() or member.islnk()):
                 raise RuntimeError(f"unsupported archive member type: {member.name}")
             target = (destination / pathlib.Path(*pure.parts)).resolve()
@@ -238,7 +258,264 @@ def safe_extract(archive: pathlib.Path, destination: pathlib.Path) -> None:
                 os.link(link_target, target)
 
 
-def validate_resource_samples(path: pathlib.Path, required_labels: set[str]) -> dict:
+def _matching_files(root: pathlib.Path, patterns: tuple[str, ...]) -> list[pathlib.Path]:
+    found: set[pathlib.Path] = set()
+    for pattern in patterns:
+        found.update(path for path in root.rglob(pattern) if path.is_file())
+    return sorted(found)
+
+
+def _executable_candidates(root: pathlib.Path, component: str) -> list[pathlib.Path]:
+    names = {"java", "java.exe"} if component == "java" else {"k6", "k6.exe"}
+    candidates = []
+    for name in names:
+        for path in root.rglob(name):
+            if not path.is_file():
+                continue
+            if component == "java" and path.parent.name != "bin":
+                continue
+            candidates.append(path)
+    return sorted(set(candidates))
+
+
+def _validate_extracted_tree(root: pathlib.Path) -> None:
+    resolved = root.resolve()
+    for path in root.rglob("*"):
+        if not path.is_symlink():
+            continue
+        target = path.resolve()
+        if target != resolved and resolved not in target.parents:
+            raise RuntimeError(f"extracted toolchain symlink escapes its root: {path} -> {target}")
+
+
+def _materialize_file(source: pathlib.Path, destination: pathlib.Path) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        destination.symlink_to(source.resolve())
+    except OSError:
+        shutil.copy2(source, destination)
+
+
+def _safe_bundle_relative(raw: str) -> pathlib.PurePosixPath:
+    relative = pathlib.PurePosixPath(raw)
+    if relative.is_absolute() or not relative.parts or ".." in relative.parts:
+        raise RuntimeError(f"unsafe bundle manifest path: {raw}")
+    return relative
+
+
+def _bootstrap_version(component: str, executable: pathlib.Path, version_runner=None) -> str:
+    args = ["-version"] if component == "java" else ["version"]
+    if version_runner is not None:
+        return str(version_runner(component, executable, args))
+    proc = subprocess.run([str(executable), *args], text=True, encoding="utf-8", errors="replace",
+                          capture_output=True, timeout=30)
+    output = (proc.stdout + proc.stderr).strip()
+    if proc.returncode:
+        raise RuntimeError(f"{component} executable version probe failed: {executable}: "
+                           f"exit={proc.returncode}, output={output}")
+    return output
+
+
+def prepare_kaggle_input(input_root: str | pathlib.Path = "/kaggle/input",
+                         working_root: str | pathlib.Path = "/kaggle/working/byteme-g24k-bootstrap",
+                         version_runner=None) -> pathlib.Path:
+    """Normalize Kaggle inputs without requiring a manual staging cell.
+
+    Kaggle may expose Java and k6 either as original archives or as already
+    extracted, non-executable dataset files. This function validates one exact
+    source for each tool, materializes Java/k6 under writable storage, preserves
+    MySQL/libaio as locked inputs, and returns the only input root a session
+    should use. Repeated calls with the same inputs return the same directory.
+    """
+    source_root = pathlib.Path(input_root).resolve()
+    bootstrap_root = pathlib.Path(working_root).resolve()
+    if not source_root.is_dir():
+        raise RuntimeError(f"Kaggle input root does not exist: {source_root}")
+
+    bundle_manifests = sorted(source_root.rglob("bundle-manifest.json"))
+    if len(bundle_manifests) != 1:
+        raise RuntimeError(f"expected exactly one bundle-manifest.json below {source_root}, "
+                           f"found {len(bundle_manifests)}: {bundle_manifests}")
+    bundle_manifest_path = bundle_manifests[0]
+    bundle_root = bundle_manifest_path.parent
+    bundle_manifest = json.loads(bundle_manifest_path.read_text(encoding="utf-8-sig"))
+    if bundle_manifest.get("protocol_baseline_sha") != BASELINE_SHA:
+        raise RuntimeError("bundle protocol baseline mismatch during bootstrap")
+    bundle_files: list[tuple[pathlib.PurePosixPath, pathlib.Path, str]] = []
+    for item in bundle_manifest.get("files", []):
+        relative = _safe_bundle_relative(item["path"])
+        source = bundle_root / pathlib.Path(*relative.parts)
+        actual = sha256(source) if source.is_file() else None
+        if actual != item.get("sha256"):
+            raise RuntimeError(f"bundle checksum mismatch during bootstrap: {relative.as_posix()}")
+        bundle_files.append((relative, source, actual))
+    locks = list(bundle_root.rglob("configuration-lock.json"))
+    if len(locks) != 1:
+        raise RuntimeError(f"configuration-lock.json missing or ambiguous during bootstrap: {locks}")
+    config = json.loads(locks[0].read_text(encoding="utf-8-sig"))
+    if config.get("baseline_sha") != BASELINE_SHA:
+        raise RuntimeError("configuration baseline mismatch during bootstrap")
+    expected = config["expected_versions"]
+
+    mysql_archives = _matching_files(source_root, TOOLCHAIN_ARCHIVE_PATTERNS["mysql"])
+    if len(mysql_archives) != 1:
+        raise RuntimeError(f"expected exactly one MySQL {expected['mysql_contains']} archive, "
+                           f"found {len(mysql_archives)}: {mysql_archives}")
+    if expected["mysql_contains"] not in mysql_archives[0].name:
+        raise RuntimeError(f"MySQL archive does not identify locked version {expected['mysql_contains']}: "
+                           f"{mysql_archives[0]}")
+    mysql_sha = sha256(mysql_archives[0])
+
+    libaio_lock = config["offline_dependencies"]["libaio"]
+    libaio_packages = sorted(path for path in source_root.rglob(libaio_lock["filename"]) if path.is_file())
+    if len(libaio_packages) != 1:
+        raise RuntimeError(f"expected exactly one locked libaio package, found {len(libaio_packages)}: "
+                           f"{libaio_packages}")
+    libaio_sha = sha256(libaio_packages[0])
+    if libaio_sha != libaio_lock["package_sha256"]:
+        raise RuntimeError(f"libaio package checksum mismatch during bootstrap: {libaio_sha}")
+
+    sources = {}
+    for component in ("java", "k6"):
+        archives = _matching_files(source_root, TOOLCHAIN_ARCHIVE_PATTERNS[component])
+        extracted = _executable_candidates(source_root, component)
+        source_count = len(archives) + len(extracted)
+        if source_count != 1:
+            raise RuntimeError(f"expected exactly one {component} source (archive or extracted executable), "
+                               f"found archives={archives}, extracted={extracted}")
+        if archives:
+            sources[component] = {"kind": "archive", "path": archives[0], "sha256": sha256(archives[0])}
+        else:
+            executable = extracted[0]
+            install_root = executable.parent.parent if component == "java" else executable.parent
+            _validate_extracted_tree(install_root)
+            sources[component] = {"kind": "extracted", "path": install_root,
+                                  "relative_executable": executable.relative_to(install_root),
+                                  "sha256": sha256(executable)}
+
+    fingerprint_document = {
+        "schema_version": 1,
+        "bundle_manifest_sha256": sha256(bundle_manifest_path),
+        "configuration_sha256": sha256(locks[0]),
+        "mysql": {"name": mysql_archives[0].name, "sha256": mysql_sha},
+        "libaio": {"name": libaio_packages[0].name, "sha256": libaio_sha},
+        "java": {key: str(value) if isinstance(value, pathlib.Path) else value
+                 for key, value in sources["java"].items() if key != "path"},
+        "k6": {key: str(value) if isinstance(value, pathlib.Path) else value
+               for key, value in sources["k6"].items() if key != "path"},
+    }
+    fingerprint = hashlib.sha256(json.dumps(fingerprint_document, sort_keys=True).encode()).hexdigest()
+    prepared = bootstrap_root / f"g24k-input-{fingerprint[:16]}"
+    bootstrap_manifest_path = prepared / "bootstrap-manifest.json"
+    if prepared.exists():
+        if not bootstrap_manifest_path.is_file():
+            raise RuntimeError(f"prepared input exists without bootstrap manifest: {prepared}")
+        previous = json.loads(bootstrap_manifest_path.read_text(encoding="utf-8"))
+        if previous.get("input_fingerprint_sha256") != fingerprint:
+            raise RuntimeError(f"prepared input fingerprint mismatch: {prepared}")
+        for component in ("java", "k6"):
+            executable = prepared / pathlib.Path(*pathlib.PurePosixPath(
+                previous["components"][component]["prepared_executable"]).parts)
+            if not executable.is_file() or sha256(executable) != previous["components"][component]["sha256"]:
+                raise RuntimeError(f"prepared {component} executable changed: {executable}")
+            output = _bootstrap_version(component, executable, version_runner)
+            if expected[f"{component}_contains"] not in output:
+                raise RuntimeError(f"prepared {component} version drift: expected "
+                                   f"{expected[f'{component}_contains']}, actual={output}")
+        return prepared.resolve()
+
+    bootstrap_root.mkdir(parents=True, exist_ok=True)
+    temporary = bootstrap_root / f".{prepared.name}.tmp-{secrets.token_hex(6)}"
+    temporary.mkdir(parents=False, exist_ok=False)
+    try:
+        _materialize_file(bundle_manifest_path, temporary / "bundle-manifest.json")
+        for relative, source, _ in bundle_files:
+            _materialize_file(source, temporary / pathlib.Path(*relative.parts))
+        _materialize_file(mysql_archives[0], temporary / "toolchain-source/mysql" / mysql_archives[0].name)
+        _materialize_file(libaio_packages[0], temporary / "toolchain-source/libaio" / libaio_packages[0].name)
+
+        components = {}
+        for component in ("java", "k6"):
+            destination = temporary / "toolchain-source" / component
+            source = sources[component]
+            if source["kind"] == "archive":
+                safe_extract(source["path"], destination)
+                candidates = _executable_candidates(destination, component)
+                if len(candidates) != 1:
+                    raise RuntimeError(f"{component} archive must contain exactly one executable, "
+                                       f"found {candidates}")
+                executable = candidates[0]
+            else:
+                copied_root = destination / source["path"].name
+                shutil.copytree(source["path"], copied_root, symlinks=True)
+                executable = copied_root / source["relative_executable"]
+            _validate_extracted_tree(destination)
+            executable.chmod(executable.stat().st_mode | 0o111)
+            output = _bootstrap_version(component, executable, version_runner)
+            expected_marker = expected[f"{component}_contains"]
+            if expected_marker not in output:
+                raise RuntimeError(f"{component} version mismatch: expected {expected_marker}, actual={output}")
+            components[component] = {
+                "source_kind": source["kind"],
+                "source_sha256": source["sha256"],
+                "prepared_executable": executable.relative_to(temporary).as_posix(),
+                "sha256": sha256(executable),
+                "version": output,
+            }
+        document = {
+            "schema_version": 1,
+            "created_at_utc": utc_now(),
+            "source_input_root": str(source_root),
+            "prepared_input_root": str(prepared),
+            "input_fingerprint_sha256": fingerprint,
+            "fingerprint": fingerprint_document,
+            "components": {
+                **components,
+                "mysql": {"archive": f"toolchain-source/mysql/{mysql_archives[0].name}",
+                            "version": expected["mysql_contains"], "sha256": mysql_sha},
+                "libaio": {"package": f"toolchain-source/libaio/{libaio_packages[0].name}",
+                            "version": libaio_lock["version"], "sha256": libaio_sha},
+            },
+        }
+        (temporary / "bootstrap-manifest.json").write_text(
+            json.dumps(document, ensure_ascii=False, indent=2), encoding="utf-8")
+        temporary.rename(prepared)
+    except Exception:
+        shutil.rmtree(temporary, ignore_errors=True)
+        raise
+    return prepared.resolve()
+
+
+def inspect_elf_library(path: pathlib.Path, lock: dict) -> dict:
+    """Validate the exact locked ELF library without relying on host binutils."""
+    actual_sha = sha256(path)
+    if actual_sha != lock["library_sha256"]:
+        raise RuntimeError(f"offline dependency library checksum mismatch: {actual_sha}")
+    data = path.read_bytes()
+    if len(data) < 20 or data[:4] != b"\x7fELF":
+        raise RuntimeError(f"offline dependency is not ELF: {path}")
+    elf = lock["elf"]
+    actual = {"class": data[4], "data": data[5], "osabi": data[7],
+              "machine": int.from_bytes(data[18:20], "little" if data[5] == 1 else "big")}
+    expected = {key: elf[key] for key in ("class", "data", "osabi", "machine")}
+    if actual != expected:
+        raise RuntimeError(f"offline dependency ELF mismatch: expected={expected}, actual={actual}")
+    required_markers = [elf["soname"], *elf["required_symbol_versions"]]
+    missing_markers = [item for item in required_markers if item.encode() + b"\0" not in data]
+    if missing_markers:
+        raise RuntimeError(f"offline dependency ABI markers missing: {missing_markers}")
+    return {**actual, "sha256": actual_sha, "soname": elf["soname"],
+            "required_symbol_versions": elf["required_symbol_versions"]}
+
+
+def parse_ldd_missing(output: str) -> list[str]:
+    return sorted(set(re.findall(r"^\s*([^\s]+)\s+=>\s+not found\s*$", output, re.MULTILINE)))
+
+
+def validate_resource_samples(path: pathlib.Path, required_labels: set[str],
+                              minimum_rows_per_label: int = 1,
+                              allowed_exit_labels: set[str] | None = None,
+                              minimum_span_seconds: float | None = None) -> dict:
     if not path.is_file():
         raise RuntimeError(f"resource telemetry missing: {path}")
     lines = [line for line in path.read_text(encoding="utf-8-sig").splitlines() if line.strip()]
@@ -249,11 +526,70 @@ def validate_resource_samples(path: pathlib.Path, required_labels: set[str]) -> 
         label_index = header.index("label")
     except ValueError as exc:
         raise RuntimeError(f"resource telemetry lacks label column: {path}") from exc
-    labels = {line.split("\t")[label_index] for line in lines[1:] if len(line.split("\t")) > label_index}
+    required_columns = {"label", "pid", "process_cpu_percent", "rss_bytes", "read_bytes", "write_bytes"}
+    if not required_columns.issubset(header):
+        raise RuntimeError(f"resource telemetry missing columns {sorted(required_columns - set(header))}: {path}")
+    unavailable_path = path.with_suffix(".unavailable.jsonl")
+    unavailable = [json.loads(line) for line in unavailable_path.read_text(encoding="utf-8").splitlines()] if unavailable_path.exists() else []
+    lifecycle_path = path.with_suffix(".lifecycle.jsonl")
+    lifecycle = [json.loads(line) for line in lifecycle_path.read_text(encoding="utf-8").splitlines()] if lifecycle_path.exists() else []
+    allowed_exit_labels = allowed_exit_labels or {"driver"}
+    invalid_lifecycle = []
+    for event in lifecycle:
+        label, kind = event.get("label"), event.get("event")
+        normal_driver_exit = (label in allowed_exit_labels and kind != "TELEMETRY_UNAVAILABLE"
+                              and (event.get("exit_code") is not None or str(kind).startswith("PROCESS_")))
+        if label in required_labels and not normal_driver_exit:
+            invalid_lifecycle.append(event)
+    if invalid_lifecycle:
+        raise RuntimeError(f"resource telemetry has invalid process lifecycle events: {invalid_lifecycle}")
+    labels = set()
+    rows_by_label: dict[str, int] = {}
+    timestamps_by_label: dict[str, list] = {}
+    io_unavailable_rows = 0
+    for line in lines[1:]:
+        fields = line.split("\t")
+        if len(fields) != len(header):
+            raise RuntimeError(f"resource telemetry malformed row: {path}")
+        row = dict(zip(header, fields))
+        try:
+            pid = int(row["pid"])
+            cpu = float(row["process_cpu_percent"])
+            rss = int(row["rss_bytes"])
+            if pid <= 0 or not math.isfinite(cpu) or cpu < 0 or rss < 0:
+                raise ValueError("invalid CPU/RSS/PID")
+            for metric in ("read_bytes", "write_bytes"):
+                if row[metric] == "NA":
+                    if not any(item.get("label") == row["label"] and item.get("pid") == pid
+                               and metric in item.get("metrics", []) and item.get("reason") for item in unavailable):
+                        raise ValueError(f"{metric}=NA without unavailable evidence")
+                elif int(row[metric]) < 0:
+                    raise ValueError(f"negative {metric}")
+        except (ValueError, TypeError) as exc:
+            raise RuntimeError(f"resource telemetry invalid/missing CPU/RSS or I/O evidence: {path}: {exc}") from exc
+        labels.add(row["label"])
+        rows_by_label[row["label"]] = rows_by_label.get(row["label"], 0) + 1
+        if minimum_span_seconds is not None:
+            timestamps_by_label.setdefault(row["label"], []).append(
+                dt.datetime.fromisoformat(row["timestamp_utc"]))
+        io_unavailable_rows += int(row["read_bytes"] == "NA" or row["write_bytes"] == "NA")
     missing = sorted(required_labels - labels)
     if missing:
         raise RuntimeError(f"resource telemetry missing process labels {missing}: {path}")
-    return {"sample_rows": len(lines) - 1, "labels": sorted(labels)}
+    insufficient = {label: rows_by_label.get(label, 0) for label in required_labels
+                    if rows_by_label.get(label, 0) < minimum_rows_per_label}
+    if insufficient:
+        raise RuntimeError(f"resource telemetry has insufficient rows per process label {insufficient}: {path}")
+    if minimum_span_seconds is not None:
+        for label in required_labels:
+            times = timestamps_by_label[label]
+            span = (max(times) - min(times)).total_seconds()
+            if span < minimum_span_seconds:
+                raise RuntimeError(f"resource telemetry duration insufficient: {label} span={span}s < {minimum_span_seconds}s")
+    return {"sample_rows": len(lines) - 1, "labels": sorted(labels),
+            "rows_by_label": rows_by_label, "minimum_rows_per_label": minimum_rows_per_label,
+            "cpu_rss_complete": True, "io_unavailable_rows": io_unavailable_rows,
+            "lifecycle_events": lifecycle}
 
 
 def validate_k6_smoke_summary(path: pathlib.Path, workload: str, expected_checks: int | None = None,
@@ -327,13 +663,109 @@ def validate_w3_smoke_result(path: pathlib.Path, expected_rounds: int) -> dict:
             "note": "Baseline defects are evidence and do not make the correctness harness fail."}
 
 
+def validate_k6_official_summary(path: pathlib.Path, workload: str, expected_duration_seconds: int,
+                                 expected_load: dict, duration_tolerance_seconds: int = 60) -> dict:
+    """Validate measurement completeness without turning application errors into harness errors."""
+    if not path.is_file():
+        raise RuntimeError(f"{workload} k6 summary missing: {path}")
+    summary = json.loads(path.read_text(encoding="utf-8-sig"))
+    metrics = summary.get("metrics", {})
+
+    def values(name: str, required: bool = True) -> dict:
+        metric = metrics.get(name)
+        if metric is None:
+            if required:
+                raise RuntimeError(f"{workload} summary missing metric: {name}")
+            return {}
+        result = metric.get("values")
+        if not isinstance(result, dict):
+            raise RuntimeError(f"{workload} metric has no values: {name}")
+        return result
+
+    duration_ms = summary.get("state", {}).get("testRunDurationMs")
+    if not isinstance(duration_ms, (int, float)) or not math.isfinite(duration_ms):
+        raise RuntimeError(f"{workload} summary has no finite test duration")
+    minimum_ms = expected_duration_seconds * 1000 * 0.95
+    maximum_ms = (expected_duration_seconds + duration_tolerance_seconds) * 1000
+    if duration_ms < minimum_ms or duration_ms > maximum_ms:
+        raise RuntimeError(f"{workload} duration outside official tolerance: {duration_ms}ms")
+
+    requests = values("http_reqs")
+    iterations = values("iterations")
+    checks = values("checks")
+    failures = values("http_req_failed")
+    if requests.get("count", 0) <= 0 or iterations.get("count", 0) <= 0:
+        raise RuntimeError(f"{workload} executed no requests/iterations")
+    error_metric = "write_error_rate" if workload == "W2" else "application_error_rate"
+    workload_errors = values(error_metric)
+    unexpected = values("unexpected_responses", required=False)
+    server_errors = values("server_errors", required=False)
+    business_rejections = values("business_rejections", required=False)
+    dropped = values("dropped_iterations", required=False)
+    observed_errors = any([
+        checks.get("fails", 0) > 0,
+        failures.get("rate", 0) > 0,
+        workload_errors.get("rate", 0) > 0,
+        unexpected.get("count", 0) > 0,
+        server_errors.get("count", 0) > 0,
+        dropped.get("count", 0) > 0,
+    ])
+    return {
+        "harness_valid": True,
+        "workload": workload,
+        "expected_duration_seconds": expected_duration_seconds,
+        "actual_duration_ms": duration_ms,
+        "expected_load": expected_load,
+        "requests": requests.get("count"),
+        "iterations": iterations.get("count"),
+        "checks_passed": checks.get("passes", 0),
+        "checks_failed": checks.get("fails", 0),
+        "http_failure_rate": failures.get("rate"),
+        "application_error_rate": workload_errors.get("rate"),
+        "unexpected_responses": unexpected.get("count", 0),
+        "server_errors": server_errors.get("count", 0),
+        "business_rejections": business_rejections.get("count", 0),
+        "dropped_iterations": dropped.get("count", 0),
+        "outcome": "HTTP_OR_PERFORMANCE_FAILURE" if observed_errors else "COMPLETED_WITHOUT_OBSERVED_ERRORS",
+        "note": "HTTP/performance failures are baseline outcomes; structural incompleteness is a harness failure.",
+    }
+
+
+class ProcessLifecycle(Exception):
+    def __init__(self, event: str, pid: int, state: str | None = None,
+                 expected_start_time: int | None = None, actual_start_time: int | None = None):
+        self.event = event
+        self.pid = pid
+        self.state = state
+        self.expected_start_time = expected_start_time
+        self.actual_start_time = actual_start_time
+        super().__init__(f"{event}: pid={pid}, state={state}, expected_start={expected_start_time}, "
+                         f"actual_start={actual_start_time}")
+
+
+class ProcessTelemetryUnavailable(RuntimeError):
+    pass
+
+
 class ResourceSampler:
-    def __init__(self, output: pathlib.Path, processes: dict[str, int], interval: float = 1.0):
-        self.output, self.processes, self.interval = output, processes, interval
+    def __init__(self, output: pathlib.Path, processes: dict[str, object], interval: float = 1.0,
+                 allowed_exit_labels: set[str] | None = None):
+        self.output, self.interval = output, interval
+        self.processes: dict[str, int] = {}
+        self.process_handles: dict[str, object] = {}
+        for label, value in processes.items():
+            if isinstance(value, int):
+                self.processes[label] = value
+            else:
+                self.processes[label] = value.pid
+                self.process_handles[label] = value
+        self.allowed_exit_labels = allowed_exit_labels or set()
         self.stop_event = threading.Event()
         self.thread = threading.Thread(target=self._run, daemon=True)
         self.previous_system = None
         self.previous_process: dict[int, int] = {}
+        self.process_start_times: dict[str, int] = {}
+        self.failure: str | None = None
 
     @staticmethod
     def _system_cpu() -> tuple[int, int]:
@@ -341,16 +773,77 @@ class ResourceSampler:
         return sum(values), values[3] + (values[4] if len(values) > 4 else 0)
 
     @staticmethod
-    def _process(pid: int) -> tuple[int, int, int, int]:
-        stat = pathlib.Path(f"/proc/{pid}/stat").read_text().split()
-        ticks = int(stat[13]) + int(stat[14])
-        status = pathlib.Path(f"/proc/{pid}/status").read_text()
+    def _stat(pid: int) -> dict:
+        # comm (field 2) may contain spaces; utime/stime are fields 14/15.
+        try:
+            fields = pathlib.Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()
+        except (FileNotFoundError, ProcessLookupError) as exc:
+            raise ProcessLifecycle("PROCESS_EXITED", pid) from exc
+        except PermissionError as exc:
+            raise ProcessTelemetryUnavailable(f"required CPU/RSS telemetry permission denied: /proc/{pid}/stat") from exc
+        return {"state": fields[0], "ticks": int(fields[11]) + int(fields[12]),
+                "start_time": int(fields[19])}
+
+    @classmethod
+    def _process_details(cls, pid: int, expected_start_time: int | None = None) -> dict:
+        identity = cls._stat(pid)
+        if expected_start_time is not None and identity["start_time"] != expected_start_time:
+            raise ProcessLifecycle("PID_REUSED", pid, identity["state"], expected_start_time,
+                                   identity["start_time"])
+        if identity["state"] in {"Z", "X", "x"}:
+            raise ProcessLifecycle("PROCESS_ZOMBIE", pid, "Z", expected_start_time,
+                                   identity["start_time"])
+        try:
+            status = pathlib.Path(f"/proc/{pid}/status").read_text()
+        except (FileNotFoundError, ProcessLookupError) as exc:
+            raise ProcessLifecycle("PROCESS_EXITED_DURING_SAMPLE", pid, identity["state"],
+                                   expected_start_time, identity["start_time"]) from exc
+        except PermissionError as exc:
+            raise ProcessTelemetryUnavailable(
+                f"required CPU/RSS telemetry permission denied: /proc/{pid}/status") from exc
         match = re.search(r"^VmRSS:\s+(\d+)\s+kB", status, re.MULTILINE)
-        rss = int(match.group(1)) * 1024 if match else 0
-        io = pathlib.Path(f"/proc/{pid}/io").read_text()
-        read_b = int(re.search(r"^read_bytes:\s+(\d+)", io, re.MULTILINE).group(1))
-        write_b = int(re.search(r"^write_bytes:\s+(\d+)", io, re.MULTILINE).group(1))
-        return ticks, rss, read_b, write_b
+        if match is None:
+            # Re-read identity to distinguish an exit/zombie/reuse race from an active process
+            # whose mandatory RSS telemetry is genuinely unavailable.
+            current = cls._stat(pid)
+            if current["start_time"] != identity["start_time"]:
+                raise ProcessLifecycle("PID_REUSED_DURING_SAMPLE", pid, current["state"],
+                                       identity["start_time"], current["start_time"])
+            if current["state"] in {"Z", "X", "x"}:
+                raise ProcessLifecycle("PROCESS_ZOMBIE_DURING_SAMPLE", pid, "Z",
+                                       identity["start_time"], current["start_time"])
+            raise ProcessTelemetryUnavailable(
+                f"required VmRSS unavailable for active process: /proc/{pid}/status; "
+                f"state={current['state']}; start_time={current['start_time']}")
+        rss = int(match.group(1)) * 1024
+        current = cls._stat(pid)
+        if current["start_time"] != identity["start_time"]:
+            raise ProcessLifecycle("PID_REUSED_DURING_SAMPLE", pid, current["state"],
+                                   identity["start_time"], current["start_time"])
+        if current["state"] in {"Z", "X", "x"}:
+            raise ProcessLifecycle("PROCESS_ZOMBIE_DURING_SAMPLE", pid, current["state"],
+                                   identity["start_time"], current["start_time"])
+        try:
+            io = pathlib.Path(f"/proc/{pid}/io").read_text()
+        except PermissionError:
+            return {**identity, "rss": rss, "read_bytes": None, "write_bytes": None,
+                    "io_reason": f"PermissionError: access denied to /proc/{pid}/io"}
+        except (FileNotFoundError, ProcessLookupError):
+            return {**identity, "rss": rss, "read_bytes": None, "write_bytes": None,
+                    "io_reason": f"process exited before optional /proc/{pid}/io read"}
+        read_match = re.search(r"^read_bytes:\s+(\d+)", io, re.MULTILINE)
+        write_match = re.search(r"^write_bytes:\s+(\d+)", io, re.MULTILINE)
+        if read_match is None or write_match is None:
+            return {**identity, "rss": rss, "read_bytes": None, "write_bytes": None,
+                    "io_reason": f"optional I/O fields unavailable: /proc/{pid}/io"}
+        return {**identity, "rss": rss, "read_bytes": int(read_match.group(1)),
+                "write_bytes": int(write_match.group(1)), "io_reason": None}
+
+    @classmethod
+    def _process(cls, pid: int) -> tuple[int, int, int | None, int | None, str | None]:
+        details = cls._process_details(pid)
+        return (details["ticks"], details["rss"], details["read_bytes"],
+                details["write_bytes"], details["io_reason"])
 
     @staticmethod
     def _available_memory() -> int:
@@ -359,10 +852,23 @@ class ResourceSampler:
         return int(match.group(1)) * 1024 if match else 0
 
     def start(self) -> None:
+        if self.stop_event.is_set() or self.thread.ident is not None:
+            raise RuntimeError("resource sampler cannot be restarted")
         self.output.parent.mkdir(parents=True, exist_ok=True)
         self.output.write_text("timestamp_utc\tsystem_cpu_percent\tmemory_total_bytes\tmemory_available_bytes\tlabel\tpid\tprocess_cpu_percent\trss_bytes\tread_bytes\twrite_bytes\n", encoding="utf-8")
         self._sample_once()
         self.thread.start()
+
+    def _lifecycle_event(self, label: str, pid: int, event: str, reason: str,
+                         state: str | None = None, exit_code: int | None = None,
+                         expected_start_time: int | None = None,
+                         actual_start_time: int | None = None) -> None:
+        path = self.output.with_suffix(".lifecycle.jsonl")
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps({"timestamp_utc": utc_now(), "label": label, "pid": pid,
+                                     "event": event, "state": state, "exit_code": exit_code,
+                                     "expected_start_time": expected_start_time,
+                                     "actual_start_time": actual_start_time, "reason": reason}) + "\n")
 
     def _sample_once(self) -> None:
         clock_ticks = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
@@ -373,33 +879,65 @@ class ResourceSampler:
             idle_delta = idle - self.previous_system[1]
             system_percent = 100.0 * (total_delta - idle_delta) / total_delta if total_delta else 0.0
         self.previous_system = (total, idle)
-        rows = []
         for label, pid in list(self.processes.items()):
             try:
-                ticks, rss, read_b, write_b = self._process(pid)
-            except (FileNotFoundError, ProcessLookupError, AttributeError):
-                continue
+                details = self._process_details(pid, self.process_start_times.get(label))
+            except ProcessLifecycle as exc:
+                handle = self.process_handles.get(label)
+                exit_code = handle.poll() if handle is not None else None
+                self._lifecycle_event(label, pid, exc.event, str(exc), exc.state, exit_code,
+                                      exc.expected_start_time, exc.actual_start_time)
+                if label in self.allowed_exit_labels and (exit_code is not None or exc.event.startswith("PROCESS_")):
+                    self.processes.pop(label, None)
+                    self.previous_process.pop(pid, None)
+                    continue
+                raise RuntimeError(f"required process lifecycle failure: label={label}, pid={pid}, "
+                                   f"event={exc.event}, exit_code={exit_code}") from exc
+            except ProcessTelemetryUnavailable as exc:
+                handle = self.process_handles.get(label)
+                exit_code = handle.poll() if handle is not None else None
+                self._lifecycle_event(label, pid, "TELEMETRY_UNAVAILABLE", str(exc),
+                                      exit_code=exit_code,
+                                      expected_start_time=self.process_start_times.get(label))
+                raise
+            self.process_start_times.setdefault(label, details["start_time"])
+            ticks, rss = details["ticks"], details["rss"]
+            read_b, write_b, io_reason = details["read_bytes"], details["write_bytes"], details["io_reason"]
             previous = self.previous_process.get(pid, ticks)
             process_percent = (ticks - previous) / clock_ticks / self.interval * 100.0
             self.previous_process[pid] = ticks
-            rows.append(f"{utc_now()}\t{system_percent:.3f}\t{memory_total()}\t{self._available_memory()}\t{label}\t{pid}\t{process_percent:.3f}\t{rss}\t{read_b}\t{write_b}\n")
-        if rows:
+            if io_reason:
+                with self.output.with_suffix(".unavailable.jsonl").open("a", encoding="utf-8") as stream:
+                    stream.write(json.dumps({"timestamp_utc": utc_now(), "label": label, "pid": pid,
+                                             "metrics": ["read_bytes", "write_bytes"], "reason": io_reason}) + "\n")
+            read_b = "NA" if read_b is None else read_b
+            write_b = "NA" if write_b is None else write_b
+            row = f"{utc_now()}\t{system_percent:.3f}\t{memory_total()}\t{self._available_memory()}\t{label}\t{pid}\t{process_percent:.3f}\t{rss}\t{read_b}\t{write_b}\n"
             with self.output.open("a", encoding="utf-8") as stream:
-                stream.writelines(rows)
+                stream.write(row)
 
     def _run(self) -> None:
-        while not self.stop_event.wait(self.interval):
-            self._sample_once()
+        try:
+            while not self.stop_event.wait(self.interval):
+                self._sample_once()
+        except Exception:
+            self.failure = traceback.format_exc()
+            self.stop_event.set()
 
     def stop(self) -> None:
         self.stop_event.set()
-        self.thread.join(timeout=5)
+        if self.thread.ident is not None:
+            self.thread.join(timeout=5)
+            if self.thread.is_alive():
+                raise RuntimeError("resource sampler did not stop within 5 seconds")
 
 
 class KaggleSession:
     def __init__(self, input_root: str = "/kaggle/input", working_root: str = "/kaggle/working/byteme-g24k",
                  run_id: str | None = None):
-        self.input_root = pathlib.Path(input_root)
+        self.input_root = pathlib.Path(input_root).resolve()
+        if not self.input_root.is_dir():
+            raise RuntimeError(f"session input root does not exist: {self.input_root}")
         self.working_root = pathlib.Path(working_root)
         self.run_id = run_id or dt.datetime.now().strftime("%Y%m%d-%H%M%S")
         self.run_dir = self.working_root / self.run_id
@@ -409,11 +947,15 @@ class KaggleSession:
         self.runtime = self.run_dir / "runtime-secret"
         self.toolchain_dir = self.run_dir / "toolchain"
         self.processes: dict[str, subprocess.Popen] = {}
+        self.active_driver: subprocess.Popen | None = None
         self.bundle_root: pathlib.Path | None = None
         self.config_path: pathlib.Path | None = None
         self.config: dict = {}
         self.tools: dict[str, pathlib.Path] = {}
         self.tool_versions: dict[str, str] = {}
+        self.mysql_env = os.environ.copy()
+        self.offline_dependencies: dict[str, dict] = {}
+        self.dynamic_dependency_reports: dict[str, dict] = {}
         self.application_sha: str | None = None
         self.repository_sha: str | None = None
         self.db_password = secrets.token_urlsafe(24) + "9a!"
@@ -434,6 +976,7 @@ class KaggleSession:
         probe = {
             "captured_at_utc": utc_now(),
             "is_kaggle": pathlib.Path("/kaggle").exists(),
+            "prepared_input_root": str(self.input_root),
             "hardware": {"cpu_model": cpu_model(), "logical_cores": os.cpu_count(),
                          "memory_total_bytes": memory_total(),
                          "cgroup": cgroup,
@@ -443,7 +986,8 @@ class KaggleSession:
                         "os_id": os_release.get("ID"), "os_version": os_release.get("VERSION_ID"),
                         "image_identity": image},
             "capabilities": {"docker": shutil.which("docker"), "apt_get": shutil.which("apt-get"),
-                             "sudo": shutil.which("sudo"), "openssl": shutil.which("openssl")},
+                             "sudo": shutil.which("sudo"), "openssl": shutil.which("openssl"),
+                             "dpkg_deb": shutil.which("dpkg-deb"), "ldd": shutil.which("ldd")},
         }
         self._write_json("environment/hardware-runtime.json", probe)
         return probe
@@ -488,27 +1032,86 @@ class KaggleSession:
         self.config = json.loads(self.config_path.read_text(encoding="utf-8"))
         if self.config.get("baseline_sha") != BASELINE_SHA:
             raise RuntimeError("configuration baseline mismatch")
+        self._preflight_benchmark_files()
+        self._preflight_w3_project_guards()
         shutil.copy2(manifest_path, self.evidence / "environment/bundle-manifest.json")
 
-    def _archives(self, component: str) -> list[pathlib.Path]:
-        patterns = {"java": ("*jdk*21*.tar.gz", "*jre*21*.tar.gz"),
-                    "mysql": ("mysql*8.4*.tar.xz", "mysql*8.4*.tar.gz"),
-                    "k6": ("k6*v0.55.2*linux*amd64*.tar.gz", "k6*0.55.2*linux*amd64*.tar.gz")}
-        found = []
-        for pattern in patterns[component]:
-            found.extend(self.input_root.rglob(pattern))
-        return sorted(set(found))
+    def setup_offline_dependencies(self) -> None:
+        lock = self.config["offline_dependencies"]["libaio"]
+        matches = list(self.input_root.rglob(lock["filename"]))
+        if len(matches) != 1:
+            raise RuntimeError(f"expected exactly one locked libaio package below {self.input_root}, found {len(matches)}")
+        package = matches[0]
+        package_sha = sha256(package)
+        if package_sha != lock["package_sha256"]:
+            raise RuntimeError(f"libaio package checksum mismatch: {package_sha}")
+        dpkg_deb = shutil.which("dpkg-deb")
+        if not dpkg_deb:
+            raise RuntimeError("dpkg-deb is unavailable; cannot extract locked offline dependency")
+        metadata = {}
+        for field, expected in (("Package", lock["package"]), ("Version", lock["version"]),
+                                ("Architecture", lock["architecture"])):
+            proc = subprocess.run([dpkg_deb, "--field", str(package), field], text=True,
+                                  encoding="utf-8", errors="replace", capture_output=True, timeout=30)
+            actual = proc.stdout.strip()
+            if proc.returncode or actual != expected:
+                raise RuntimeError(f"libaio package metadata mismatch for {field}: expected={expected}, actual={actual}")
+            metadata[field.lower()] = actual
 
-    def _version(self, executable: pathlib.Path, args: list[str]) -> str:
+        package_root = self.toolchain_dir / "libaio-package"
+        package_root.mkdir(parents=True, exist_ok=False)
+        extract = subprocess.run([dpkg_deb, "--extract", str(package), str(package_root)], text=True,
+                                 encoding="utf-8", errors="replace", capture_output=True, timeout=60)
+        if extract.returncode:
+            raise RuntimeError(f"libaio package extraction failed: {extract.stderr.strip()}")
+        source = package_root / pathlib.PurePosixPath(lock["library_path"])
+        if not source.is_file():
+            raise RuntimeError(f"locked libaio library is absent after extraction: {source}")
+        elf = inspect_elf_library(source, lock)
+
+        library_dir = self.toolchain_dir / "libaio"
+        library_dir.mkdir(parents=True, exist_ok=False)
+        library = library_dir / source.name
+        shutil.copy2(source, library)
+        compatibility = library_dir / lock["compatibility_soname"]
+        compatibility.symlink_to(library.name)
+        if not compatibility.is_file() or sha256(compatibility) != lock["library_sha256"]:
+            raise RuntimeError("libaio compatibility symlink validation failed")
+        previous = self.mysql_env.get("LD_LIBRARY_PATH")
+        self.mysql_env["LD_LIBRARY_PATH"] = str(library_dir) + (os.pathsep + previous if previous else "")
+        evidence = {**metadata, "source_url": lock["source_url"], "filename": lock["filename"],
+                    "package_sha256": package_sha, "library_path": str(library),
+                    "compatibility_path": str(compatibility), "compatibility_soname": lock["compatibility_soname"],
+                    "elf": elf, "ld_library_path_prefix": str(library_dir)}
+        self.offline_dependencies["libaio"] = evidence
+        self._write_json("environment/offline-dependencies.json", self.offline_dependencies)
+
+    def _archives(self, component: str) -> list[pathlib.Path]:
+        return _matching_files(self.input_root, TOOLCHAIN_ARCHIVE_PATTERNS[component])
+
+    def _version(self, executable: pathlib.Path, args: list[str], env: dict | None = None) -> str:
         proc = subprocess.run([str(executable), *args], text=True, encoding="utf-8", errors="replace",
-                              capture_output=True, timeout=30)
+                              capture_output=True, timeout=30, env=env)
         return (proc.stdout + proc.stderr).strip()
 
-    def _select_tool(self, component: str, binary: str, version_args: list[str], expected: str) -> tuple[pathlib.Path, str]:
+    def _dynamic_dependencies(self, executable: pathlib.Path, env: dict) -> dict:
+        ldd = shutil.which("ldd")
+        if not ldd:
+            raise RuntimeError("ldd is unavailable; cannot preflight MySQL shared libraries")
+        proc = subprocess.run([ldd, str(executable)], text=True, encoding="utf-8", errors="replace",
+                              capture_output=True, timeout=30, env=env)
+        output = (proc.stdout + proc.stderr).strip()
+        if proc.returncode or not output or "not a dynamic executable" in output.lower():
+            raise RuntimeError(f"ldd preflight failed for {executable}: exit={proc.returncode}, output={output}")
+        return {"executable": str(executable), "exit_code": proc.returncode,
+                "missing": parse_ldd_missing(output), "output": output}
+
+    def _select_tool(self, component: str, binary: str, version_args: list[str], expected: str,
+                     env: dict | None = None, dynamic_preflight: bool = False) -> tuple[pathlib.Path, str]:
         candidates = []
-        system = shutil.which(binary)
-        if system:
-            candidates.append(pathlib.Path(system))
+        input_names = (binary, f"{binary}.exe") if os.name == "nt" else (binary,)
+        for name in input_names:
+            candidates.extend(path for path in self.input_root.rglob(name) if path.is_file())
         archives = self._archives(component)
         if len(archives) > 1:
             raise RuntimeError(f"multiple {component} archives attached; keep exactly one: {archives}")
@@ -516,6 +1119,9 @@ class KaggleSession:
             destination = self.toolchain_dir / component
             safe_extract(archives[0], destination)
             candidates.extend(destination.rglob(binary))
+        system = shutil.which(binary)
+        if system:
+            candidates.append(pathlib.Path(system))
         checked = []
         for candidate in candidates:
             if not candidate.is_file():
@@ -523,19 +1129,28 @@ class KaggleSession:
             if not os.access(candidate, os.X_OK):
                 candidate.chmod(candidate.stat().st_mode | 0o111)
             try:
-                version = self._version(candidate, version_args)
+                dependency_report = self._dynamic_dependencies(candidate, env or os.environ.copy()) if dynamic_preflight else None
+                if dependency_report and dependency_report["missing"]:
+                    checked.append(f"{candidate}: missing shared libraries {dependency_report['missing']}")
+                    continue
+                version = self._version(candidate, version_args, env)
             except Exception as exc:
                 checked.append(f"{candidate}: {exc}")
                 continue
             checked.append(f"{candidate}: {version.splitlines()[0] if version else 'empty'}")
             if expected in version:
+                if dependency_report:
+                    self.dynamic_dependency_reports[str(candidate)] = dependency_report
                 return candidate.resolve(), version
         raise RuntimeError(f"no exact {component} {expected}; checked={checked}; archives={archives}")
 
     def setup_toolchain(self) -> None:
         expected = self.config["expected_versions"]
+        self.toolchain_dir.mkdir(parents=True, exist_ok=False)
+        self.setup_offline_dependencies()
         java, java_v = self._select_tool("java", "java", ["-version"], expected["java_contains"])
-        mysqld, mysql_v = self._select_tool("mysql", "mysqld", ["--version"], expected["mysql_contains"])
+        mysqld, mysql_v = self._select_tool("mysql", "mysqld", ["--version"], expected["mysql_contains"],
+                                            self.mysql_env, dynamic_preflight=True)
         k6, k6_v = self._select_tool("k6", "k6", ["version"], expected["k6_contains"])
         mysql_bin = mysqld.parent / "mysql"
         mysqladmin = mysqld.parent / "mysqladmin"
@@ -546,67 +1161,134 @@ class KaggleSession:
         if not mysql_bin.exists() or not mysqladmin.exists():
             raise RuntimeError("selected MySQL distribution lacks mysql/mysqladmin clients")
         for client in (mysql_bin, mysqladmin):
-            client_version = self._version(client, ["--version"])
+            dependency_report = self._dynamic_dependencies(client, self.mysql_env)
+            if dependency_report["missing"]:
+                raise RuntimeError(f"MySQL client shared libraries missing: {client}: {dependency_report['missing']}")
+            self.dynamic_dependency_reports[str(client)] = dependency_report
+            client_version = self._version(client, ["--version"], self.mysql_env)
             if expected["mysql_contains"] not in client_version:
                 raise RuntimeError(f"MySQL client version mismatch: {client}: {client_version}")
         self.tools = {"java": java, "mysqld": mysqld, "mysql": mysql_bin, "mysqladmin": mysqladmin, "k6": k6}
         self.tool_versions = {"java_version": java_v, "mysql_version": mysql_v, "k6_version": k6_v}
+        self._write_json("environment/mysql-dynamic-dependencies.json", {
+            "ld_library_path": self.mysql_env.get("LD_LIBRARY_PATH"),
+            "executables": self.dynamic_dependency_reports,
+            "all_dependencies_resolved": all(not item["missing"] for item in self.dynamic_dependency_reports.values()),
+        })
         self._write_json("environment/toolchain.json", {
             **self.tool_versions,
             "executables": {key: str(value) for key, value in self.tools.items()},
             "sha256": {key: sha256(value) for key, value in self.tools.items()},
+            "offline_dependencies": self.offline_dependencies,
         })
 
     def _mysql(self, sql: str, user: str = "root", password: str = "", database: str | None = None) -> str:
         runtime = self.config["runtime"]
         command = [str(self.tools["mysql"]), "--batch", "--raw", "--user", user]
         if user == "root":
-            command.extend(["--protocol=SOCKET", "--socket", str(self.run_dir / "mysql.sock")])
+            command.extend(["--protocol=SOCKET", "--socket", str(self.run_dir / "mysql-runtime/mysql.sock")])
         else:
             command.extend(["--protocol=TCP", "--host", runtime["mysql_host"],
                             "--port", str(runtime["mysql_port"])])
         if database:
             command.append(database)
-        env = os.environ.copy()
+        env = self.mysql_env.copy()
         env["MYSQL_PWD"] = password
         proc = subprocess.run(command, input=sql, text=True, encoding="utf-8", capture_output=True, env=env)
         if proc.returncode:
             raise RuntimeError(proc.stderr.strip())
         return proc.stdout
 
+    def _mysql_identity(self) -> tuple[int, int, str]:
+        """Return an unprivileged identity; Kaggle notebooks can run as UID 0."""
+        current_uid = os.geteuid() if hasattr(os, "geteuid") else -1
+        current_gid = os.getegid() if hasattr(os, "getegid") else -1
+        if current_uid != 0:
+            return current_uid, current_gid, "current-user"
+        if pwd is None:
+            raise RuntimeError("root privilege drop is only supported on Linux")
+        try:
+            account = pwd.getpwnam("mysql")
+        except KeyError:
+            try:
+                account = pwd.getpwnam("nobody")
+            except KeyError as exc:
+                raise RuntimeError("running as root but no mysql/nobody account is available") from exc
+        if account.pw_uid == 0 or account.pw_gid == 0:
+            raise RuntimeError(f"refusing privileged MySQL identity: uid={account.pw_uid}, gid={account.pw_gid}")
+        return account.pw_uid, account.pw_gid, account.pw_name
+
+    @staticmethod
+    def _drop_mysql_privileges(uid: int, gid: int):
+        def demote() -> None:
+            os.setgid(gid)
+            os.setuid(uid)
+        return demote
+
+    def _prepare_mysql_writable_paths(self, paths: list[pathlib.Path], uid: int, gid: int) -> None:
+        for path in paths:
+            path.mkdir(parents=True, exist_ok=True)
+            if hasattr(os, "geteuid") and os.geteuid() == 0:
+                os.chown(path, uid, gid)
+            try:
+                mode = stat.S_IMODE(path.stat().st_mode)
+                path.chmod(mode | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
+                           stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP)
+            except OSError as exc:
+                raise RuntimeError(f"cannot prepare MySQL writable directory {path}: {exc}") from exc
+            if not os.access(path, os.W_OK | os.X_OK):
+                raise RuntimeError(f"MySQL identity cannot write directory: {path}")
+
     def start_mysql(self) -> None:
         runtime = self.config["runtime"]
         base = self.tools["mysqld"].parent.parent
         data = self.run_dir / "mysql-data"
-        data.mkdir(parents=True)
-        (self.evidence / "logs").mkdir(parents=True, exist_ok=True)
+        mysql_runtime = self.run_dir / "mysql-runtime"
+        mysql_log_dir = self.evidence / "logs/mysql-server"
+        mysql_uid, mysql_gid, mysql_account = self._mysql_identity()
+        self._prepare_mysql_writable_paths([data, mysql_runtime, mysql_log_dir], mysql_uid, mysql_gid)
         config = self.run_dir / "mysql.cnf"
         config.write_text("\n".join([
             "[mysqld]", f"basedir={base}", f"datadir={data}", f"port={runtime['mysql_port']}",
-            "bind-address=127.0.0.1", f"socket={self.run_dir / 'mysql.sock'}", f"pid-file={self.run_dir / 'mysql.pid'}",
-            f"log-error={self.evidence / 'logs/mysql.log'}", "skip-name-resolve=ON", "mysqlx=OFF",
+            "bind-address=127.0.0.1", f"socket={mysql_runtime / 'mysql.sock'}", f"pid-file={mysql_runtime / 'mysql.pid'}",
+            f"log-error={mysql_log_dir / 'mysql.log'}", "skip-name-resolve=ON", "mysqlx=OFF",
             f"transaction-isolation={runtime['mysql_transaction_isolation']}",
             f"max-connections={runtime['mysql_max_connections']}",
             f"innodb-buffer-pool-size={runtime['mysql_innodb_buffer_pool_size']}", "performance-schema=ON", "",
         ]), encoding="utf-8")
+        self.mysql_process_identity = {"uid": mysql_uid, "gid": mysql_gid, "account": mysql_account}
+        self._write_json("environment/mysql-process-identity.json", self.mysql_process_identity)
+        demote = self._drop_mysql_privileges(mysql_uid, mysql_gid) if hasattr(os, "geteuid") and os.geteuid() == 0 else None
         init = subprocess.run([str(self.tools["mysqld"]), f"--defaults-file={config}", "--initialize-insecure"],
-                              text=True, capture_output=True)
+                              text=True, capture_output=True, env=self.mysql_env, preexec_fn=demote)
         if init.returncode:
-            raise RuntimeError(f"mysqld initialize failed: {init.stderr}")
-        process = subprocess.Popen([str(self.tools["mysqld"]), f"--defaults-file={config}"],
-                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            raise RuntimeError(f"mysqld initialize failed under uid={mysql_uid}, gid={mysql_gid}: {init.stderr}")
+        for path in (data, mysql_runtime, mysql_log_dir):
+            if hasattr(os, "geteuid") and os.geteuid() == 0:
+                os.chown(path, mysql_uid, mysql_gid)
+        startup_stdout = self.evidence / "logs/mysql-startup.stdout.log"
+        startup_stderr = self.evidence / "logs/mysql-startup.stderr.log"
+        with startup_stdout.open("wb") as stdout, startup_stderr.open("wb") as stderr:
+            process = subprocess.Popen([str(self.tools["mysqld"]), f"--defaults-file={config}"],
+                                       stdout=stdout, stderr=stderr, env=self.mysql_env, preexec_fn=demote)
         self.processes["mysql"] = process
         deadline = time.time() + 120
         while time.time() < deadline:
             if process.poll() is not None:
-                raise RuntimeError("mysqld exited during startup")
+                self._mysql_startup_diagnostics(process, "early_exit", data)
+                raise RuntimeError("mysqld exited during startup; see logs/mysql-startup.stderr.log, "
+                                   "logs/mysql-startup.stdout.log, logs/mysql.log and "
+                                   "environment/mysql-startup-failure.json in the evidence ZIP")
             ping = subprocess.run([str(self.tools["mysqladmin"]), "--protocol=SOCKET",
-                                   "--socket", str(self.run_dir / "mysql.sock"), "-uroot", "ping"], capture_output=True)
+                                   "--socket", str(mysql_runtime / "mysql.sock"), "-uroot", "ping"],
+                                  capture_output=True, env=self.mysql_env)
             if ping.returncode == 0:
                 break
             time.sleep(1)
         else:
-            raise RuntimeError("mysqld readiness timeout")
+            self._mysql_startup_diagnostics(process, "readiness_timeout", data)
+            raise RuntimeError("mysqld readiness timeout; see logs/mysql-startup.stderr.log, "
+                               "logs/mysql.log and environment/mysql-startup-failure.json in the evidence ZIP")
         database, user = runtime["database"], runtime["database_user"]
         quoted_password = self.db_password.replace("'", "''")
         self._mysql(f"CREATE DATABASE `{database}` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci;"
@@ -616,6 +1298,47 @@ class KaggleSession:
                     f"GRANT ALL ON `{database}`.* TO '{user}'@'localhost'; FLUSH PRIVILEGES;")
         schema = self._find_single("schema.sql")
         self._mysql(schema.read_text(encoding="utf-8"), user, self.db_password, database)
+
+    def _mysql_startup_diagnostics(self, process: subprocess.Popen, reason: str, data: pathlib.Path) -> None:
+        """Capture startup facts before cleanup removes the run's datadir and socket."""
+        code = process.poll()
+        runtime = self.config["runtime"]
+        mysql_runtime = self.run_dir / "mysql-runtime"
+        paths = {"datadir": data, "socket_parent": mysql_runtime,
+                 "socket": mysql_runtime / "mysql.sock", "pid_file": mysql_runtime / "mysql.pid",
+                 "log_directory": self.evidence / "logs/mysql-server"}
+        path_status = {}
+        for name, path in paths.items():
+            try:
+                info = path.stat()
+                path_status[name] = {"exists": True, "mode": oct(stat.S_IMODE(info.st_mode)),
+                                     "readable": os.access(path, os.R_OK), "writable": os.access(path, os.W_OK),
+                                     "executable": os.access(path, os.X_OK), "is_directory": path.is_dir()}
+            except FileNotFoundError:
+                path_status[name] = {"exists": False}
+            except OSError as exc:
+                path_status[name] = {"stat_error": f"{type(exc).__name__}: {exc}"}
+        try:
+            with socket.create_connection((runtime["mysql_host"], runtime["mysql_port"]), timeout=1):
+                port_status = "accepting_connections"
+        except OSError as exc:
+            port_status = f"not_accepting: {type(exc).__name__}: {exc}"
+        cgroup = {}
+        for candidate in ("/sys/fs/cgroup/memory.events", "/sys/fs/cgroup/memory/memory.oom_control",
+                          "/sys/fs/cgroup/memory.current", "/sys/fs/cgroup/memory.max"):
+            try:
+                cgroup[candidate] = pathlib.Path(candidate).read_text(encoding="utf-8").strip()
+            except OSError:
+                pass
+        mysql_log = self.evidence / "logs/mysql.log"
+        self._write_json("environment/mysql-startup-failure.json", {
+            "reason": reason, "exit_code": code, "signal": -code if code is not None and code < 0 else None,
+            "logs": {"stdout": "logs/mysql-startup.stdout.log", "stderr": "logs/mysql-startup.stderr.log",
+                     "mysql_error": "logs/mysql.log", "mysql_error_exists": mysql_log.is_file(),
+                     "mysql_error_bytes": mysql_log.stat().st_size if mysql_log.is_file() else None},
+            "port": {"host": runtime["mysql_host"], "number": runtime["mysql_port"], "status": port_status},
+            "paths": path_status, "cgroup": cgroup,
+        })
 
     def start_backend(self) -> None:
         if not shutil.which("openssl"):
@@ -680,47 +1403,368 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
         assert self.bundle_root
         matches = list(self.bundle_root.rglob("benchmarks/phase2/profiles.json"))
         if len(matches) != 1:
-            raise RuntimeError("bundled benchmark root missing or ambiguous")
-        return matches[0].parents[1]
+            raise RuntimeError(f"bundled benchmark root missing or ambiguous below {self.bundle_root}; matches={matches}")
+        return matches[0].parent
+
+    def _preflight_benchmark_files(self) -> None:
+        root = self._benchmark_root()
+        required = [root / "profiles.json", root / "prepare_dataset.py",
+                    root / "workloads/w1_read.js", root / "workloads/w2_write.js",
+                    root / "workloads/w3_contention.py", self.bundle_root / "schema.sql"]
+        missing = [str(path) for path in required if not path.is_file()]
+        if missing:
+            raise RuntimeError(f"benchmark bundle preflight missing required files: {missing}")
+        workloads = root / "workloads"
+        if not workloads.is_dir():
+            raise RuntimeError(f"benchmark bundle preflight missing workloads directory: {workloads}")
+
+    def _load_bundled_w3(self):
+        path = self._benchmark_root() / "workloads/w3_contention.py"
+        spec = importlib.util.spec_from_file_location(f"byteme_w3_{self.run_id}", path)
+        if spec is None or spec.loader is None:
+            raise RuntimeError(f"unable to load bundled W3 guard: {path}")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        guard = getattr(module, "require_benchmark_project", None)
+        if not callable(guard):
+            raise RuntimeError(f"bundled W3 project guard is absent: {path}")
+        return module, path
+
+    def _preflight_w3_project_guards(self) -> None:
+        module, path = self._load_bundled_w3()
+        accepted = {}
+        for label, project in (("smoke", SMOKE_PROJECT), ("official", OFFICIAL_PROJECT)):
+            accepted[label] = module.require_benchmark_project(project)
+        rejected = []
+        for project in (None, "", "byteme-g25-kaggle", "production"):
+            try:
+                module.require_benchmark_project(project)
+            except SystemExit as exc:
+                rejected.append({"project": project, "message": str(exc)})
+            else:
+                raise RuntimeError(f"bundled W3 guard accepted unsafe project marker: {project!r}")
+        self._write_json("environment/w3-project-guard-preflight.json", {
+            "guard_source": str(path), "accepted": accepted, "rejected": rejected})
 
     def _dataset_command(self, mode: str, profile: str, output: pathlib.Path) -> list[str]:
         root = self._benchmark_root()
         runtime = self.config["runtime"]
+        project = OFFICIAL_PROJECT if profile == "standard" else SMOKE_PROJECT
         return ["python", "-X", "utf8", str(root / "prepare_dataset.py"), "--mode", mode, "--profile", profile,
-                "--project", "byteme-g24-kaggle", "--db-mode", "direct", "--mysql-bin", str(self.tools["mysql"]),
+                "--project", project, "--db-mode", "direct", "--mysql-bin", str(self.tools["mysql"]),
                 "--mysql-host", runtime["mysql_host"], "--mysql-port", str(runtime["mysql_port"]),
                 "--mysql-user", runtime["database_user"], "--mysql-database", runtime["database"],
                 "--mysql-password-env", "BENCH_DB_PASSWORD", "--base-url", f"http://127.0.0.1:{runtime['backend_port']}",
                 "--runtime-actors", str(self.runtime / "actors.json"), "--output", str(output)]
 
+    def _backend_alive(self, stage: str, health: bool = False) -> None:
+        backend = self.processes.get("backend")
+        code = backend.poll() if backend is not None else None
+        self._write_json("environment/backend-lifecycle.json", {
+            "stage": stage, "captured_at_utc": utc_now(),
+            "pid": backend.pid if backend else None, "exit_code": code,
+            "log": "logs/backend.log", "alive": backend is not None and code is None,
+        })
+        if backend is None or code is not None:
+            raise RuntimeError(f"backend unavailable at {stage}: pid={backend.pid if backend else None}, "
+                               f"exit_code={code}; see logs/backend.log and environment/backend-lifecycle.json")
+        if health:
+            url = f"http://127.0.0.1:{self.config['runtime']['backend_port']}/actuator/health"
+            with urllib.request.urlopen(url, timeout=5) as response:
+                if response.status != 200:
+                    raise RuntimeError(f"backend health failed before {stage}: HTTP {response.status}")
+
+    def _stop_driver(self) -> None:
+        process = self.active_driver
+        if process is not None:
+            if process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=10)
+            self.active_driver = None
+
+    def _mysql_alive_for_workload(self, stage: str) -> None:
+        process = self.processes.get("mysql")
+        if process is not None and process.poll() is not None:
+            self._write_json("environment/mysql-workload-exit.json", {
+                "stage": stage, "pid": process.pid, "exit_code": process.poll(),
+                "timestamp_utc": utc_now(), "log": "logs/mysql.log"})
+            raise RuntimeError(f"mysql exited during workload: pid={process.pid}; see logs/mysql.log")
+
     def _run(self, command: list[str], relative_console: str, relative_resources: str | None = None,
              extra_env: dict[str, str] | None = None,
-             required_resource_labels: set[str] | None = None) -> dict | None:
+             required_resource_labels: set[str] | None = None,
+             allowed_exit_codes: set[int] | None = None) -> dict | None:
         env = os.environ.copy()
         env.update({"BENCH_DB_PASSWORD": self.db_password, "BENCH_ACTOR_PASSWORD": self.actor_password})
         if extra_env:
             env.update(extra_env)
         console = self.evidence / relative_console
         console.parent.mkdir(parents=True, exist_ok=True)
+        if relative_resources:
+            self._backend_alive(relative_console, health=True)
+            self._mysql_alive_for_workload(relative_console)
         with console.open("w", encoding="utf-8") as stream:
             process = subprocess.Popen(command, stdout=stream, stderr=subprocess.STDOUT, env=env)
+            self.active_driver = process
             sampler = None
+            primary = None
             try:
                 if relative_resources:
-                    pids = {key: value.pid for key, value in self.processes.items() if value.poll() is None}
-                    pids["driver"] = process.pid
-                    sampler = ResourceSampler(self.evidence / relative_resources, pids)
+                    tracked = dict(self.processes)
+                    tracked["driver"] = process
+                    sampler = ResourceSampler(self.evidence / relative_resources, tracked,
+                                              allowed_exit_labels={"driver"})
                     sampler.start()
-                code = process.wait()
+                while True:
+                    if relative_resources:
+                        self._backend_alive(relative_console)
+                        self._mysql_alive_for_workload(relative_console)
+                    if sampler and sampler.failure:
+                        raise RuntimeError(f"resource sampler failed:\n{sampler.failure}")
+                    try:
+                        code = process.wait(timeout=0.25)
+                        break
+                    except subprocess.TimeoutExpired:
+                        continue
+                if relative_resources:
+                    self._backend_alive(relative_console + ":completed")
+                    self._mysql_alive_for_workload(relative_console + ":completed")
+            except BaseException as exc:
+                primary = exc
+                raise
             finally:
+                errors = []
+                try:
+                    self._stop_driver()
+                except Exception as exc:
+                    errors.append(f"driver stop: {exc}")
                 if sampler:
-                    sampler.stop()
-        if code:
+                    try:
+                        sampler.stop()
+                        if sampler.failure:
+                            errors.append(f"sampler: {sampler.failure}")
+                    except Exception as exc:
+                        errors.append(f"sampler stop: {exc}")
+                if errors:
+                    if primary is not None:
+                        primary.add_note("; ".join(errors))
+                    else:
+                        raise RuntimeError("; ".join(errors))
+        allowed_exit_codes = allowed_exit_codes or {0}
+        if code not in allowed_exit_codes:
             raise RuntimeError(f"command failed ({code}): {' '.join(command[:4])}; see {relative_console}")
         if relative_resources:
             return validate_resource_samples(self.evidence / relative_resources,
                                              required_resource_labels or {"backend", "mysql", "driver"})
         return None
+
+    def _official_event(self, phase: str, state: str, details: dict | None = None) -> None:
+        path = self.evidence / "official/phase-events.json"
+        events = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
+        events.append({"phase": phase, "state": state, "timestamp_utc": utc_now(), "details": details or {}})
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(events, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    def _official_dataset(self, phase: str, mode: str, output_relative: str,
+                          expected_sha: str | None = None) -> dict:
+        output = self.evidence / output_relative
+        self._official_event(phase, "started")
+        try:
+            self._run(self._dataset_command(mode, "standard", output),
+                      f"dataset/{phase}-console.txt", allowed_exit_codes={0, 2} if mode == "snapshot" else {0})
+            document = json.loads(output.read_text(encoding="utf-8"))
+            expected_validation = "initial" if mode == "prepare" else "post_workload"
+            if document.get("profile") != "standard" or document.get("validation_phase") != expected_validation:
+                raise RuntimeError(f"{phase} dataset profile/validation phase mismatch")
+            if mode == "prepare" and not document.get("all_invariants_pass"):
+                raise RuntimeError(f"{phase} dataset invariants failed")
+            if expected_sha is not None and document.get("overall_sha256") != expected_sha:
+                raise RuntimeError(f"{phase} checksum mismatch: {document.get('overall_sha256')} != {expected_sha}")
+            document["consistency_outcome"] = ("CONSISTENT" if document.get("all_invariants_pass")
+                                                else "BUSINESS_INVARIANT_VIOLATION")
+            self._official_event(phase, "completed", {"overall_sha256": document.get("overall_sha256"),
+                                                       "consistency_outcome": document["consistency_outcome"]})
+            return document
+        except BaseException as exc:
+            self._official_event(phase, "failed", {"error": f"{type(exc).__name__}: {exc}"})
+            raise
+
+    def _official_k6(self, phase: str, workload: str, script: pathlib.Path, duration: int,
+                     environment: dict[str, str], expected_load: dict) -> dict:
+        output = self.evidence / phase
+        output.mkdir(parents=True, exist_ok=False)
+        raw, summary = output / "raw.json", output / "summary.json"
+        self._official_event(phase, "started", {"duration_seconds": duration, "load": expected_load})
+        try:
+            resource_validation = self._run(
+                [str(self.tools["k6"]), "run", "--no-color", "--out", f"json={raw}", str(script)],
+                f"{phase}/console.txt", f"{phase}/resources.tsv",
+                {**environment, "BENCH_MODE": "official", "MEASUREMENT_DURATION": f"{duration}s",
+                 "SUMMARY_PATH": str(summary)},
+                {"backend", "mysql", "driver"})
+            if not raw.is_file() or raw.stat().st_size == 0:
+                raise RuntimeError(f"{phase} raw k6 output missing or empty")
+            minimum = self.config["official_validation"]["minimum_resource_samples_per_label"]
+            resource_validation = validate_resource_samples(output / "resources.tsv",
+                                                            {"backend", "mysql", "driver"}, minimum,
+                                                            minimum_span_seconds=duration * 0.95)
+            validation = validate_k6_official_summary(
+                summary, workload, duration, expected_load,
+                self.config["official_validation"]["k6_duration_tolerance_seconds"])
+            validation["resource_validation"] = resource_validation
+            validation["exit_code"] = 0
+            self._write_json(f"{phase}/validation.json", validation)
+            self._official_event(phase, "completed", {"outcome": validation["outcome"]})
+            return validation
+        except BaseException as exc:
+            self._official_event(phase, "failed", {"error": f"{type(exc).__name__}: {exc}"})
+            raise
+
+    def _w3_command(self, project: str, actors: pathlib.Path, base: str,
+                    rounds: int, output: pathlib.Path) -> list[str]:
+        root, runtime = self._benchmark_root(), self.config["runtime"]
+        return ["python", "-X", "utf8", str(root / "workloads/w3_contention.py"),
+                   "--project", project, "--db-mode", "direct",
+                   "--mysql-bin", str(self.tools["mysql"]), "--mysql-host", runtime["mysql_host"],
+                   "--mysql-port", str(runtime["mysql_port"]), "--mysql-user", runtime["database_user"],
+                   "--mysql-database", runtime["database"], "--mysql-password-env", "BENCH_DB_PASSWORD",
+                   "--base-url", base, "--actors", str(actors), "--rounds", str(rounds),
+                   "--output", str(output)]
+
+    def _preflight_official_w3(self, actors: pathlib.Path, base: str) -> dict:
+        module, source = self._load_bundled_w3()
+        project = module.require_benchmark_project(OFFICIAL_PROJECT)
+        if not actors.is_file():
+            raise RuntimeError(f"official W3 actors fixture missing before warm-up: {actors}")
+        if not self.db_password:
+            raise RuntimeError("official W3 database password environment source is absent")
+        command = self._w3_command(project, actors, base, self.config["workloads"]["w3_rounds"],
+                                   self.evidence / "w3/result.json")
+        required = {"--project": project, "--mysql-password-env": "BENCH_DB_PASSWORD",
+                    "--actors": str(actors)}
+        for option, expected in required.items():
+            try:
+                actual = command[command.index(option) + 1]
+            except (ValueError, IndexError) as exc:
+                raise RuntimeError(f"official W3 invocation missing marker: {option}") from exc
+            if actual != expected:
+                raise RuntimeError(f"official W3 invocation mismatch: {option}={actual!r}, expected={expected!r}")
+        result = {"status": "PASS", "checked_before": "warmup",
+                  "project": project, "guard_source": str(source),
+                  "script": command[3], "actors": str(actors),
+                  "mysql_password_environment": "BENCH_DB_PASSWORD"}
+        self._write_json("official/w3-preflight.json", result)
+        return result
+
+    def _official_w3(self, actors: pathlib.Path, base: str) -> dict:
+        phase, rounds = "w3", self.config["workloads"]["w3_rounds"]
+        output = self.evidence / phase
+        output.mkdir(parents=True, exist_ok=False)
+        command = self._w3_command(OFFICIAL_PROJECT, actors, base, rounds, output / "result.json")
+        self._official_event(phase, "started", {"rounds_per_scenario": rounds})
+        try:
+            self._run(command, "w3/console.txt", "w3/resources.tsv", required_resource_labels={"backend", "mysql", "driver"})
+            minimum = self.config["official_validation"]["minimum_resource_samples_per_label"]
+            resources = validate_resource_samples(output / "resources.tsv", {"backend", "mysql", "driver"}, minimum)
+            validation = validate_w3_smoke_result(output / "result.json", rounds)
+            validation["resource_validation"] = resources
+            validation["exit_code"] = 0
+            self._write_json("w3/validation.json", validation)
+            self._official_event(phase, "completed", {"violation_rounds": validation["violation_rounds"]})
+            return validation
+        except BaseException as exc:
+            self._official_event(phase, "failed", {"error": f"{type(exc).__name__}: {exc}"})
+            raise
+
+    def _official_cooldown(self, seconds: int) -> None:
+        self._official_event("cooldown", "started", {"duration_seconds": seconds})
+        started = time.monotonic()
+        try:
+            while True:
+                remaining = seconds - (time.monotonic() - started)
+                if remaining <= 0:
+                    break
+                self._backend_alive("official cooldown")
+                time.sleep(min(5, remaining))
+            self._official_event("cooldown", "completed", {"duration_seconds": seconds})
+        except BaseException as exc:
+            self._official_event("cooldown", "failed", {"error": f"{type(exc).__name__}: {exc}"})
+            raise
+
+    def run_official_workloads(self) -> dict:
+        """Execute one locked standard run. Service lifecycle is owned by run_official()."""
+        root, workloads = self._benchmark_root(), self.config["workloads"]
+        actors = self.runtime / "actors.json"
+        base = f"http://127.0.0.1:{self.config['runtime']['backend_port']}"
+        plan = {
+            "profile": "standard",
+            "phase_order": ["prepare_standard", "warmup", "w1", "post_w1", "reset_after_w1",
+                            "w2", "post_w2", "reset_after_w2", "w3", "post_w3", "cooldown",
+                            "final_reset"],
+            "warmup": {"duration_seconds": workloads["warmup_seconds"],
+                       "food_list_rps": workloads["warmup_food_list_rps"],
+                       "food_search_rps": workloads["warmup_food_search_rps"],
+                       "order_list_rps": workloads["warmup_order_list_rps"]},
+            "w1": {"duration_seconds": workloads["measurement_seconds"],
+                   "food_list_rps": workloads["w1_food_list_rps"],
+                   "food_search_rps": workloads["w1_food_search_rps"],
+                   "order_list_rps": workloads["w1_order_list_rps"],
+                   "order_page_size": workloads["w1_order_page_size"]},
+            "w2": {"duration_seconds": workloads["measurement_seconds"], "vus": workloads["w2_vus"]},
+            "w3": {"rounds_per_scenario": workloads["w3_rounds"]},
+            "cooldown_seconds": workloads["cooldown_seconds"],
+        }
+        self._write_json("official/execution-plan.json", plan)
+
+        initial = self._official_dataset("prepare_standard", "prepare", "dataset/initial.json")
+        initial_sha = initial["overall_sha256"]
+        common = {"ACTORS_FILE": str(actors), "BASE_URL": base,
+                  "ORDER_PAGE_SIZE": str(workloads["w1_order_page_size"])}
+        self._preflight_official_w3(actors, base)
+        warmup_load = plan["warmup"]
+        warmup = self._official_k6(
+            "warmup", "W1", root / "workloads/w1_read.js", workloads["warmup_seconds"],
+            {**common, "FOOD_LIST_RPS": str(workloads["warmup_food_list_rps"]),
+             "FOOD_SEARCH_RPS": str(workloads["warmup_food_search_rps"]),
+             "ORDER_LIST_RPS": str(workloads["warmup_order_list_rps"])}, warmup_load)
+
+        self._db_telemetry("database/before-w1.txt")
+        w1 = self._official_k6(
+            "w1", "W1", root / "workloads/w1_read.js", workloads["measurement_seconds"],
+            {**common, "FOOD_LIST_RPS": str(workloads["w1_food_list_rps"]),
+             "FOOD_SEARCH_RPS": str(workloads["w1_food_search_rps"]),
+             "ORDER_LIST_RPS": str(workloads["w1_order_list_rps"])}, plan["w1"])
+        self._db_telemetry("database/after-w1.txt")
+        post_w1 = self._official_dataset("post_w1", "snapshot", "dataset/post-w1.json")
+        reset_w1 = self._official_dataset("reset_after_w1", "prepare", "dataset/after-reset-w1.json", initial_sha)
+
+        self._db_telemetry("database/before-w2.txt")
+        w2 = self._official_k6(
+            "w2", "W2", root / "workloads/w2_write.js", workloads["measurement_seconds"],
+            {"ACTORS_FILE": str(actors), "BASE_URL": base, "WRITE_VUS": str(workloads["w2_vus"])},
+            plan["w2"])
+        self._db_telemetry("database/after-w2.txt")
+        post_w2 = self._official_dataset("post_w2", "snapshot", "dataset/post-w2.json")
+        reset_w2 = self._official_dataset("reset_after_w2", "prepare", "dataset/after-reset-w2.json", initial_sha)
+
+        self._db_telemetry("database/before-w3.txt")
+        w3 = self._official_w3(actors, base)
+        self._db_telemetry("database/after-w3.txt")
+        post_w3 = self._official_dataset("post_w3", "snapshot", "dataset/post-w3.json")
+        self._official_cooldown(workloads["cooldown_seconds"])
+        final_reset = self._official_dataset("final_reset", "prepare", "dataset/after-final-reset.json", initial_sha)
+        return {"initial_sha256": initial_sha,
+                "reset_sha256": [reset_w1["overall_sha256"], reset_w2["overall_sha256"],
+                                  final_reset["overall_sha256"]],
+                "warmup": warmup, "w1": w1, "w2": w2, "w3": w3,
+                "consistency_outcomes": {"post_w1": post_w1["consistency_outcome"],
+                                         "post_w2": post_w2["consistency_outcome"],
+                                         "post_w3": post_w3["consistency_outcome"]},
+                "plan": plan}
 
     def run_workloads(self) -> tuple[str, str]:
         root = self._benchmark_root()
@@ -759,12 +1803,8 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
         self._db_telemetry("database/after-w2.txt")
         w3 = self.evidence / "w3"
         w3.mkdir(parents=True)
-        command = ["python", "-X", "utf8", str(root / "workloads/w3_contention.py"),
-                   "--project", "byteme-g24-kaggle", "--db-mode", "direct", "--mysql-bin", str(self.tools["mysql"]),
-                   "--mysql-host", runtime["mysql_host"], "--mysql-port", str(runtime["mysql_port"]),
-                   "--mysql-user", runtime["database_user"], "--mysql-database", runtime["database"],
-                   "--mysql-password-env", "BENCH_DB_PASSWORD", "--base-url", base, "--actors", str(actors),
-                   "--rounds", str(self.config["smoke"]["w3_rounds"]), "--output", str(w3 / "result.json")]
+        command = self._w3_command(SMOKE_PROJECT, actors, base, self.config["smoke"]["w3_rounds"],
+                                   w3 / "result.json")
         self._run(command, "w3/console.txt", "w3/resources.tsv")
         self._write_json("w3/validation.json", validate_w3_smoke_result(
             w3 / "result.json", self.config["smoke"]["w3_rounds"]))
@@ -793,9 +1833,10 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
                 digest.update(bytes.fromhex(sha256(path)))
         return digest.hexdigest()
 
-    def write_run_manifest(self, dataset_sha: str | None) -> None:
+    def write_run_manifest(self, dataset_sha: str | None, benchmark: dict | None = None) -> None:
         hardware = json.loads((self.evidence / "environment/hardware-runtime.json").read_text(encoding="utf-8"))
         toolchain = json.loads((self.evidence / "environment/toolchain.json").read_text(encoding="utf-8")) if (self.evidence / "environment/toolchain.json").exists() else {}
+        libaio = toolchain.get("offline_dependencies", {}).get("libaio", {})
         manifest = {
             "run_id": self.run_id, "timestamp_timezone": {"timestamps": "UTC", "project_timezone": "Asia/Saigon"},
             "source": {"protocol_baseline_sha": BASELINE_SHA, "repository_sha": self.repository_sha,
@@ -812,12 +1853,109 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
                           "k6_version": toolchain.get("k6_version"),
                           "java_executable_sha256": toolchain.get("sha256", {}).get("java"),
                           "mysqld_executable_sha256": toolchain.get("sha256", {}).get("mysqld"),
-                          "k6_executable_sha256": toolchain.get("sha256", {}).get("k6")},
+                          "k6_executable_sha256": toolchain.get("sha256", {}).get("k6"),
+                          "libaio_package_version": libaio.get("version"),
+                          "libaio_package_sha256": libaio.get("package_sha256"),
+                          "libaio_library_sha256": libaio.get("elf", {}).get("sha256"),
+                          "libaio_library_soname": libaio.get("elf", {}).get("soname"),
+                          "libaio_compatibility_soname": libaio.get("compatibility_soname")},
             "locks": {"configuration_sha256": sha256(self.config_path) if self.config_path else None,
                       "workload_source_sha256": self._source_hash() if self.bundle_root else None,
                       "dataset_sha256": dataset_sha},
         }
+        if benchmark is not None:
+            manifest["benchmark"] = benchmark
         self._write_json("manifest/run-manifest.json", manifest)
+
+    def validate_official_execution(self, execution: dict) -> dict:
+        plan = execution["plan"]
+        events = json.loads((self.evidence / "official/phase-events.json").read_text(encoding="utf-8"))
+        failed = [event for event in events if event.get("state") == "failed"]
+        completed = [event.get("phase") for event in events if event.get("state") == "completed"]
+        if failed or completed != plan["phase_order"]:
+            raise RuntimeError(f"official phase order incomplete: completed={completed}, failed={failed}")
+        if len(execution.get("reset_sha256", [])) != 3 or any(
+                value != execution.get("initial_sha256") for value in execution["reset_sha256"]):
+            raise RuntimeError("official dataset resets do not all match the initial checksum")
+        initial = json.loads((self.evidence / "dataset/initial.json").read_text(encoding="utf-8"))
+        profiles = json.loads((self._benchmark_root() / "profiles.json").read_text(encoding="utf-8"))
+        if initial.get("profile") != "standard" or initial.get("profile_parameters") != profiles["standard"]:
+            raise RuntimeError("official initial fixture does not match the locked standard profile")
+        actor_count = 2 + profiles["standard"]["write_actors"] + profiles["standard"]["contention_actors"]
+        required = [
+            "official/execution-plan.json", "official/phase-events.json", "official/w3-preflight.json",
+            "environment/w3-project-guard-preflight.json",
+            "dataset/initial.json", "dataset/post-w1.json", "dataset/after-reset-w1.json",
+            "dataset/post-w2.json", "dataset/after-reset-w2.json", "dataset/post-w3.json",
+            "dataset/after-final-reset.json", "warmup/raw.json", "warmup/summary.json",
+            "warmup/validation.json", "warmup/resources.tsv", "w1/raw.json", "w1/summary.json",
+            "w1/validation.json", "w1/resources.tsv", "w2/raw.json", "w2/summary.json",
+            "w2/validation.json", "w2/resources.tsv", "w3/result.json", "w3/validation.json",
+            "w3/resources.tsv", "database/before-w1.txt", "database/after-w1.txt",
+            "database/before-w2.txt", "database/after-w2.txt", "database/before-w3.txt",
+            "database/after-w3.txt",
+        ]
+        missing = [relative for relative in required
+                   if not (self.evidence / relative).is_file() or (self.evidence / relative).stat().st_size == 0]
+        if missing:
+            raise RuntimeError(f"official evidence missing or empty: {missing}")
+        w3_preflight = json.loads((self.evidence / "official/w3-preflight.json").read_text(encoding="utf-8"))
+        if (w3_preflight.get("status") != "PASS" or w3_preflight.get("project") != OFFICIAL_PROJECT
+                or w3_preflight.get("checked_before") != "warmup"):
+            raise RuntimeError(f"official W3 preflight evidence mismatch: {w3_preflight}")
+        authentication_evidence = {}
+        for label, relative, expected in (
+                ("initial", "dataset/initial.json", {
+                    "token_strategy": "initial_login", "actor_count": actor_count,
+                    "login_requests": actor_count, "reused_tokens": 0, "live_token_validations": 0}),
+                ("reset_after_w1", "dataset/after-reset-w1.json", {
+                    "token_strategy": "reuse_initial_tokens", "actor_count": actor_count,
+                    "login_requests": 0, "reused_tokens": actor_count,
+                    "live_token_validations": actor_count}),
+                ("reset_after_w2", "dataset/after-reset-w2.json", {
+                    "token_strategy": "reuse_initial_tokens", "actor_count": actor_count,
+                    "login_requests": 0, "reused_tokens": actor_count,
+                    "live_token_validations": actor_count}),
+                ("final_reset", "dataset/after-final-reset.json", {
+                    "token_strategy": "reuse_initial_tokens", "actor_count": actor_count,
+                    "login_requests": 0, "reused_tokens": actor_count,
+                    "live_token_validations": actor_count})):
+            document = json.loads((self.evidence / relative).read_text(encoding="utf-8"))
+            actual = document.get("preparation_authentication")
+            if actual != expected:
+                raise RuntimeError(f"official dataset authentication evidence mismatch for {label}: "
+                                   f"{actual} != {expected}")
+            authentication_evidence[label] = actual
+        workloads = self.config["workloads"]
+        expected = {
+            "warmup": {"duration_seconds": workloads["warmup_seconds"],
+                       "food_list_rps": workloads["warmup_food_list_rps"],
+                       "food_search_rps": workloads["warmup_food_search_rps"],
+                       "order_list_rps": workloads["warmup_order_list_rps"]},
+            "w1": {"duration_seconds": workloads["measurement_seconds"],
+                   "food_list_rps": workloads["w1_food_list_rps"],
+                   "food_search_rps": workloads["w1_food_search_rps"],
+                   "order_list_rps": workloads["w1_order_list_rps"],
+                   "order_page_size": workloads["w1_order_page_size"]},
+            "w2": {"duration_seconds": workloads["measurement_seconds"], "vus": workloads["w2_vus"]},
+            "w3": {"rounds_per_scenario": workloads["w3_rounds"]},
+            "cooldown_seconds": workloads["cooldown_seconds"],
+        }
+        for key, value in expected.items():
+            if plan.get(key) != value:
+                raise RuntimeError(f"official execution plan mismatch for {key}: {plan.get(key)} != {value}")
+        result = {"harness_valid": True, "profile": "standard", "phase_order": completed,
+                  "initial_dataset_sha256": execution["initial_sha256"],
+                  "reset_dataset_sha256": execution["reset_sha256"],
+                  "warmup_excluded_from_official_metrics": True,
+                  "performance_outcomes": {"w1": execution["w1"]["outcome"],
+                                           "w2": execution["w2"]["outcome"]},
+                  "consistency_outcomes": execution["consistency_outcomes"],
+                  "w3_violation_rounds": execution["w3"]["violation_rounds"],
+                  "dataset_authentication": authentication_evidence,
+                  "note": "Application errors and W3 defects remain measured baseline outcomes."}
+        self._write_json("official/protocol-validation.json", result)
+        return result
 
     def _checksums(self) -> None:
         lines = []
@@ -828,6 +1966,10 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
 
     def cleanup(self) -> dict:
         errors = []
+        try:
+            self._stop_driver()
+        except Exception as exc:
+            return {"success": False, "errors": [f"driver still active; services retained: {exc}"]}
         backend = self.processes.get("backend")
         if backend and backend.poll() is None:
             try:
@@ -844,8 +1986,8 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
             try:
                 runtime = self.config["runtime"]
                 shutdown = subprocess.run([str(self.tools["mysqladmin"]), "--protocol=SOCKET",
-                                           "--socket", str(self.run_dir / "mysql.sock"), "-uroot", "shutdown"],
-                                          timeout=20, capture_output=True)
+                                           "--socket", str(self.run_dir / "mysql-runtime/mysql.sock"), "-uroot", "shutdown"],
+                                          timeout=20, capture_output=True, env=self.mysql_env)
                 if shutdown.returncode:
                     mysql.send_signal(signal.SIGTERM)
                 try:
@@ -889,6 +2031,109 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
                 violations.append(path.relative_to(self.evidence).as_posix())
         return violations
 
+    def run_official(self, expected_application_sha: str = BASELINE_SHA) -> dict:
+        """Run one official standard benchmark; never marks HTTP/W3 defects as harness failures."""
+        if not self.evidence.exists():
+            self.probe()
+        status, error, execution, protocol_validation = "FAIL", None, None, None
+        cleanup, finalization_errors, secret_violations = {}, [], []
+        archive = self.working_root / f"{self.run_id}-evidence.zip"
+        try:
+            probe = json.loads((self.evidence / "environment/hardware-runtime.json").read_text(encoding="utf-8"))
+            if not probe.get("is_kaggle"):
+                raise RuntimeError("not a Kaggle runtime; refusing to label this as an official Kaggle benchmark")
+            self.resolve_bundle()
+            if self.application_sha != expected_application_sha:
+                raise RuntimeError(f"official application SHA mismatch: {self.application_sha} != {expected_application_sha}")
+            self.setup_toolchain()
+            self.start_mysql()
+            self.start_backend()
+            execution = self.run_official_workloads()
+            protocol_validation = self.validate_official_execution(execution)
+            status = "PASS"
+        except Exception as exc:
+            error = f"{type(exc).__name__}: {exc}"
+            failure_trace = traceback.format_exc()
+            for secret in (self.db_password, self.actor_password):
+                failure_trace = failure_trace.replace(secret, "[REDACTED]")
+                error = error.replace(secret, "[REDACTED]")
+            failure_trace = re.sub(r"eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}",
+                                   "[REDACTED JWT]", failure_trace)
+            trace_path = self.evidence / "logs/official-failure-traceback.txt"
+            trace_path.parent.mkdir(parents=True, exist_ok=True)
+            trace_path.write_text(failure_trace, encoding="utf-8")
+        finally:
+            try:
+                cleanup = self.cleanup()
+            except Exception as exc:
+                cleanup = {"success": False, "errors": [f"cleanup raised: {type(exc).__name__}: {exc}"]}
+            if not cleanup.get("success"):
+                finalization_errors.extend(cleanup.get("errors", ["cleanup failed"]))
+            initial_sha = execution.get("initial_sha256") if execution else None
+            try:
+                self.write_run_manifest(initial_sha, {
+                    "requested_official_benchmark": True, "profile": "standard",
+                    "configuration": self.config.get("workloads", {}),
+                })
+            except Exception as exc:
+                finalization_errors.append(f"manifest: {type(exc).__name__}: {exc}")
+            secret_violations = self.scan_evidence_secrets()
+            if secret_violations:
+                finalization_errors.append(f"secret scan failed for {secret_violations}")
+            if finalization_errors:
+                status = "FAIL"
+                suffix = "; ".join(finalization_errors)
+                error = f"{error}; {suffix}" if error else suffix
+
+            application_outcome = None
+            if execution:
+                application_outcome = {
+                    "w1": execution["w1"]["outcome"], "w2": execution["w2"]["outcome"],
+                    "consistency_outcomes": execution["consistency_outcomes"],
+                    "w3_violation_rounds": execution["w3"]["violation_rounds"],
+                    "w3_server_error_rounds": execution["w3"]["server_error_rounds"],
+                }
+            result = {
+                "started_at_utc": self.started_at, "finished_at_utc": utc_now(),
+                "requested_official_benchmark": True, "official_benchmark": status == "PASS",
+                "profile": "standard", "status": status,
+                "classification": "VALID_BASELINE_MEASUREMENT" if status == "PASS" else "HARNESS_FAILURE",
+                "error": error, "application_outcome": application_outcome,
+                "initial_dataset_sha256": initial_sha,
+                "reset_dataset_sha256": execution.get("reset_sha256", []) if execution else [],
+                "reset_matches_initial": bool(execution and all(
+                    item == initial_sha for item in execution.get("reset_sha256", []))),
+                "protocol_validation": protocol_validation, "cleanup": cleanup,
+                "secret_scan_violations": secret_violations, "evidence_zip": str(archive),
+            }
+            self._write_json("official-result.json", result)
+            try:
+                self._checksums()
+                with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as bundle:
+                    for path in self.evidence.rglob("*"):
+                        if path.is_file():
+                            bundle.write(path, path.relative_to(self.evidence))
+                with zipfile.ZipFile(archive, "r") as bundle:
+                    bad = bundle.testzip()
+                    if bad:
+                        raise RuntimeError(f"corrupt evidence ZIP member: {bad}")
+            except Exception as exc:
+                result["status"] = "FAIL"
+                result["official_benchmark"] = False
+                result["classification"] = "HARNESS_FAILURE"
+                packaging = f"evidence packaging: {type(exc).__name__}: {exc}"
+                result["error"] = f"{result['error']}; {packaging}" if result["error"] else packaging
+                self._write_json("official-result.json", result)
+                try:
+                    self._checksums()
+                    with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as bundle:
+                        for path in self.evidence.rglob("*"):
+                            if path.is_file():
+                                bundle.write(path, path.relative_to(self.evidence))
+                except Exception:
+                    pass
+        return result
+
     def run_smoke(self) -> dict:
         if not self.evidence.exists():
             self.probe()
@@ -907,6 +2152,15 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
             status = "PASS"
         except Exception as exc:
             error = f"{type(exc).__name__}: {exc}"
+            failure_trace = traceback.format_exc()
+            for secret in (self.db_password, self.actor_password):
+                failure_trace = failure_trace.replace(secret, "[REDACTED]")
+                error = error.replace(secret, "[REDACTED]")
+            failure_trace = re.sub(r"eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}",
+                                   "[REDACTED JWT]", failure_trace)
+            trace_path = self.evidence / "logs/smoke-failure-traceback.txt"
+            trace_path.parent.mkdir(parents=True, exist_ok=True)
+            trace_path.write_text(failure_trace, encoding="utf-8")
         finally:
             try:
                 cleanup = self.cleanup()

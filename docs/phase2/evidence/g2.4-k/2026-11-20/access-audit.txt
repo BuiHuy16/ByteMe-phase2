@@ -1,0 +1,10 @@
+captured_local_date=2026-11-20
+project_timezone=Asia/Saigon
+kaggle_cli=NOT_FOUND
+KAGGLE_USERNAME_present=False
+KAGGLE_KEY_present=False
+KAGGLE_API_TOKEN_present=False
+kaggle_json_exists=False
+kaggle_runtime_executed=False
+kaggle_smoke_status=PENDING
+official_g2.5_executed=False

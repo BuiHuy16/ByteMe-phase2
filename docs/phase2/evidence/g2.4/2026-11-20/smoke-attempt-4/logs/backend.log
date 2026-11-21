@@ -1,0 +1,544 @@
+﻿backend-1  | Picked up JAVA_TOOL_OPTIONS: -Xms512m -Xmx768m -XX:+UseG1GC -Xlog:gc*:stdout:time,level,tags
+backend-1  | [2026-11-19T18:29:41.347+0000][info][gc,init] CardTable entry size: 512
+backend-1  | [2026-11-19T18:29:41.347+0000][info][gc     ] Using G1
+backend-1  | [2026-11-19T18:29:41.350+0000][info][gc,init] Version: 21.0.13+9-LTS (release)
+backend-1  | [2026-11-19T18:29:41.350+0000][info][gc,init] CPUs: 12 total, 2 available
+backend-1  | [2026-11-19T18:29:41.350+0000][info][gc,init] Memory: 1280M
+backend-1  | [2026-11-19T18:29:41.350+0000][info][gc,init] Large Page Support: Disabled
+backend-1  | [2026-11-19T18:29:41.350+0000][info][gc,init] NUMA Support: Disabled
+backend-1  | [2026-11-19T18:29:41.350+0000][info][gc,init] Compressed Oops: Enabled (32-bit)
+backend-1  | [2026-11-19T18:29:41.350+0000][info][gc,init] Heap Region Size: 1M
+backend-1  | [2026-11-19T18:29:41.350+0000][info][gc,init] Heap Min Capacity: 512M
+backend-1  | [2026-11-19T18:29:41.350+0000][info][gc,init] Heap Initial Capacity: 512M
+backend-1  | [2026-11-19T18:29:41.350+0000][info][gc,init] Heap Max Capacity: 768M
+backend-1  | [2026-11-19T18:29:41.350+0000][info][gc,init] Pre-touch: Disabled
+backend-1  | [2026-11-19T18:29:41.350+0000][info][gc,init] Parallel Workers: 2
+backend-1  | [2026-11-19T18:29:41.350+0000][info][gc,init] Concurrent Workers: 1
+backend-1  | [2026-11-19T18:29:41.350+0000][info][gc,init] Concurrent Refinement Workers: 2
+backend-1  | [2026-11-19T18:29:41.350+0000][info][gc,init] Periodic GC: Disabled
+backend-1  | [2026-11-19T18:29:41.359+0000][info][gc,metaspace] CDS archive(s) mapped at: [0x00007df003000000-0x00007df003baf000-0x00007df003baf000), size 12251136, SharedBaseAddress: 0x00007df003000000, ArchiveRelocationMode: 1.
+backend-1  | [2026-11-19T18:29:41.359+0000][info][gc,metaspace] Compressed class space mapped at: 0x00007df004000000-0x00007df044000000, reserved size: 1073741824
+backend-1  | [2026-11-19T18:29:41.359+0000][info][gc,metaspace] Narrow klass base: 0x00007df003000000, Narrow klass shift: 0, Narrow klass range: 0x100000000
+backend-1  | [2026-11-19T18:29:41.601+0000][info][gc,start    ] GC(0) Pause Young (Normal) (G1 Evacuation Pause)
+backend-1  | [2026-11-19T18:29:41.601+0000][info][gc,task     ] GC(0) Using 2 workers of 2 for evacuation
+backend-1  | [2026-11-19T18:29:41.604+0000][info][gc,phases   ] GC(0)   Pre Evacuate Collection Set: 0.18ms
+backend-1  | [2026-11-19T18:29:41.604+0000][info][gc,phases   ] GC(0)   Merge Heap Roots: 0.29ms
+backend-1  | [2026-11-19T18:29:41.604+0000][info][gc,phases   ] GC(0)   Evacuate Collection Set: 1.65ms
+backend-1  | [2026-11-19T18:29:41.604+0000][info][gc,phases   ] GC(0)   Post Evacuate Collection Set: 0.35ms
+backend-1  | [2026-11-19T18:29:41.604+0000][info][gc,phases   ] GC(0)   Other: 0.32ms
+backend-1  | [2026-11-19T18:29:41.604+0000][info][gc,heap     ] GC(0) Eden regions: 25->0(23)
+backend-1  | [2026-11-19T18:29:41.604+0000][info][gc,heap     ] GC(0) Survivor regions: 0->2(4)
+backend-1  | [2026-11-19T18:29:41.604+0000][info][gc,heap     ] GC(0) Old regions: 1->1
+backend-1  | [2026-11-19T18:29:41.604+0000][info][gc,heap     ] GC(0) Humongous regions: 0->0
+backend-1  | [2026-11-19T18:29:41.604+0000][info][gc,metaspace] GC(0) Metaspace: 1894K(2176K)->1894K(2176K) NonClass: 1696K(1856K)->1696K(1856K) Class: 197K(320K)->197K(320K)
+backend-1  | [2026-11-19T18:29:41.604+0000][info][gc          ] GC(0) Pause Young (Normal) (G1 Evacuation Pause) 25M->2M(513M) 2.996ms
+backend-1  | [2026-11-19T18:29:41.604+0000][info][gc,cpu      ] GC(0) User=0.01s Sys=0.00s Real=0.00s
+backend-1  | [2026-11-19T18:29:41.850+0000][info][gc,start    ] GC(1) Pause Young (Normal) (G1 Evacuation Pause)
+backend-1  | [2026-11-19T18:29:41.850+0000][info][gc,task     ] GC(1) Using 2 workers of 2 for evacuation
+backend-1  | [2026-11-19T18:29:41.853+0000][info][gc,phases   ] GC(1)   Pre Evacuate Collection Set: 0.20ms
+backend-1  | [2026-11-19T18:29:41.853+0000][info][gc,phases   ] GC(1)   Merge Heap Roots: 0.08ms
+backend-1  | [2026-11-19T18:29:41.853+0000][info][gc,phases   ] GC(1)   Evacuate Collection Set: 1.96ms
+backend-1  | [2026-11-19T18:29:41.853+0000][info][gc,phases   ] GC(1)   Post Evacuate Collection Set: 0.40ms
+backend-1  | [2026-11-19T18:29:41.853+0000][info][gc,phases   ] GC(1)   Other: 0.05ms
+backend-1  | [2026-11-19T18:29:41.853+0000][info][gc,heap     ] GC(1) Eden regions: 23->0(36)
+backend-1  | [2026-11-19T18:29:41.853+0000][info][gc,heap     ] GC(1) Survivor regions: 2->3(4)
+backend-1  | [2026-11-19T18:29:41.853+0000][info][gc,heap     ] GC(1) Old regions: 1->1
+backend-1  | [2026-11-19T18:29:41.853+0000][info][gc,heap     ] GC(1) Humongous regions: 0->0
+backend-1  | [2026-11-19T18:29:41.853+0000][info][gc,metaspace] GC(1) Metaspace: 5572K(5824K)->5572K(5824K) NonClass: 4919K(5056K)->4919K(5056K) Class: 652K(768K)->652K(768K)
+backend-1  | [2026-11-19T18:29:41.853+0000][info][gc          ] GC(1) Pause Young (Normal) (G1 Evacuation Pause) 25M->3M(513M) 2.820ms
+backend-1  | [2026-11-19T18:29:41.853+0000][info][gc,cpu      ] GC(1) User=0.00s Sys=0.01s Real=0.00s
+backend-1  | 
+backend-1  |   .   ____          _            __ _ _
+backend-1  |  /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+backend-1  | ( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+backend-1  |  \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+backend-1  |   '  |____| .__|_| |_|_| |_\__, | / / / /
+backend-1  |  =========|_|==============|___/=/_/_/_/
+backend-1  | 
+backend-1  |  :: Spring Boot ::               (v3.5.16)
+backend-1  | 
+backend-1  | [2026-11-19T18:29:42.242+0000][info][gc,start    ] GC(2) Pause Young (Normal) (G1 Evacuation Pause)
+backend-1  | [2026-11-19T18:29:42.242+0000][info][gc,task     ] GC(2) Using 2 workers of 2 for evacuation
+backend-1  | [2026-11-19T18:29:42.248+0000][info][gc,phases   ] GC(2)   Pre Evacuate Collection Set: 0.29ms
+backend-1  | [2026-11-19T18:29:42.248+0000][info][gc,phases   ] GC(2)   Merge Heap Roots: 0.17ms
+backend-1  | [2026-11-19T18:29:42.248+0000][info][gc,phases   ] GC(2)   Evacuate Collection Set: 5.12ms
+backend-1  | [2026-11-19T18:29:42.248+0000][info][gc,phases   ] GC(2)   Post Evacuate Collection Set: 0.62ms
+backend-1  | [2026-11-19T18:29:42.248+0000][info][gc,phases   ] GC(2)   Other: 0.05ms
+backend-1  | [2026-11-19T18:29:42.248+0000][info][gc,heap     ] GC(2) Eden regions: 36->0(122)
+backend-1  | [2026-11-19T18:29:42.248+0000][info][gc,heap     ] GC(2) Survivor regions: 3->3(5)
+backend-1  | [2026-11-19T18:29:42.248+0000][info][gc,heap     ] GC(2) Old regions: 1->3
+backend-1  | [2026-11-19T18:29:42.248+0000][info][gc,heap     ] GC(2) Humongous regions: 0->0
+backend-1  | [2026-11-19T18:29:42.248+0000][info][gc,metaspace] GC(2) Metaspace: 11613K(11968K)->11613K(11968K) NonClass: 10100K(10304K)->10100K(10304K) Class: 1513K(1664K)->1513K(1664K)
+backend-1  | [2026-11-19T18:29:42.248+0000][info][gc          ] GC(2) Pause Young (Normal) (G1 Evacuation Pause) 39M->5M(513M) 6.377ms
+backend-1  | [2026-11-19T18:29:42.248+0000][info][gc,cpu      ] GC(2) User=0.01s Sys=0.00s Real=0.01s
+backend-1  | 2026-11-19T18:29:42.328Z  INFO 1 --- [byteme] [           main] org.example.Application                  : Starting Application v0.0.1-SNAPSHOT using Java 21.0.13 with PID 1 (/app/application.jar started by ? in /app)
+backend-1  | 2026-11-19T18:29:42.330Z  INFO 1 --- [byteme] [           main] org.example.Application                  : No active profile set, falling back to 1 default profile: "default"
+backend-1  | [2026-11-19T18:29:43.053+0000][info][gc,start    ] GC(3) Pause Young (Concurrent Start) (Metadata GC Threshold)
+backend-1  | [2026-11-19T18:29:43.053+0000][info][gc,task     ] GC(3) Using 2 workers of 2 for evacuation
+backend-1  | [2026-11-19T18:29:43.061+0000][info][gc,phases   ] GC(3)   Pre Evacuate Collection Set: 0.21ms
+backend-1  | [2026-11-19T18:29:43.061+0000][info][gc,phases   ] GC(3)   Merge Heap Roots: 0.06ms
+backend-1  | [2026-11-19T18:29:43.061+0000][info][gc,phases   ] GC(3)   Evacuate Collection Set: 7.05ms
+backend-1  | [2026-11-19T18:29:43.061+0000][info][gc,phases   ] GC(3)   Post Evacuate Collection Set: 0.56ms
+backend-1  | [2026-11-19T18:29:43.061+0000][info][gc,phases   ] GC(3)   Other: 0.13ms
+backend-1  | [2026-11-19T18:29:43.061+0000][info][gc,heap     ] GC(3) Eden regions: 101->0(105)
+backend-1  | [2026-11-19T18:29:43.061+0000][info][gc,heap     ] GC(3) Survivor regions: 3->7(16)
+backend-1  | [2026-11-19T18:29:43.061+0000][info][gc,heap     ] GC(3) Old regions: 3->3
+backend-1  | [2026-11-19T18:29:43.061+0000][info][gc,heap     ] GC(3) Humongous regions: 0->0
+backend-1  | [2026-11-19T18:29:43.061+0000][info][gc,metaspace] GC(3) Metaspace: 21141K(21504K)->21141K(21504K) NonClass: 18419K(18624K)->18419K(18624K) Class: 2721K(2880K)->2721K(2880K)
+backend-1  | [2026-11-19T18:29:43.061+0000][info][gc          ] GC(3) Pause Young (Concurrent Start) (Metadata GC Threshold) 106M->9M(513M) 8.147ms
+backend-1  | [2026-11-19T18:29:43.061+0000][info][gc,cpu      ] GC(3) User=0.02s Sys=0.00s Real=0.01s
+backend-1  | [2026-11-19T18:29:43.061+0000][info][gc          ] GC(4) Concurrent Mark Cycle
+backend-1  | [2026-11-19T18:29:43.061+0000][info][gc,marking  ] GC(4) Concurrent Scan Root Regions
+backend-1  | [2026-11-19T18:29:43.102+0000][info][gc,marking  ] GC(4) Concurrent Scan Root Regions 41.110ms
+backend-1  | [2026-11-19T18:29:43.102+0000][info][gc,marking  ] GC(4) Concurrent Mark
+backend-1  | [2026-11-19T18:29:43.102+0000][info][gc,marking  ] GC(4) Concurrent Mark From Roots
+backend-1  | [2026-11-19T18:29:43.102+0000][info][gc,task     ] GC(4) Using 1 workers of 1 for marking
+backend-1  | [2026-11-19T18:29:43.106+0000][info][gc,marking  ] GC(4) Concurrent Mark From Roots 3.879ms
+backend-1  | [2026-11-19T18:29:43.106+0000][info][gc,marking  ] GC(4) Concurrent Preclean
+backend-1  | [2026-11-19T18:29:43.106+0000][info][gc,marking  ] GC(4) Concurrent Preclean 0.101ms
+backend-1  | [2026-11-19T18:29:43.107+0000][info][gc,start    ] GC(4) Pause Remark
+backend-1  | [2026-11-19T18:29:43.109+0000][info][gc          ] GC(4) Pause Remark 13M->13M(512M) 2.399ms
+backend-1  | [2026-11-19T18:29:43.109+0000][info][gc,cpu      ] GC(4) User=0.01s Sys=0.00s Real=0.01s
+backend-1  | [2026-11-19T18:29:43.109+0000][info][gc,marking  ] GC(4) Concurrent Mark 6.964ms
+backend-1  | [2026-11-19T18:29:43.109+0000][info][gc,marking  ] GC(4) Concurrent Rebuild Remembered Sets and Scrub Regions
+backend-1  | [2026-11-19T18:29:43.110+0000][info][gc,marking  ] GC(4) Concurrent Rebuild Remembered Sets and Scrub Regions 1.234ms
+backend-1  | [2026-11-19T18:29:43.111+0000][info][gc,start    ] GC(4) Pause Cleanup
+backend-1  | [2026-11-19T18:29:43.111+0000][info][gc          ] GC(4) Pause Cleanup 14M->14M(512M) 0.195ms
+backend-1  | [2026-11-19T18:29:43.111+0000][info][gc,cpu      ] GC(4) User=0.00s Sys=0.00s Real=0.00s
+backend-1  | [2026-11-19T18:29:43.111+0000][info][gc,marking  ] GC(4) Concurrent Clear Claimed Marks
+backend-1  | [2026-11-19T18:29:43.111+0000][info][gc,marking  ] GC(4) Concurrent Clear Claimed Marks 0.064ms
+backend-1  | [2026-11-19T18:29:43.111+0000][info][gc,marking  ] GC(4) Concurrent Cleanup for Next Mark
+backend-1  | [2026-11-19T18:29:43.117+0000][info][gc,marking  ] GC(4) Concurrent Cleanup for Next Mark 6.241ms
+backend-1  | [2026-11-19T18:29:43.117+0000][info][gc          ] GC(4) Concurrent Mark Cycle 56.440ms
+backend-1  | [2026-11-19T18:29:43.761+0000][info][gc,start    ] GC(5) Pause Young (Prepare Mixed) (G1 Evacuation Pause)
+backend-1  | [2026-11-19T18:29:43.761+0000][info][gc,task     ] GC(5) Using 2 workers of 2 for evacuation
+backend-1  | [2026-11-19T18:29:43.769+0000][info][gc,phases   ] GC(5)   Pre Evacuate Collection Set: 0.24ms
+backend-1  | [2026-11-19T18:29:43.769+0000][info][gc,phases   ] GC(5)   Merge Heap Roots: 0.09ms
+backend-1  | [2026-11-19T18:29:43.769+0000][info][gc,phases   ] GC(5)   Evacuate Collection Set: 6.64ms
+backend-1  | [2026-11-19T18:29:43.769+0000][info][gc,phases   ] GC(5)   Post Evacuate Collection Set: 0.81ms
+backend-1  | [2026-11-19T18:29:43.769+0000][info][gc,phases   ] GC(5)   Other: 0.05ms
+backend-1  | [2026-11-19T18:29:43.769+0000][info][gc,heap     ] GC(5) Eden regions: 82->0(91)
+backend-1  | [2026-11-19T18:29:43.769+0000][info][gc,heap     ] GC(5) Survivor regions: 7->10(12)
+backend-1  | [2026-11-19T18:29:43.769+0000][info][gc,heap     ] GC(5) Old regions: 3->5
+backend-1  | [2026-11-19T18:29:43.769+0000][info][gc,heap     ] GC(5) Humongous regions: 0->0
+backend-1  | [2026-11-19T18:29:43.769+0000][info][gc,metaspace] GC(5) Metaspace: 26956K(27392K)->26956K(27392K) NonClass: 23501K(23744K)->23501K(23744K) Class: 3454K(3648K)->3454K(3648K)
+backend-1  | [2026-11-19T18:29:43.769+0000][info][gc          ] GC(5) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 91M->13M(512M) 7.938ms
+backend-1  | [2026-11-19T18:29:43.769+0000][info][gc,cpu      ] GC(5) User=0.01s Sys=0.00s Real=0.01s
+backend-1  | 2026-11-19T18:29:43.934Z  INFO 1 --- [byteme] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+backend-1  | 2026-11-19T18:29:43.979Z  INFO 1 --- [byteme] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 37 ms. Found 5 JPA repository interfaces.
+backend-1  | [2026-11-19T18:29:44.368+0000][info][gc,start    ] GC(6) Pause Young (Mixed) (G1 Evacuation Pause)
+backend-1  | [2026-11-19T18:29:44.368+0000][info][gc,task     ] GC(6) Using 2 workers of 2 for evacuation
+backend-1  | [2026-11-19T18:29:44.401+0000][info][gc,phases   ] GC(6)   Pre Evacuate Collection Set: 0.18ms
+backend-1  | [2026-11-19T18:29:44.401+0000][info][gc,phases   ] GC(6)   Merge Heap Roots: 0.09ms
+backend-1  | [2026-11-19T18:29:44.401+0000][info][gc,phases   ] GC(6)   Evacuate Collection Set: 31.19ms
+backend-1  | [2026-11-19T18:29:44.401+0000][info][gc,phases   ] GC(6)   Post Evacuate Collection Set: 0.97ms
+backend-1  | [2026-11-19T18:29:44.401+0000][info][gc,phases   ] GC(6)   Other: 0.05ms
+backend-1  | [2026-11-19T18:29:44.401+0000][info][gc,heap     ] GC(6) Eden regions: 77->0(87)
+backend-1  | [2026-11-19T18:29:44.401+0000][info][gc,heap     ] GC(6) Survivor regions: 10->9(11)
+backend-1  | [2026-11-19T18:29:44.401+0000][info][gc,heap     ] GC(6) Old regions: 5->9
+backend-1  | [2026-11-19T18:29:44.401+0000][info][gc,heap     ] GC(6) Humongous regions: 0->0
+backend-1  | [2026-11-19T18:29:44.401+0000][info][gc,metaspace] GC(6) Metaspace: 33499K(33984K)->33499K(33984K) NonClass: 29055K(29376K)->29055K(29376K) Class: 4444K(4608K)->4444K(4608K)
+backend-1  | [2026-11-19T18:29:44.401+0000][info][gc          ] GC(6) Pause Young (Mixed) (G1 Evacuation Pause) 90M->17M(512M) 32.594ms
+backend-1  | [2026-11-19T18:29:44.401+0000][info][gc,cpu      ] GC(6) User=0.05s Sys=0.00s Real=0.03s
+backend-1  | 2026-11-19T18:29:44.455Z  INFO 1 --- [byteme] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+backend-1  | 2026-11-19T18:29:44.465Z  INFO 1 --- [byteme] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+backend-1  | 2026-11-19T18:29:44.465Z  INFO 1 --- [byteme] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.55]
+backend-1  | 2026-11-19T18:29:44.486Z  INFO 1 --- [byteme] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+backend-1  | 2026-11-19T18:29:44.487Z  INFO 1 --- [byteme] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2126 ms
+backend-1  | [2026-11-19T18:29:44.520+0000][info][gc,start    ] GC(7) Pause Young (Concurrent Start) (Metadata GC Threshold)
+backend-1  | [2026-11-19T18:29:44.520+0000][info][gc,task     ] GC(7) Using 2 workers of 2 for evacuation
+backend-1  | [2026-11-19T18:29:44.530+0000][info][gc,phases   ] GC(7)   Pre Evacuate Collection Set: 0.19ms
+backend-1  | [2026-11-19T18:29:44.530+0000][info][gc,phases   ] GC(7)   Merge Heap Roots: 0.06ms
+backend-1  | [2026-11-19T18:29:44.530+0000][info][gc,phases   ] GC(7)   Evacuate Collection Set: 8.49ms
+backend-1  | [2026-11-19T18:29:44.530+0000][info][gc,phases   ] GC(7)   Post Evacuate Collection Set: 0.48ms
+backend-1  | [2026-11-19T18:29:44.530+0000][info][gc,phases   ] GC(7)   Other: 0.10ms
+backend-1  | [2026-11-19T18:29:44.530+0000][info][gc,heap     ] GC(7) Eden regions: 14->0(225)
+backend-1  | [2026-11-19T18:29:44.530+0000][info][gc,heap     ] GC(7) Survivor regions: 9->2(4)
+backend-1  | [2026-11-19T18:29:44.530+0000][info][gc,heap     ] GC(7) Old regions: 9->18
+backend-1  | [2026-11-19T18:29:44.530+0000][info][gc,heap     ] GC(7) Humongous regions: 0->0
+backend-1  | [2026-11-19T18:29:44.530+0000][info][gc,metaspace] GC(7) Metaspace: 35907K(36416K)->35907K(36416K) NonClass: 31201K(31488K)->31201K(31488K) Class: 4705K(4928K)->4705K(4928K)
+backend-1  | [2026-11-19T18:29:44.530+0000][info][gc          ] GC(7) Pause Young (Concurrent Start) (Metadata GC Threshold) 31M->18M(512M) 9.450ms
+backend-1  | [2026-11-19T18:29:44.530+0000][info][gc,cpu      ] GC(7) User=0.02s Sys=0.00s Real=0.01s
+backend-1  | [2026-11-19T18:29:44.530+0000][info][gc          ] GC(8) Concurrent Mark Cycle
+backend-1  | [2026-11-19T18:29:44.530+0000][info][gc,marking  ] GC(8) Concurrent Scan Root Regions
+backend-1  | [2026-11-19T18:29:44.535+0000][info][gc,marking  ] GC(8) Concurrent Scan Root Regions 4.710ms
+backend-1  | [2026-11-19T18:29:44.535+0000][info][gc,marking  ] GC(8) Concurrent Mark
+backend-1  | [2026-11-19T18:29:44.535+0000][info][gc,marking  ] GC(8) Concurrent Mark From Roots
+backend-1  | [2026-11-19T18:29:44.535+0000][info][gc,task     ] GC(8) Using 1 workers of 1 for marking
+backend-1  | [2026-11-19T18:29:44.542+0000][info][gc,marking  ] GC(8) Concurrent Mark From Roots 7.739ms
+backend-1  | [2026-11-19T18:29:44.542+0000][info][gc,marking  ] GC(8) Concurrent Preclean
+backend-1  | [2026-11-19T18:29:44.542+0000][info][gc,marking  ] GC(8) Concurrent Preclean 0.039ms
+backend-1  | [2026-11-19T18:29:44.543+0000][info][gc,start    ] GC(8) Pause Remark
+backend-1  | [2026-11-19T18:29:44.546+0000][info][gc          ] GC(8) Pause Remark 20M->20M(512M) 3.736ms
+backend-1  | [2026-11-19T18:29:44.546+0000][info][gc,cpu      ] GC(8) User=0.01s Sys=0.00s Real=0.00s
+backend-1  | [2026-11-19T18:29:44.546+0000][info][gc,marking  ] GC(8) Concurrent Mark 11.810ms
+backend-1  | [2026-11-19T18:29:44.546+0000][info][gc,marking  ] GC(8) Concurrent Rebuild Remembered Sets and Scrub Regions
+backend-1  | [2026-11-19T18:29:44.556+0000][info][gc,marking  ] GC(8) Concurrent Rebuild Remembered Sets and Scrub Regions 9.347ms
+backend-1  | [2026-11-19T18:29:44.556+0000][info][gc,start    ] GC(8) Pause Cleanup
+backend-1  | [2026-11-19T18:29:44.556+0000][info][gc          ] GC(8) Pause Cleanup 21M->21M(512M) 0.140ms
+backend-1  | [2026-11-19T18:29:44.556+0000][info][gc,cpu      ] GC(8) User=0.00s Sys=0.00s Real=0.00s
+backend-1  | [2026-11-19T18:29:44.556+0000][info][gc,marking  ] GC(8) Concurrent Clear Claimed Marks
+backend-1  | [2026-11-19T18:29:44.556+0000][info][gc,marking  ] GC(8) Concurrent Clear Claimed Marks 0.059ms
+backend-1  | [2026-11-19T18:29:44.556+0000][info][gc,marking  ] GC(8) Concurrent Cleanup for Next Mark
+backend-1  | [2026-11-19T18:29:44.557+0000][info][gc,marking  ] GC(8) Concurrent Cleanup for Next Mark 0.728ms
+backend-1  | [2026-11-19T18:29:44.557+0000][info][gc          ] GC(8) Concurrent Mark Cycle 27.235ms
+backend-1  | 2026-11-19T18:29:44.752Z  INFO 1 --- [byteme] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+backend-1  | 2026-11-19T18:29:44.790Z  INFO 1 --- [byteme] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.53.Final
+backend-1  | 2026-11-19T18:29:44.823Z  INFO 1 --- [byteme] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+backend-1  | 2026-11-19T18:29:45.022Z  INFO 1 --- [byteme] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+backend-1  | 2026-11-19T18:29:45.044Z  INFO 1 --- [byteme] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+backend-1  | 2026-11-19T18:29:45.329Z  INFO 1 --- [byteme] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@78508e6b
+backend-1  | 2026-11-19T18:29:45.330Z  INFO 1 --- [byteme] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+backend-1  | 2026-11-19T18:29:45.389Z  INFO 1 --- [byteme] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+backend-1  | 	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+backend-1  | 	Database driver: undefined/unknown
+backend-1  | 	Database version: 8.4.13
+backend-1  | 	Autocommit mode: undefined/unknown
+backend-1  | 	Isolation level: undefined/unknown
+backend-1  | 	Minimum pool size: undefined/unknown
+backend-1  | 	Maximum pool size: undefined/unknown
+backend-1  | [2026-11-19T18:29:45.858+0000][info][gc,start    ] GC(9) Pause Young (Prepare Mixed) (G1 Evacuation Pause)
+backend-1  | [2026-11-19T18:29:45.858+0000][info][gc,task     ] GC(9) Using 2 workers of 2 for evacuation
+backend-1  | [2026-11-19T18:29:45.868+0000][info][gc,phases   ] GC(9)   Pre Evacuate Collection Set: 0.24ms
+backend-1  | [2026-11-19T18:29:45.868+0000][info][gc,phases   ] GC(9)   Merge Heap Roots: 0.10ms
+backend-1  | [2026-11-19T18:29:45.868+0000][info][gc,phases   ] GC(9)   Evacuate Collection Set: 9.47ms
+backend-1  | [2026-11-19T18:29:45.868+0000][info][gc,phases   ] GC(9)   Post Evacuate Collection Set: 0.89ms
+backend-1  | [2026-11-19T18:29:45.868+0000][info][gc,phases   ] GC(9)   Other: 0.05ms
+backend-1  | [2026-11-19T18:29:45.868+0000][info][gc,heap     ] GC(9) Eden regions: 173->0(200)
+backend-1  | [2026-11-19T18:29:45.868+0000][info][gc,heap     ] GC(9) Survivor regions: 2->8(22)
+backend-1  | [2026-11-19T18:29:45.868+0000][info][gc,heap     ] GC(9) Old regions: 18->18
+backend-1  | [2026-11-19T18:29:45.868+0000][info][gc,heap     ] GC(9) Humongous regions: 0->0
+backend-1  | [2026-11-19T18:29:45.868+0000][info][gc,metaspace] GC(9) Metaspace: 59244K(59904K)->59244K(59904K) NonClass: 51370K(51712K)->51370K(51712K) Class: 7873K(8192K)->7873K(8192K)
+backend-1  | [2026-11-19T18:29:45.868+0000][info][gc          ] GC(9) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 191M->25M(512M) 10.876ms
+backend-1  | [2026-11-19T18:29:45.868+0000][info][gc,cpu      ] GC(9) User=0.02s Sys=0.00s Real=0.01s
+backend-1  | [2026-11-19T18:29:45.921+0000][info][gc,start    ] GC(10) Pause Young (Mixed) (Metadata GC Threshold)
+backend-1  | [2026-11-19T18:29:45.921+0000][info][gc,task     ] GC(10) Using 2 workers of 2 for evacuation
+backend-1  | [2026-11-19T18:29:45.927+0000][info][gc,phases   ] GC(10)   Pre Evacuate Collection Set: 0.18ms
+backend-1  | [2026-11-19T18:29:45.927+0000][info][gc,phases   ] GC(10)   Merge Heap Roots: 0.11ms
+backend-1  | [2026-11-19T18:29:45.927+0000][info][gc,phases   ] GC(10)   Evacuate Collection Set: 5.76ms
+backend-1  | [2026-11-19T18:29:45.927+0000][info][gc,phases   ] GC(10)   Post Evacuate Collection Set: 0.67ms
+backend-1  | [2026-11-19T18:29:45.927+0000][info][gc,phases   ] GC(10)   Other: 0.06ms
+backend-1  | [2026-11-19T18:29:45.927+0000][info][gc,heap     ] GC(10) Eden regions: 6->0(226)
+backend-1  | [2026-11-19T18:29:45.927+0000][info][gc,heap     ] GC(10) Survivor regions: 8->8(25)
+backend-1  | [2026-11-19T18:29:45.927+0000][info][gc,heap     ] GC(10) Old regions: 18->18
+backend-1  | [2026-11-19T18:29:45.927+0000][info][gc,heap     ] GC(10) Humongous regions: 0->0
+backend-1  | [2026-11-19T18:29:45.927+0000][info][gc,metaspace] GC(10) Metaspace: 60337K(60928K)->60337K(60928K) NonClass: 52372K(52672K)->52372K(52672K) Class: 7965K(8256K)->7965K(8256K)
+backend-1  | [2026-11-19T18:29:45.927+0000][info][gc          ] GC(10) Pause Young (Mixed) (Metadata GC Threshold) 30M->25M(512M) 6.879ms
+backend-1  | [2026-11-19T18:29:45.927+0000][info][gc,cpu      ] GC(10) User=0.01s Sys=0.00s Real=0.00s
+backend-1  | [2026-11-19T18:29:45.935+0000][info][gc,start    ] GC(11) Pause Young (Concurrent Start) (Metadata GC Threshold)
+backend-1  | [2026-11-19T18:29:45.935+0000][info][gc,task     ] GC(11) Using 2 workers of 2 for evacuation
+backend-1  | [2026-11-19T18:29:45.941+0000][info][gc,phases   ] GC(11)   Pre Evacuate Collection Set: 0.28ms
+backend-1  | [2026-11-19T18:29:45.941+0000][info][gc,phases   ] GC(11)   Merge Heap Roots: 0.06ms
+backend-1  | [2026-11-19T18:29:45.941+0000][info][gc,phases   ] GC(11)   Evacuate Collection Set: 4.76ms
+backend-1  | [2026-11-19T18:29:45.941+0000][info][gc,phases   ] GC(11)   Post Evacuate Collection Set: 0.58ms
+backend-1  | [2026-11-19T18:29:45.941+0000][info][gc,phases   ] GC(11)   Other: 0.14ms
+backend-1  | [2026-11-19T18:29:45.941+0000][info][gc,heap     ] GC(11) Eden regions: 2->0(299)
+backend-1  | [2026-11-19T18:29:45.941+0000][info][gc,heap     ] GC(11) Survivor regions: 8->8(29)
+backend-1  | [2026-11-19T18:29:45.941+0000][info][gc,heap     ] GC(11) Old regions: 18->18
+backend-1  | [2026-11-19T18:29:45.941+0000][info][gc,heap     ] GC(11) Humongous regions: 0->0
+backend-1  | [2026-11-19T18:29:45.941+0000][info][gc,metaspace] GC(11) Metaspace: 60638K(61248K)->60638K(61248K) NonClass: 52506K(52800K)->52506K(52800K) Class: 8132K(8448K)->8132K(8448K)
+backend-1  | [2026-11-19T18:29:45.941+0000][info][gc          ] GC(11) Pause Young (Concurrent Start) (Metadata GC Threshold) 26M->25M(512M) 5.965ms
+backend-1  | [2026-11-19T18:29:45.941+0000][info][gc          ] GC(12) Concurrent Mark Cycle
+backend-1  | [2026-11-19T18:29:45.941+0000][info][gc,marking  ] GC(12) Concurrent Scan Root Regions
+backend-1  | [2026-11-19T18:29:45.941+0000][info][gc,cpu      ] GC(11) User=0.01s Sys=0.00s Real=0.01s
+backend-1  | [2026-11-19T18:29:45.946+0000][info][gc,marking  ] GC(12) Concurrent Scan Root Regions 4.869ms
+backend-1  | [2026-11-19T18:29:45.946+0000][info][gc,marking  ] GC(12) Concurrent Mark
+backend-1  | [2026-11-19T18:29:45.946+0000][info][gc,marking  ] GC(12) Concurrent Mark From Roots
+backend-1  | [2026-11-19T18:29:45.946+0000][info][gc,task     ] GC(12) Using 1 workers of 1 for marking
+backend-1  | [2026-11-19T18:29:45.962+0000][info][gc,marking  ] GC(12) Concurrent Mark From Roots 16.422ms
+backend-1  | [2026-11-19T18:29:45.962+0000][info][gc,marking  ] GC(12) Concurrent Preclean
+backend-1  | [2026-11-19T18:29:45.962+0000][info][gc,marking  ] GC(12) Concurrent Preclean 0.046ms
+backend-1  | [2026-11-19T18:29:45.962+0000][info][gc,start    ] GC(12) Pause Remark
+backend-1  | [2026-11-19T18:29:45.967+0000][info][gc          ] GC(12) Pause Remark 28M->28M(512M) 4.935ms
+backend-1  | [2026-11-19T18:29:45.967+0000][info][gc,cpu      ] GC(12) User=0.02s Sys=0.00s Real=0.00s
+backend-1  | [2026-11-19T18:29:45.968+0000][info][gc,marking  ] GC(12) Concurrent Mark 21.599ms
+backend-1  | [2026-11-19T18:29:45.968+0000][info][gc,marking  ] GC(12) Concurrent Rebuild Remembered Sets and Scrub Regions
+backend-1  | [2026-11-19T18:29:45.975+0000][info][gc,marking  ] GC(12) Concurrent Rebuild Remembered Sets and Scrub Regions 7.119ms
+backend-1  | [2026-11-19T18:29:45.975+0000][info][gc,start    ] GC(12) Pause Cleanup
+backend-1  | [2026-11-19T18:29:45.975+0000][info][gc          ] GC(12) Pause Cleanup 29M->29M(512M) 0.296ms
+backend-1  | [2026-11-19T18:29:45.975+0000][info][gc,cpu      ] GC(12) User=0.00s Sys=0.00s Real=0.00s
+backend-1  | [2026-11-19T18:29:45.975+0000][info][gc,marking  ] GC(12) Concurrent Clear Claimed Marks
+backend-1  | [2026-11-19T18:29:45.975+0000][info][gc,marking  ] GC(12) Concurrent Clear Claimed Marks 0.057ms
+backend-1  | [2026-11-19T18:29:45.975+0000][info][gc,marking  ] GC(12) Concurrent Cleanup for Next Mark
+backend-1  | [2026-11-19T18:29:45.976+0000][info][gc,marking  ] GC(12) Concurrent Cleanup for Next Mark 0.782ms
+backend-1  | [2026-11-19T18:29:45.976+0000][info][gc          ] GC(12) Concurrent Mark Cycle 35.142ms
+backend-1  | 2026-11-19T18:29:46.465Z  INFO 1 --- [byteme] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+backend-1  | 2026-11-19T18:29:46.467Z  INFO 1 --- [byteme] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+backend-1  | 2026-11-19T18:29:46.936Z  INFO 1 --- [byteme] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+backend-1  | [2026-11-19T18:29:47.476+0000][info][gc,start    ] GC(13) Pause Young (Prepare Mixed) (G1 Evacuation Pause)
+backend-1  | [2026-11-19T18:29:47.476+0000][info][gc,task     ] GC(13) Using 2 workers of 2 for evacuation
+backend-1  | [2026-11-19T18:29:47.519+0000][info][gc,phases   ] GC(13)   Pre Evacuate Collection Set: 0.28ms
+backend-1  | [2026-11-19T18:29:47.519+0000][info][gc,phases   ] GC(13)   Merge Heap Roots: 0.17ms
+backend-1  | [2026-11-19T18:29:47.519+0000][info][gc,phases   ] GC(13)   Evacuate Collection Set: 41.39ms
+backend-1  | [2026-11-19T18:29:47.519+0000][info][gc,phases   ] GC(13)   Post Evacuate Collection Set: 1.28ms
+backend-1  | [2026-11-19T18:29:47.519+0000][info][gc,phases   ] GC(13)   Other: 0.07ms
+backend-1  | [2026-11-19T18:29:47.519+0000][info][gc,heap     ] GC(13) Eden regions: 299->0(221)
+backend-1  | [2026-11-19T18:29:47.519+0000][info][gc,heap     ] GC(13) Survivor regions: 8->39(39)
+backend-1  | [2026-11-19T18:29:47.519+0000][info][gc,heap     ] GC(13) Old regions: 18->19
+backend-1  | [2026-11-19T18:29:47.519+0000][info][gc,heap     ] GC(13) Humongous regions: 1->1
+backend-1  | [2026-11-19T18:29:47.519+0000][info][gc,metaspace] GC(13) Metaspace: 79037K(79680K)->79037K(79680K) NonClass: 67992K(68352K)->67992K(68352K) Class: 11045K(11328K)->11045K(11328K)
+backend-1  | [2026-11-19T18:29:47.519+0000][info][gc          ] GC(13) Pause Young (Prepare Mixed) (G1 Evacuation Pause) 325M->58M(512M) 43.312ms
+backend-1  | [2026-11-19T18:29:47.519+0000][info][gc,cpu      ] GC(13) User=0.05s Sys=0.02s Real=0.04s
+backend-1  | 2026-11-19T18:29:47.979Z  INFO 1 --- [byteme] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+backend-1  | [2026-11-19T18:29:48.463+0000][info][gc,start    ] GC(14) Pause Young (Mixed) (G1 Evacuation Pause)
+backend-1  | [2026-11-19T18:29:48.463+0000][info][gc,task     ] GC(14) Using 2 workers of 2 for evacuation
+backend-1  | [2026-11-19T18:29:48.527+0000][info][gc,phases   ] GC(14)   Pre Evacuate Collection Set: 0.18ms
+backend-1  | [2026-11-19T18:29:48.527+0000][info][gc,phases   ] GC(14)   Merge Heap Roots: 0.11ms
+backend-1  | [2026-11-19T18:29:48.527+0000][info][gc,phases   ] GC(14)   Evacuate Collection Set: 62.55ms
+backend-1  | [2026-11-19T18:29:48.527+0000][info][gc,phases   ] GC(14)   Post Evacuate Collection Set: 1.20ms
+backend-1  | [2026-11-19T18:29:48.527+0000][info][gc,phases   ] GC(14)   Other: 0.05ms
+backend-1  | [2026-11-19T18:29:48.527+0000][info][gc,heap     ] GC(14) Eden regions: 179->0(299)
+backend-1  | [2026-11-19T18:29:48.527+0000][info][gc,heap     ] GC(14) Survivor regions: 39->8(28)
+backend-1  | [2026-11-19T18:29:48.527+0000][info][gc,heap     ] GC(14) Old regions: 19->57
+backend-1  | [2026-11-19T18:29:48.527+0000][info][gc,heap     ] GC(14) Humongous regions: 1->1
+backend-1  | [2026-11-19T18:29:48.527+0000][info][gc,metaspace] GC(14) Metaspace: 88030K(88960K)->88030K(88960K) NonClass: 75687K(76224K)->75687K(76224K) Class: 12343K(12736K)->12343K(12736K)
+backend-1  | [2026-11-19T18:29:48.527+0000][info][gc          ] GC(14) Pause Young (Mixed) (G1 Evacuation Pause) 237M->64M(512M) 64.211ms
+backend-1  | [2026-11-19T18:29:48.527+0000][info][gc,cpu      ] GC(14) User=0.10s Sys=0.03s Real=0.06s
+backend-1  | 2026-11-19T18:29:48.529Z  INFO 1 --- [byteme] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+backend-1  | 2026-11-19T18:29:48.540Z  INFO 1 --- [byteme] [           main] org.example.Application                  : Started Application in 6.739 seconds (process running for 7.195)
+backend-1  | 2026-11-19T18:29:48.634Z  WARN 1 --- [byteme] [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'
+backend-1  | 2026-11-19T18:29:48.634Z  WARN 1 --- [byteme] [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /swagger-ui.html endpoint is enabled by default. To disable it in production, set the property 'springdoc.swagger-ui.enabled=false'
+backend-1  | 2026-11-19T18:29:49.707Z  INFO 1 --- [byteme] [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+backend-1  | 2026-11-19T18:29:49.708Z  INFO 1 --- [byteme] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+backend-1  | 2026-11-19T18:29:49.709Z  INFO 1 --- [byteme] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+backend-1  | 2026-11-19T18:30:37.120Z  WARN 1 --- [byteme] [nio-8080-exec-5] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 1213, SQLState: 40001
+backend-1  | 2026-11-19T18:30:37.121Z ERROR 1 --- [byteme] [nio-8080-exec-5] o.h.engine.jdbc.spi.SqlExceptionHelper   : Deadlock found when trying to get lock; try restarting transaction
+backend-1  | 2026-11-19T18:30:37.130Z  WARN 1 --- [byteme] [nio-8080-exec-5] org.example.common.GlobalErrors          : Tranh chấp khóa tại /api/orders: Deadlock found when trying to get lock; try restarting transaction
+backend-1  | 2026-11-19T18:30:38.010Z  WARN 1 --- [byteme] [nio-8080-exec-6] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 1213, SQLState: 40001
+backend-1  | 2026-11-19T18:30:38.010Z ERROR 1 --- [byteme] [nio-8080-exec-6] o.h.engine.jdbc.spi.SqlExceptionHelper   : Deadlock found when trying to get lock; try restarting transaction
+backend-1  | 2026-11-19T18:30:38.012Z  WARN 1 --- [byteme] [nio-8080-exec-6] org.example.common.GlobalErrors          : Tranh chấp khóa tại /api/orders: Deadlock found when trying to get lock; try restarting transaction
+backend-1  | 2026-11-19T18:30:39.050Z ERROR 1 --- [byteme] [nio-8080-exec-9] org.example.common.GlobalErrors          : Lỗi không xử lý tại /api/orders
+backend-1  | 
+backend-1  | org.springframework.orm.ObjectOptimisticLockingFailureException: Row was updated or deleted by another transaction (or unsaved-value mapping was incorrect): [org.example.entity.CartItem#8]
+backend-1  | 	at org.springframework.orm.jpa.vendor.HibernateJpaDialect.convertHibernateAccessException(HibernateJpaDialect.java:329) ~[spring-orm-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.orm.jpa.vendor.HibernateJpaDialect.convertHibernateAccessException(HibernateJpaDialect.java:256) ~[spring-orm-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.orm.jpa.vendor.HibernateJpaDialect.translateExceptionIfPossible(HibernateJpaDialect.java:244) ~[spring-orm-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.translateExceptionIfPossible(AbstractEntityManagerFactoryBean.java:560) ~[spring-orm-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.dao.support.ChainedPersistenceExceptionTranslator.translateExceptionIfPossible(ChainedPersistenceExceptionTranslator.java:61) ~[spring-tx-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.dao.support.DataAccessUtils.translateIfNecessary(DataAccessUtils.java:343) ~[spring-tx-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.dao.support.PersistenceExceptionTranslationInterceptor.invoke(PersistenceExceptionTranslationInterceptor.java:160) ~[spring-tx-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.data.jpa.repository.support.CrudMethodMetadataPostProcessor$CrudMethodMetadataPopulatingMethodInterceptor.invoke(CrudMethodMetadataPostProcessor.java:165) ~[spring-data-jpa-3.5.13.jar!/:3.5.13]
+backend-1  | 	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.aop.framework.JdkDynamicAopProxy.invoke(JdkDynamicAopProxy.java:223) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at jdk.proxy2/jdk.proxy2.$Proxy158.saveAndFlush(Unknown Source) ~[na:na]
+backend-1  | 	at org.example.repository.CartRepository.saveChanges(CartRepository.java:11) ~[!/:0.0.1-SNAPSHOT]
+backend-1  | 	at java.base/java.lang.invoke.MethodHandle.invokeWithArguments(Unknown Source) ~[na:na]
+backend-1  | 	at org.springframework.data.projection.DefaultMethodInvokingMethodInterceptor.invoke(DefaultMethodInvokingMethodInterceptor.java:75) ~[spring-data-commons-3.5.13.jar!/:3.5.13]
+backend-1  | 	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:380) ~[spring-tx-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119) ~[spring-tx-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.dao.support.PersistenceExceptionTranslationInterceptor.invoke(PersistenceExceptionTranslationInterceptor.java:138) ~[spring-tx-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.data.jpa.repository.support.CrudMethodMetadataPostProcessor$CrudMethodMetadataPopulatingMethodInterceptor.invoke(CrudMethodMetadataPostProcessor.java:165) ~[spring-data-jpa-3.5.13.jar!/:3.5.13]
+backend-1  | 	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.aop.framework.JdkDynamicAopProxy.invoke(JdkDynamicAopProxy.java:223) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at jdk.proxy2/jdk.proxy2.$Proxy158.saveChanges(Unknown Source) ~[na:na]
+backend-1  | 	at org.example.service.CartService.lambda$clearCart$7(CartService.java:105) ~[!/:0.0.1-SNAPSHOT]
+backend-1  | 	at java.base/java.util.Optional.ifPresent(Unknown Source) ~[na:na]
+backend-1  | 	at org.example.service.CartService.clearCart(CartService.java:103) ~[!/:0.0.1-SNAPSHOT]
+backend-1  | 	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source) ~[na:na]
+backend-1  | 	at java.base/java.lang.reflect.Method.invoke(Unknown Source) ~[na:na]
+backend-1  | 	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:360) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:380) ~[spring-tx-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119) ~[spring-tx-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:728) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.example.service.CartService$$SpringCGLIB$$0.clearCart(<generated>) ~[!/:0.0.1-SNAPSHOT]
+backend-1  | 	at org.example.service.OrderService.create(OrderService.java:67) ~[!/:0.0.1-SNAPSHOT]
+backend-1  | 	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source) ~[na:na]
+backend-1  | 	at java.base/java.lang.reflect.Method.invoke(Unknown Source) ~[na:na]
+backend-1  | 	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:360) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:380) ~[spring-tx-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119) ~[spring-tx-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:728) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.example.service.OrderService$$SpringCGLIB$$0.create(<generated>) ~[!/:0.0.1-SNAPSHOT]
+backend-1  | 	at org.example.controller.OrderController.create(OrderController.java:33) ~[!/:0.0.1-SNAPSHOT]
+backend-1  | 	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source) ~[na:na]
+backend-1  | 	at java.base/java.lang.reflect.Method.invoke(Unknown Source) ~[na:na]
+backend-1  | 	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:258) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:191) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118) ~[spring-webmvc-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:991) ~[spring-webmvc-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:896) ~[spring-webmvc-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87) ~[spring-webmvc-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1089) ~[spring-webmvc-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979) ~[spring-webmvc-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014) ~[spring-webmvc-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914) ~[spring-webmvc-6.2.19.jar!/:6.2.19]
+backend-1  | 	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885) ~[spring-webmvc-6.2.19.jar!/:6.2.19]
+backend-1  | 	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51) ~[tomcat-embed-websocket-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.security.web.FilterChainProxy.lambda$doFilterInternal$3(FilterChainProxy.java:231) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$FilterObservation$SimpleFilterObservation.lambda$wrap$1(ObservationFilterChainDecorator.java:490) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$AroundFilterObservation$SimpleAroundFilterObservation.lambda$wrap$1(ObservationFilterChainDecorator.java:351) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator.lambda$wrapSecured$0(ObservationFilterChainDecorator.java:83) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:129) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.access.intercept.AuthorizationFilter.doFilter(AuthorizationFilter.java:101) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:241) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:228) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:138) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:125) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:119) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:241) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:228) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:138) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:131) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:85) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:241) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:228) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:138) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.authentication.AnonymousAuthenticationFilter.doFilter(AnonymousAuthenticationFilter.java:100) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:241) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:228) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:138) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:179) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:241) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:228) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:138) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.savedrequest.RequestCacheAwareFilter.doFilter(RequestCacheAwareFilter.java:63) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:241) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:228) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:138) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.authentication.AuthenticationFilter.doFilterInternal(AuthenticationFilter.java:177) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:241) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:228) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:138) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.doFilterInternal(BearerTokenAuthenticationFilter.java:158) ~[spring-security-oauth2-resource-server-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:241) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:228) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:138) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:107) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:93) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:241) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:228) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:138) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.header.HeaderWriterFilter.doHeadersAfter(HeaderWriterFilter.java:90) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.header.HeaderWriterFilter.doFilterInternal(HeaderWriterFilter.java:75) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:241) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:228) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:138) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:241) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:228) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:138) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter.doFilterInternal(WebAsyncManagerIntegrationFilter.java:62) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:241) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:228) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:138) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.session.DisableEncodeUrlFilter.doFilterInternal(DisableEncodeUrlFilter.java:42) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:241) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$AroundFilterObservation$SimpleAroundFilterObservation.lambda$wrap$0(ObservationFilterChainDecorator.java:334) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:225) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:138) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:233) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:191) ~[spring-security-web-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.filter.ServletRequestPathFilter.doFilter(ServletRequestPathFilter.java:52) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebSecurityConfiguration.java:319) ~[spring-security-config-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.servlet.handler.HandlerMappingIntrospector.lambda$createCacheFilter$4(HandlerMappingIntrospector.java:267) ~[spring-webmvc-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.security.config.annotation.web.configuration.WebMvcSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebMvcSecurityConfiguration.java:240) ~[spring-security-config-6.5.11.jar!/:6.5.11]
+backend-1  | 	at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:362) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:278) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.springframework.web.filter.ServerHttpObservationFilter.doFilterInternal(ServerHttpObservationFilter.java:110) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:165) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:88) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:492) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:113) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:83) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:72) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:342) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:399) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:1272) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1797) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:973) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:491) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63) ~[tomcat-embed-core-10.1.55.jar!/:na]
+backend-1  | 	at java.base/java.lang.Thread.run(Unknown Source) ~[na:na]
+backend-1  | Caused by: org.hibernate.StaleObjectStateException: Row was updated or deleted by another transaction (or unsaved-value mapping was incorrect): [org.example.entity.CartItem#8]
+backend-1  | 	at org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.identifiedResultsCheck(ModelMutationHelper.java:75) ~[hibernate-core-6.6.53.Final.jar!/:6.6.53.Final]
+backend-1  | 	at org.hibernate.persister.entity.mutation.AbstractDeleteCoordinator.lambda$doStaticDelete$2(AbstractDeleteCoordinator.java:284) ~[hibernate-core-6.6.53.Final.jar!/:6.6.53.Final]
+backend-1  | 	at org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.checkResults(ModelMutationHelper.java:50) ~[hibernate-core-6.6.53.Final.jar!/:6.6.53.Final]
+backend-1  | 	at org.hibernate.engine.jdbc.mutation.internal.AbstractMutationExecutor.performNonBatchedMutation(AbstractMutationExecutor.java:141) ~[hibernate-core-6.6.53.Final.jar!/:6.6.53.Final]
+backend-1  | 	at org.hibernate.engine.jdbc.mutation.internal.MutationExecutorSingleNonBatched.performNonBatchedOperations(MutationExecutorSingleNonBatched.java:55) ~[hibernate-core-6.6.53.Final.jar!/:6.6.53.Final]
+backend-1  | 	at org.hibernate.engine.jdbc.mutation.internal.AbstractMutationExecutor.execute(AbstractMutationExecutor.java:55) ~[hibernate-core-6.6.53.Final.jar!/:6.6.53.Final]
+backend-1  | 	at org.hibernate.persister.entity.mutation.AbstractDeleteCoordinator.doStaticDelete(AbstractDeleteCoordinator.java:280) ~[hibernate-core-6.6.53.Final.jar!/:6.6.53.Final]
+backend-1  | 	at org.hibernate.persister.entity.mutation.AbstractDeleteCoordinator.delete(AbstractDeleteCoordinator.java:87) ~[hibernate-core-6.6.53.Final.jar!/:6.6.53.Final]
+backend-1  | 	at org.hibernate.action.internal.EntityDeleteAction.execute(EntityDeleteAction.java:131) ~[hibernate-core-6.6.53.Final.jar!/:6.6.53.Final]
+backend-1  | 	at org.hibernate.engine.spi.ActionQueue.executeActions(ActionQueue.java:644) ~[hibernate-core-6.6.53.Final.jar!/:6.6.53.Final]
+backend-1  | 	at org.hibernate.engine.spi.ActionQueue.executeActions(ActionQueue.java:511) ~[hibernate-core-6.6.53.Final.jar!/:6.6.53.Final]
+backend-1  | 	at org.hibernate.event.internal.AbstractFlushingEventListener.performExecutions(AbstractFlushingEventListener.java:414) ~[hibernate-core-6.6.53.Final.jar!/:6.6.53.Final]
+backend-1  | 	at org.hibernate.event.internal.DefaultFlushEventListener.onFlush(DefaultFlushEventListener.java:41) ~[hibernate-core-6.6.53.Final.jar!/:6.6.53.Final]
+backend-1  | 	at org.hibernate.event.service.internal.EventListenerGroupImpl.fireEventOnEachListener(EventListenerGroupImpl.java:127) ~[hibernate-core-6.6.53.Final.jar!/:6.6.53.Final]
+backend-1  | 	at org.hibernate.internal.SessionImpl.doFlush(SessionImpl.java:1429) ~[hibernate-core-6.6.53.Final.jar!/:6.6.53.Final]
+backend-1  | 	at org.hibernate.internal.SessionImpl.flush(SessionImpl.java:1415) ~[hibernate-core-6.6.53.Final.jar!/:6.6.53.Final]
+backend-1  | 	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source) ~[na:na]
+backend-1  | 	at java.base/java.lang.reflect.Method.invoke(Unknown Source) ~[na:na]
+backend-1  | 	at org.springframework.orm.jpa.SharedEntityManagerCreator$SharedEntityManagerInvocationHandler.invoke(SharedEntityManagerCreator.java:320) ~[spring-orm-6.2.19.jar!/:6.2.19]
+backend-1  | 	at jdk.proxy2/jdk.proxy2.$Proxy150.flush(Unknown Source) ~[na:na]
+backend-1  | 	at org.springframework.data.jpa.repository.support.SimpleJpaRepository.flush(SimpleJpaRepository.java:699) ~[spring-data-jpa-3.5.13.jar!/:3.5.13]
+backend-1  | 	at org.springframework.data.jpa.repository.support.SimpleJpaRepository.saveAndFlush(SimpleJpaRepository.java:666) ~[spring-data-jpa-3.5.13.jar!/:3.5.13]
+backend-1  | 	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source) ~[na:na]
+backend-1  | 	at java.base/java.lang.reflect.Method.invoke(Unknown Source) ~[na:na]
+backend-1  | 	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:360) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.data.repository.core.support.RepositoryMethodInvoker$RepositoryFragmentMethodInvoker.lambda$new$0(RepositoryMethodInvoker.java:277) ~[spring-data-commons-3.5.13.jar!/:3.5.13]
+backend-1  | 	at org.springframework.data.repository.core.support.RepositoryMethodInvoker.doInvoke(RepositoryMethodInvoker.java:170) ~[spring-data-commons-3.5.13.jar!/:3.5.13]
+backend-1  | 	at org.springframework.data.repository.core.support.RepositoryMethodInvoker.invoke(RepositoryMethodInvoker.java:158) ~[spring-data-commons-3.5.13.jar!/:3.5.13]
+backend-1  | 	at org.springframework.data.repository.core.support.RepositoryComposition$RepositoryFragments.invoke(RepositoryComposition.java:515) ~[spring-data-commons-3.5.13.jar!/:3.5.13]
+backend-1  | 	at org.springframework.data.repository.core.support.RepositoryComposition.invoke(RepositoryComposition.java:284) ~[spring-data-commons-3.5.13.jar!/:3.5.13]
+backend-1  | 	at org.springframework.data.repository.core.support.RepositoryFactorySupport$ImplementationMethodExecutionInterceptor.invoke(RepositoryFactorySupport.java:720) ~[spring-data-commons-3.5.13.jar!/:3.5.13]
+backend-1  | 	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.data.repository.core.support.QueryExecutorMethodInterceptor.doInvoke(QueryExecutorMethodInterceptor.java:174) ~[spring-data-commons-3.5.13.jar!/:3.5.13]
+backend-1  | 	at org.springframework.data.repository.core.support.QueryExecutorMethodInterceptor.invoke(QueryExecutorMethodInterceptor.java:149) ~[spring-data-commons-3.5.13.jar!/:3.5.13]
+backend-1  | 	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.data.projection.DefaultMethodInvokingMethodInterceptor.invoke(DefaultMethodInvokingMethodInterceptor.java:69) ~[spring-data-commons-3.5.13.jar!/:3.5.13]
+backend-1  | 	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:380) ~[spring-tx-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119) ~[spring-tx-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.2.19.jar!/:6.2.19]
+backend-1  | 	at org.springframework.dao.support.PersistenceExceptionTranslationInterceptor.invoke(PersistenceExceptionTranslationInterceptor.java:138) ~[spring-tx-6.2.19.jar!/:6.2.19]
+backend-1  | 	... 181 common frames omitted
+backend-1  | 

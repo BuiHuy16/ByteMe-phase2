@@ -1,0 +1,7 @@
+﻿containers_remaining=0
+networks_remaining=0
+volumes_remaining=0
+g22_port_listeners=0
+image_retained=sha256:374e18d9da9322de83cfae202353ef6e9f268db6cd6289a295cf5af581da7022
+other_running_containers=aws-cloud-mailpit-1,busbooking-backend,busbooking-db,learncloud-db
+cleanupVerified=True

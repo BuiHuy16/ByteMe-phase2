@@ -9,15 +9,23 @@ target/
 .env.*
 !.env.example
 *.log
+!docs/phase2/evidence/**/*.log
 .DS_Store
 Thumbs.db
 
 # Auth/dev local artifacts
 .local/
 .venv/
+.maven-user-home/
+.pytest_cache/
+.ipynb_checkpoints/
+*.py[cod]
 
 # Dataset Kaggle: tạo theo kaggle/script/README.md (bước 0), không commit
-kaggle/dataset/
+kaggle/dataset/*
+!kaggle/dataset/schema.sql
+!kaggle/dataset/seed.sql
+kaggle/dataset-g25-*/
+kaggle/byteme-g25-*.zip
 __pycache__/
 
-evidence/

@@ -1,80 +1,84 @@
-# ByteMe Phase 2 reproducible benchmark kit
+# Bộ công cụ benchmark có thể tái lập cho ByteMe Phase 2
 
-This directory prepares the common before/after protocol. It does **not** contain an official result. G2.5 must run the same committed workload and locked configuration against each treatment SHA.
+Thư mục này chuẩn bị protocol before/after dùng chung. Thư mục **không** chứa kết quả chính thức. G2.5 phải chạy cùng workload đã commit và configuration đã khóa cho từng treatment SHA.
 
-## Platform
+## Nền tảng
 
-Primary platform for the instructor-required official before/after benchmark: Kaggle CPU through the G2.4-K user-space adapter. Local Windows + Docker Desktop remains the development/integration verification platform and preserves the already-passed G2.4 preparation evidence. Local and Kaggle results must never be compared directly.
+Nền tảng chính cho benchmark before/after chính thức theo yêu cầu của giảng viên là Kaggle CPU thông qua adapter user-space G2.4-K. Local Windows + Docker Desktop vẫn là nền tảng xác minh development/integration và giữ nguyên evidence chuẩn bị G2.4 đã PASS. Tuyệt đối không so sánh trực tiếp kết quả Local với Kaggle.
 
-Kaggle sessions are comparable only when their captured CPU model, core/RAM quota, OS image, exact portable toolchain binaries, configuration, workload and dataset locks match. Kaggle runtime validation is still pending until a real session produces a PASS evidence bundle.
+Các Kaggle session chỉ có thể so sánh khi CPU model, core/RAM quota, OS image, portable toolchain binaries, locked offline dependencies, configuration, workload và dataset locks đã thu thập đều khớp nhau. `MemTotal` host-visible được phép lệch tối đa 1 MiB do khác biệt nhỏ trong kernel/host memory accounting; memory cgroup limit và resolved limit vẫn phải khớp chính xác. Kaggle runtime validation vẫn PENDING cho đến khi một session thực tế tạo được evidence bundle PASS.
 
-## Files
+## Các file
 
-- `compose.benchmark.yaml`: benchmark-only runtime/resource lock layered over the baseline Compose file.
-- `profiles.json`: deterministic smoke and standard dataset cardinalities.
-- `prepare_dataset.py`: safety-checked isolated reset, fixture generation, logical checksums and temporary actor-token file.
-- `workloads/w1_read.js`: food list, food search and authenticated order-list reads with operation tags.
-- `workloads/w2_write.js`: isolated per-actor cart add/update, checkout and cancellation.
-- `workloads/w3_contention.py`: barrier-based correctness rounds for same-food checkout, same-cart checkout and admin-stock-vs-checkout.
-- `tools/collect_environment.ps1`: source/toolchain/image/runtime configuration manifest.
-- `tools/collect_resources.ps1`: timestamped Docker CPU/RAM samples.
-- `tools/collect_db_telemetry.ps1`: read-only MySQL status and Performance Schema digest snapshots for before/after deltas.
-- `tools/new_manifest.ps1`: SHA-256 artifact manifest.
-- `tools/aggregate_runs.py`: median/min/max/CV aggregation for comparable k6 summaries; rejects malformed runs.
-- `tools/run_smoke.ps1`: small preparation smoke test only.
-- `kaggle/`: rootless Kaggle runtime adapter, configuration lock, bundle builder and manifest comparator.
+- `compose.benchmark.yaml`: khóa runtime/resource chỉ dành cho benchmark, được xếp lớp trên baseline Compose file.
+- `profiles.json`: cardinality xác định trước cho dataset smoke và standard.
+- `prepare_dataset.py`: reset cô lập có kiểm tra an toàn, sinh fixture, logical checksums và file actor-token tạm thời.
+- `workloads/w1_read.js`: đọc food list, food search và order list có xác thực với operation tags.
+- `workloads/w2_write.js`: cart add/update, checkout và cancellation cô lập theo từng actor.
+- `workloads/w3_contention.py`: các vòng correctness dựa trên barrier cho same-food checkout, same-cart checkout và admin-stock-vs-checkout.
+- `tools/collect_environment.ps1`: manifest của source/toolchain/image/runtime configuration.
+- `tools/collect_resources.ps1`: các sample Docker CPU/RAM có timestamp.
+- `tools/collect_db_telemetry.ps1`: snapshot chỉ đọc của MySQL status và Performance Schema digest để tính delta before/after.
+- `tools/new_manifest.ps1`: artifact manifest SHA-256.
+- `tools/aggregate_runs.py`: tổng hợp median/min/max/CV cho các k6 summary có thể so sánh; từ chối run sai định dạng.
+- `tools/run_smoke.ps1`: chỉ là smoke test chuẩn bị quy mô nhỏ.
+- `kaggle/`: rootless Kaggle runtime adapter, configuration lock, bundle builder và manifest comparator.
 
-## Dataset profiles
+## Các dataset profile
 
-`smoke` exists only to validate the kit. `standard` is the proposed G2.5 starting profile and must be frozen before the first official run.
+`smoke` chỉ dùng để xác minh bộ công cụ. `standard` là profile khởi đầu được đề xuất cho G2.5 và phải được đóng băng trước official run đầu tiên.
 
-| Partition | Smoke | Standard |
+| Phân vùng | Smoke | Standard |
 |---|---:|---:|
-| Search/menu foods | 60 | 5,000 |
-| Read actor orders | 20 | 500 |
-| Items per read order | 2 | 2 |
-| Dedicated write actors/foods | 2 | 20 |
-| Contention actors | 4 | 4 |
-| Shared-stock initial quantity | 10 | 10 |
+| Food cho search/menu | 60 | 5,000 |
+| Order của read actor | 20 | 500 |
+| Item trên mỗi read order | 2 | 2 |
+| Write actor/food chuyên dụng | 2 | 20 |
+| Contention actor | 4 | 4 |
+| Số lượng shared-stock ban đầu | 10 | 10 |
 
-Users, categories, foods, orders and order items are regenerated from the profile. Logical checksums deliberately exclude password hashes, JWTs and generated timestamps. Temporary actor tokens stay under `.local/phase2-benchmark/` and must never be archived.
+Users, categories, foods, orders và order items được sinh lại từ profile. Logical checksums chủ động loại trừ password hashes, JWTs và generated timestamps. Actor tokens tạm thời nằm trong `.local/phase2-benchmark/` và tuyệt đối không được lưu vào archive.
 
-## Shared G2.5 protocol (not run by G2.4/G2.4-K)
+Trong một run, initial prepare đăng nhập đúng một lần cho mỗi actor. Các reset tiếp theo vẫn đăng ký lại toàn bộ user/fixture và kiểm tra logical checksum, nhưng tái sử dụng token ban đầu sau khi xác minh ID/role và gọi endpoint được bảo vệ cho từng token. Cách này tránh để reset phụ thuộc vào IP login quota 100 request/900 giây; token bị hết hạn, sai role hoặc bị từ chối authentication làm harness fail ngay, không fallback sang login và không retry/sleep. Cùng implementation và evidence fields `preparation_authentication` phải được dùng cho BEFORE và AFTER.
 
-1. Create a new unique run ID and an isolated runtime: user-space MySQL datadir on Kaggle, or a dedicated Compose project/volume for Local verification.
-2. Build the selected source SHA and record JAR hash; record image/base-image IDs as well when using Local Docker.
-3. Prepare `standard`; archive cardinality and logical checksums.
-4. Readiness, then 60 s low-rate warm-up. Discard warm-up metrics.
-5. Run W1 for 180 s using constant arrival rates: food list 10 RPS, search 5 RPS, order list 5 RPS. Lock page size (proposed 20; add a separate diagnostic run for 50).
-6. Reset and verify the dataset.
-7. Run W2 for 180 s with 10 constant VUs, not exceeding the 20 dedicated actors.
-8. Reset and verify the dataset.
-9. Run W3 separately for 15 correctness rounds/scenario; never mix it into throughput percentiles.
-10. Cool down 30 s, collect logs/metrics, reset and verify again, then remove only that run's processes/data/resources.
-11. Repeat independent measurement runs at least 3 times (target 5), alternating before/after order where practical. A failed run is retained and classified, never silently rerun.
+## Protocol G2.5 dùng chung (không chạy trong G2.4/G2.4-K)
 
-For each metric report per-run p50/p95/p99/RPS/error rate, then median across valid runs plus min/max and coefficient of variation. Do not treat historical p95/p99 thresholds as accepted SLOs. Business 409s, HTTP 500s and transport errors are separate counters.
+1. Tạo run ID mới, duy nhất và một runtime cô lập: user-space MySQL datadir trên Kaggle hoặc Compose project/volume chuyên dụng cho xác minh Local.
+2. Build source SHA đã chọn và ghi lại JAR hash; khi dùng Local Docker, ghi thêm image/base-image IDs.
+3. Chuẩn bị `standard`; lưu cardinality và logical checksums.
+4. Kiểm tra readiness, sau đó warm-up read-only 60 giây bằng food list 2 RPS, food search
+   1 RPS và order list 1 RPS (tổng 4 RPS). Lưu raw/summary/telemetry dưới artifact `warmup/`
+   riêng và loại bỏ toàn bộ metric warm-up khỏi percentile/throughput chính thức.
+5. Chạy W1 trong 180 giây bằng constant arrival rates: food list 10 RPS, search 5 RPS, order list 5 RPS. Khóa page size (đề xuất 20; thêm một diagnostic run riêng cho 50).
+6. Reset và xác minh dataset.
+7. Chạy W2 trong 180 giây với 10 constant VUs, không vượt quá 20 actor chuyên dụng.
+8. Reset và xác minh dataset.
+9. Chạy W3 riêng trong 15 correctness rounds/scenario; tuyệt đối không trộn kết quả vào throughput percentiles.
+10. Cooldown 30 giây, thu logs/metrics, reset và xác minh lại, sau đó chỉ xóa processes/data/resources của run đó.
+11. Lặp lại independent measurement run ít nhất 3 lần (mục tiêu 5), luân phiên thứ tự before/after khi khả thi. Run lỗi phải được giữ lại và phân loại, tuyệt đối không âm thầm rerun.
 
-Take DB telemetry snapshots immediately before and after each measured workload and compare `COUNT_STAR` by digest; never enable MySQL general logging during throughput measurement. Hikari configuration is locked, while runtime pool gauges are unavailable through the current actuator exposure and must be reported as a limitation rather than inferred.
+Với mỗi metric, báo cáo p50/p95/p99/RPS/error rate theo từng run, sau đó báo cáo median của các valid run cùng min/max và coefficient of variation. Không xem các threshold p95/p99 lịch sử là SLO đã được chấp nhận. Business 409, HTTP 500 và transport errors là các counter riêng.
 
-The aggregator requires the frozen configuration and dataset SHA-256 values on every invocation. Review each candidate run's manifests before passing its summary; the tool deliberately does not infer comparability from filenames.
+Thu DB telemetry snapshot ngay trước và sau mỗi measured workload rồi so sánh `COUNT_STAR` theo digest; tuyệt đối không bật MySQL general logging trong lúc đo throughput. Hikari configuration được khóa, còn runtime pool gauges không khả dụng qua actuator exposure hiện tại và phải được báo cáo như một limitation thay vì suy diễn.
+
+Aggregator yêu cầu các giá trị SHA-256 của frozen configuration và dataset trong mọi lần gọi. Xem xét manifest của từng candidate run trước khi truyền summary của run đó; tool chủ động không suy luận comparability từ tên file.
 
 ## Configuration lock
 
-Local verification uses the benchmark Compose override to lock G1 heap, Hikari 10/10, Tomcat 200/10, MySQL isolation/max connections/buffer pool, CPU/memory limits, GC logging and image digests. Kaggle uses `kaggle/configuration-lock.json`, exact portable tool versions/binary hashes and a hardware fingerprint. Any later configuration change is either prohibited or declared as a separate treatment.
+Xác minh Local sử dụng benchmark Compose override để khóa G1 heap, Hikari 10/10, Tomcat 200/10, MySQL isolation/max connections/buffer pool, CPU/memory limits, GC logging và image digests. Kaggle sử dụng `kaggle/configuration-lock.json`, phiên bản portable tool chính xác/binary hashes và hardware fingerprint. Mọi thay đổi configuration sau đó hoặc bị cấm, hoặc phải được khai báo là một treatment riêng.
 
 ## Smoke test
 
-From PowerShell at repository root:
+Từ PowerShell tại repository root:
 
 ```powershell
 $env:BENCH_ACTOR_PASSWORD = '<ephemeral strong value>'
 ./benchmarks/phase2/tools/run_smoke.ps1 -EvidenceDir 'docs/phase2/evidence/g2.4/YYYY-MM-DD/smoke'
 ```
 
-The script uses project `byteme-g24-smoke`, ports 13308/18082, runs only a few iterations/rounds, resets to the initial checksum, writes evidence, and removes the project volume/containers/network/image plus temporary secrets. It is not an official baseline benchmark.
+Script sử dụng project `byteme-g24-smoke`, các port 13308/18082, chỉ chạy một vài iteration/round, reset về initial checksum, ghi evidence rồi xóa project volume/containers/network/image cùng temporary secrets. Đây không phải official baseline benchmark.
 
-## Artifact layout for every official run
+## Bố cục artifact cho mỗi official run
 
 ```text
 <run-id>/
@@ -95,4 +99,4 @@ The script uses project `byteme-g24-smoke`, ports 13308/18082, runs only a few i
   SHA256SUMS.txt
 ```
 
-Never archive runtime env files, passwords, private keys, JWTs or Authorization headers.
+Tuyệt đối không lưu runtime env files, passwords, private keys, JWTs hoặc Authorization headers vào archive.

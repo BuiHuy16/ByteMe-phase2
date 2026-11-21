@@ -1,0 +1,895 @@
+{
+  "scenario": "C4",
+  "method_limitations": [
+    "Barrier synchronizes client worker release, not an in-transaction database barrier.",
+    "HTTP timestamps prove near-simultaneous client attempts but do not prove transaction overlap.",
+    "No application synchronization hook or source/config change was used."
+  ],
+  "rounds": [
+    {
+      "round": 1,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 3
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:58:59.447543+00:00",
+          "ended_at_utc": "2026-11-19T17:58:59.469742+00:00",
+          "elapsed_ms": 22.387,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 73,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:58:59.447000+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:59.447543+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:58:59.447543+00:00",
+          "ended_at_utc": "2026-11-19T17:58:59.476277+00:00",
+          "elapsed_ms": 28.929,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 46,
+            "status": "ACTIVE"
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:58:59.447000+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:58:59.447000+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 3,
+        "stock": 20,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "serializable_final_stock_outcomes": [
+        17,
+        20
+      ],
+      "observations": [],
+      "violations": []
+    },
+    {
+      "round": 2,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 3
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:01.347631+00:00",
+          "ended_at_utc": "2026-11-19T17:59:01.417630+00:00",
+          "elapsed_ms": 70.01,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 74,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:01.345184+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:01.347631+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:01.348628+00:00",
+          "ended_at_utc": "2026-11-19T17:59:01.407974+00:00",
+          "elapsed_ms": 58.954,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 47,
+            "status": "ACTIVE"
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:01.346597+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:01.348628+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 3,
+        "stock": 7,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "serializable_final_stock_outcomes": [
+        17,
+        20
+      ],
+      "observations": [
+        "NON_SERIALIZABLE_FINAL_STOCK_FOR_ABSOLUTE_UPDATE_CONTRACT"
+      ],
+      "violations": []
+    },
+    {
+      "round": 3,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 3
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:03.328680+00:00",
+          "ended_at_utc": "2026-11-19T17:59:03.402801+00:00",
+          "elapsed_ms": 70.839,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 75,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:03.328680+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:03.328680+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:03.328680+00:00",
+          "ended_at_utc": "2026-11-19T17:59:03.381157+00:00",
+          "elapsed_ms": 47.986,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 48,
+            "status": "ACTIVE"
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:03.328680+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:03.328680+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 3,
+        "stock": 7,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "serializable_final_stock_outcomes": [
+        17,
+        20
+      ],
+      "observations": [
+        "NON_SERIALIZABLE_FINAL_STOCK_FOR_ABSOLUTE_UPDATE_CONTRACT"
+      ],
+      "violations": []
+    },
+    {
+      "round": 4,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 3
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:05.393326+00:00",
+          "ended_at_utc": "2026-11-19T17:59:05.443129+00:00",
+          "elapsed_ms": 49.086,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 76,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:05.390373+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:05.393326+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:05.393326+00:00",
+          "ended_at_utc": "2026-11-19T17:59:05.431852+00:00",
+          "elapsed_ms": 38.865,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 49,
+            "status": "ACTIVE"
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:05.392382+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:05.392382+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 3,
+        "stock": 7,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "serializable_final_stock_outcomes": [
+        17,
+        20
+      ],
+      "observations": [
+        "NON_SERIALIZABLE_FINAL_STOCK_FOR_ABSOLUTE_UPDATE_CONTRACT"
+      ],
+      "violations": []
+    },
+    {
+      "round": 5,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 3
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:07.407931+00:00",
+          "ended_at_utc": "2026-11-19T17:59:07.460162+00:00",
+          "elapsed_ms": 51.862,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 77,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:07.403291+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:07.407931+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:07.403291+00:00",
+          "ended_at_utc": "2026-11-19T17:59:07.443585+00:00",
+          "elapsed_ms": 36.986,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 50,
+            "status": "ACTIVE"
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:07.403291+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:07.403291+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 3,
+        "stock": 7,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "serializable_final_stock_outcomes": [
+        17,
+        20
+      ],
+      "observations": [
+        "NON_SERIALIZABLE_FINAL_STOCK_FOR_ABSOLUTE_UPDATE_CONTRACT"
+      ],
+      "violations": []
+    },
+    {
+      "round": 6,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 3
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:09.477820+00:00",
+          "ended_at_utc": "2026-11-19T17:59:09.513044+00:00",
+          "elapsed_ms": 35.39,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 78,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:09.476734+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:09.477820+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:09.476734+00:00",
+          "ended_at_utc": "2026-11-19T17:59:09.499944+00:00",
+          "elapsed_ms": 22.434,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 51,
+            "status": "ACTIVE"
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:09.476734+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:09.476734+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 3,
+        "stock": 7,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "serializable_final_stock_outcomes": [
+        17,
+        20
+      ],
+      "observations": [
+        "NON_SERIALIZABLE_FINAL_STOCK_FOR_ABSOLUTE_UPDATE_CONTRACT"
+      ],
+      "violations": []
+    },
+    {
+      "round": 7,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 3
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:11.627450+00:00",
+          "ended_at_utc": "2026-11-19T17:59:11.695228+00:00",
+          "elapsed_ms": 64.198,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 79,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:11.627450+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:11.627450+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:11.627450+00:00",
+          "ended_at_utc": "2026-11-19T17:59:11.680941+00:00",
+          "elapsed_ms": 51.415,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 52,
+            "status": "ACTIVE"
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:11.627450+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:11.627450+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 3,
+        "stock": 7,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "serializable_final_stock_outcomes": [
+        17,
+        20
+      ],
+      "observations": [
+        "NON_SERIALIZABLE_FINAL_STOCK_FOR_ABSOLUTE_UPDATE_CONTRACT"
+      ],
+      "violations": []
+    },
+    {
+      "round": 8,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 3
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:13.660528+00:00",
+          "ended_at_utc": "2026-11-19T17:59:13.732430+00:00",
+          "elapsed_ms": 67.093,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 80,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:13.660528+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:13.660528+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:13.667398+00:00",
+          "ended_at_utc": "2026-11-19T17:59:13.705431+00:00",
+          "elapsed_ms": 38.242,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 53,
+            "status": "ACTIVE"
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:13.660528+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:13.660528+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 3,
+        "stock": 7,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "serializable_final_stock_outcomes": [
+        17,
+        20
+      ],
+      "observations": [
+        "NON_SERIALIZABLE_FINAL_STOCK_FOR_ABSOLUTE_UPDATE_CONTRACT"
+      ],
+      "violations": []
+    },
+    {
+      "round": 9,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 3
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:15.906929+00:00",
+          "ended_at_utc": "2026-11-19T17:59:15.944014+00:00",
+          "elapsed_ms": 36.907,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 81,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:15.905701+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:15.906929+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:15.906301+00:00",
+          "ended_at_utc": "2026-11-19T17:59:15.929729+00:00",
+          "elapsed_ms": 26.341,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 54,
+            "status": "ACTIVE"
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:15.905701+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:15.905701+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 3,
+        "stock": 7,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "serializable_final_stock_outcomes": [
+        17,
+        20
+      ],
+      "observations": [
+        "NON_SERIALIZABLE_FINAL_STOCK_FOR_ABSOLUTE_UPDATE_CONTRACT"
+      ],
+      "violations": []
+    },
+    {
+      "round": 10,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 3
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:18.002062+00:00",
+          "ended_at_utc": "2026-11-19T17:59:18.041423+00:00",
+          "elapsed_ms": 40.053,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 82,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:18.002062+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:18.002062+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:18.002627+00:00",
+          "ended_at_utc": "2026-11-19T17:59:18.021887+00:00",
+          "elapsed_ms": 19.647,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 55,
+            "status": "ACTIVE"
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:18.002062+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:18.002627+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 3,
+        "stock": 17,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "serializable_final_stock_outcomes": [
+        17,
+        20
+      ],
+      "observations": [],
+      "violations": []
+    },
+    {
+      "round": 11,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 3
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:20.024572+00:00",
+          "ended_at_utc": "2026-11-19T17:59:20.072674+00:00",
+          "elapsed_ms": 48.331,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 83,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:20.023559+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:20.023559+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:20.023559+00:00",
+          "ended_at_utc": "2026-11-19T17:59:20.058936+00:00",
+          "elapsed_ms": 35.09,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 56,
+            "status": "ACTIVE"
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:20.023559+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:20.023559+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 3,
+        "stock": 7,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "serializable_final_stock_outcomes": [
+        17,
+        20
+      ],
+      "observations": [
+        "NON_SERIALIZABLE_FINAL_STOCK_FOR_ABSOLUTE_UPDATE_CONTRACT"
+      ],
+      "violations": []
+    },
+    {
+      "round": 12,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 3
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:21.897129+00:00",
+          "ended_at_utc": "2026-11-19T17:59:21.980784+00:00",
+          "elapsed_ms": 83.462,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 84,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:21.896519+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:21.897129+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:21.897708+00:00",
+          "ended_at_utc": "2026-11-19T17:59:21.954475+00:00",
+          "elapsed_ms": 56.947,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 57,
+            "status": "ACTIVE"
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:21.897129+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:21.897708+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 3,
+        "stock": 7,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "serializable_final_stock_outcomes": [
+        17,
+        20
+      ],
+      "observations": [
+        "NON_SERIALIZABLE_FINAL_STOCK_FOR_ABSOLUTE_UPDATE_CONTRACT"
+      ],
+      "violations": []
+    },
+    {
+      "round": 13,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 3
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:24.157327+00:00",
+          "ended_at_utc": "2026-11-19T17:59:24.187783+00:00",
+          "elapsed_ms": 30.783,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 85,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:24.155914+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:24.156890+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:24.158396+00:00",
+          "ended_at_utc": "2026-11-19T17:59:24.194776+00:00",
+          "elapsed_ms": 36.147,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 58,
+            "status": "ACTIVE"
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:24.156890+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:24.157327+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 3,
+        "stock": 20,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "serializable_final_stock_outcomes": [
+        17,
+        20
+      ],
+      "observations": [],
+      "violations": []
+    },
+    {
+      "round": 14,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 3
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:26.257764+00:00",
+          "ended_at_utc": "2026-11-19T17:59:26.341281+00:00",
+          "elapsed_ms": 83.413,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 86,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:26.255764+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:26.257764+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:26.258745+00:00",
+          "ended_at_utc": "2026-11-19T17:59:26.322018+00:00",
+          "elapsed_ms": 62.681,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 59,
+            "status": "ACTIVE"
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:26.256765+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:26.258745+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 3,
+        "stock": 7,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "serializable_final_stock_outcomes": [
+        17,
+        20
+      ],
+      "observations": [
+        "NON_SERIALIZABLE_FINAL_STOCK_FOR_ABSOLUTE_UPDATE_CONTRACT"
+      ],
+      "violations": []
+    },
+    {
+      "round": 15,
+      "initial": {
+        "orders": 0,
+        "committed_item_quantity": 0,
+        "stock": 10,
+        "carts": 1,
+        "cart_items": 1,
+        "cart_quantity": 3
+      },
+      "responses": [
+        {
+          "started_at_utc": "2026-11-19T17:59:28.580457+00:00",
+          "ended_at_utc": "2026-11-19T17:59:28.624709+00:00",
+          "elapsed_ms": 44.373,
+          "http_status": 201,
+          "error": null,
+          "body": {
+            "id": 87,
+            "status": "PENDING",
+            "item_count": 1
+          },
+          "actor_index": 1,
+          "barrier_ready_at_utc": "2026-11-19T17:59:28.580457+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:28.580457+00:00"
+        },
+        {
+          "started_at_utc": "2026-11-19T17:59:28.580457+00:00",
+          "ended_at_utc": "2026-11-19T17:59:28.609242+00:00",
+          "elapsed_ms": 28.306,
+          "http_status": 200,
+          "error": null,
+          "body": {
+            "id": 60,
+            "status": "ACTIVE"
+          },
+          "actor_index": 2,
+          "barrier_ready_at_utc": "2026-11-19T17:59:28.580457+00:00",
+          "barrier_released_at_utc": "2026-11-19T17:59:28.580457+00:00"
+        }
+      ],
+      "final": {
+        "orders": 1,
+        "committed_item_quantity": 3,
+        "stock": 7,
+        "carts": 1,
+        "cart_items": 0,
+        "cart_quantity": 0
+      },
+      "serializable_final_stock_outcomes": [
+        17,
+        20
+      ],
+      "observations": [
+        "NON_SERIALIZABLE_FINAL_STOCK_FOR_ABSOLUTE_UPDATE_CONTRACT"
+      ],
+      "violations": []
+    }
+  ],
+  "summary": {
+    "scenario": "C4",
+    "classification": "INCONCLUSIVE",
+    "rounds_executed": 15,
+    "invariant_violation_rounds": [],
+    "server_or_transport_error_rounds": [],
+    "notable_observation_rounds": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      11,
+      12,
+      14,
+      15
+    ]
+  }
+}

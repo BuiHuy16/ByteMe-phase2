@@ -1,0 +1,14 @@
+﻿{
+    "validated_at_utc":  "2026-11-20T08:00:47.8896476Z",
+    "schema_version":  2,
+    "application_sha":  "510f6415b6af535ceec77213f0b0c7d5082123f7",
+    "repository_sha":  "24b3ace314365bc2b727928fae2243c605b4c87c",
+    "bundle_file_count":  17,
+    "bundle_checksum_errors":  0,
+    "jar_sha256":  "ff3d8e1c8cbdf93e07c38f25f4a732a7655accd5684307c556a110d267c475aa",
+    "jar_matches_bundle_manifest":  true,
+    "jar_matches_build_provenance":  true,
+    "build_exit_code":  0,
+    "build_command":  ".\\mvnw.cmd -B -DskipTests clean package",
+    "runtime_bundle_resolution":  "PASS"
+}

@@ -1,0 +1,447 @@
+{
+  "investigation": "Q1",
+  "dataset_orders": 60,
+  "items_per_order": 1,
+  "measurements": [
+    {
+      "page_size": 1,
+      "api": {
+        "http_status": 200,
+        "elapsed_ms": 68.048,
+        "error": null,
+        "content_count": 1,
+        "total_elements": 60
+      },
+      "sql_statement_count": 4,
+      "order_statement_count": 2,
+      "order_item_statement_count": 1,
+      "statements": [
+        {
+          "command_type": "Query",
+          "sql": "select o1_0.id,o1_0.cancelled_at,o1_0.completed_at,o1_0.confirmed_at,o1_0.confirmed_by,o1_0.created_at,o1_0.note,o1_0.order_type,o1_0.payment_method,o1_0.recipient_name,o1_0.shipping_address,o1_0.shipping_phone,o1_0.status,o1_0.table_number,o1_0.updated_at,o1_0.user_id from orders o1_0 where (8 is null or o1_0.user_id=8) and (null is null or o1_0.order_type=null) and o1_0.status in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED') order by o1_0.created_at desc,o1_0.id desc limit 1"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=147 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select count(o1_0.id) from orders o1_0 where (8 is null or o1_0.user_id=8) and (null is null or o1_0.order_type=null) and o1_0.status in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED')"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select @@version_comment limit 1"
+        }
+      ]
+    },
+    {
+      "page_size": 5,
+      "api": {
+        "http_status": 200,
+        "elapsed_ms": 34.723,
+        "error": null,
+        "content_count": 5,
+        "total_elements": 60
+      },
+      "sql_statement_count": 8,
+      "order_statement_count": 2,
+      "order_item_statement_count": 5,
+      "statements": [
+        {
+          "command_type": "Query",
+          "sql": "select o1_0.id,o1_0.cancelled_at,o1_0.completed_at,o1_0.confirmed_at,o1_0.confirmed_by,o1_0.created_at,o1_0.note,o1_0.order_type,o1_0.payment_method,o1_0.recipient_name,o1_0.shipping_address,o1_0.shipping_phone,o1_0.status,o1_0.table_number,o1_0.updated_at,o1_0.user_id from orders o1_0 where (8 is null or o1_0.user_id=8) and (null is null or o1_0.order_type=null) and o1_0.status in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED') order by o1_0.created_at desc,o1_0.id desc limit 5"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=147 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=146 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=145 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=144 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=143 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select count(o1_0.id) from orders o1_0 where (8 is null or o1_0.user_id=8) and (null is null or o1_0.order_type=null) and o1_0.status in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED')"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select @@version_comment limit 1"
+        }
+      ]
+    },
+    {
+      "page_size": 20,
+      "api": {
+        "http_status": 200,
+        "elapsed_ms": 62.575,
+        "error": null,
+        "content_count": 20,
+        "total_elements": 60
+      },
+      "sql_statement_count": 23,
+      "order_statement_count": 2,
+      "order_item_statement_count": 20,
+      "statements": [
+        {
+          "command_type": "Query",
+          "sql": "select o1_0.id,o1_0.cancelled_at,o1_0.completed_at,o1_0.confirmed_at,o1_0.confirmed_by,o1_0.created_at,o1_0.note,o1_0.order_type,o1_0.payment_method,o1_0.recipient_name,o1_0.shipping_address,o1_0.shipping_phone,o1_0.status,o1_0.table_number,o1_0.updated_at,o1_0.user_id from orders o1_0 where (8 is null or o1_0.user_id=8) and (null is null or o1_0.order_type=null) and o1_0.status in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED') order by o1_0.created_at desc,o1_0.id desc limit 20"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=147 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=146 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=145 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=144 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=143 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=142 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=141 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=140 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=139 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=138 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=137 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=136 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=135 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=134 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=133 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=132 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=131 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=130 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=129 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=128 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select count(o1_0.id) from orders o1_0 where (8 is null or o1_0.user_id=8) and (null is null or o1_0.order_type=null) and o1_0.status in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED')"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select @@version_comment limit 1"
+        }
+      ]
+    },
+    {
+      "page_size": 50,
+      "api": {
+        "http_status": 200,
+        "elapsed_ms": 50.642,
+        "error": null,
+        "content_count": 50,
+        "total_elements": 60
+      },
+      "sql_statement_count": 53,
+      "order_statement_count": 2,
+      "order_item_statement_count": 50,
+      "statements": [
+        {
+          "command_type": "Query",
+          "sql": "select o1_0.id,o1_0.cancelled_at,o1_0.completed_at,o1_0.confirmed_at,o1_0.confirmed_by,o1_0.created_at,o1_0.note,o1_0.order_type,o1_0.payment_method,o1_0.recipient_name,o1_0.shipping_address,o1_0.shipping_phone,o1_0.status,o1_0.table_number,o1_0.updated_at,o1_0.user_id from orders o1_0 where (8 is null or o1_0.user_id=8) and (null is null or o1_0.order_type=null) and o1_0.status in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED') order by o1_0.created_at desc,o1_0.id desc limit 50"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=147 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=146 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=145 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=144 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=143 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=142 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=141 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=140 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=139 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=138 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=137 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=136 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=135 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=134 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=133 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=132 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=131 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=130 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=129 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=128 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=127 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=126 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=125 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=124 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=123 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=122 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=121 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=120 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=119 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=118 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=117 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=116 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=115 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=114 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=113 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=112 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=111 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=110 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=109 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=108 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=107 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=106 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=105 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=104 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=103 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=102 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=101 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=100 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=99 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=98 order by i1_0.id"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select count(o1_0.id) from orders o1_0 where (8 is null or o1_0.user_id=8) and (null is null or o1_0.order_type=null) and o1_0.status in ('PENDING','CONFIRMED','PROCESSING','SHIPPING','COMPLETED','CANCELLED')"
+        },
+        {
+          "command_type": "Query",
+          "sql": "select @@version_comment limit 1"
+        }
+      ]
+    }
+  ],
+  "detail_measurement": {
+    "api": {
+      "http_status": 200,
+      "elapsed_ms": 34.847,
+      "error": null,
+      "content_count": 0,
+      "total_elements": null
+    },
+    "sql_statement_count": 3,
+    "order_statement_count": 1,
+    "order_item_statement_count": 1,
+    "statements": [
+      {
+        "command_type": "Query",
+        "sql": "select o1_0.id,o1_0.cancelled_at,o1_0.completed_at,o1_0.confirmed_at,o1_0.confirmed_by,o1_0.created_at,o1_0.note,o1_0.order_type,o1_0.payment_method,o1_0.recipient_name,o1_0.shipping_address,o1_0.shipping_phone,o1_0.status,o1_0.table_number,o1_0.updated_at,o1_0.user_id from orders o1_0 where o1_0.id=88"
+      },
+      {
+        "command_type": "Query",
+        "sql": "select i1_0.order_id,i1_0.id,i1_0.food_id,i1_0.food_name,i1_0.quantity,i1_0.unit_price from order_items i1_0 where i1_0.order_id=88 order by i1_0.id"
+      },
+      {
+        "command_type": "Query",
+        "sql": "select @@version_comment limit 1"
+      }
+    ]
+  },
+  "classification": "CONFIRMED DEFECT",
+  "finding": "N+1 observed: one order_items SELECT per listed order"
+}
