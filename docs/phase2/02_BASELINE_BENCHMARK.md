@@ -638,7 +638,7 @@ HEAD hiện là repository/tooling commit `24b3ace314365bc2b727928fae2243c605b4c
 
 **Official primary platform: Kaggle CPU. Local Docker: development/integration verification.** Local G2.4 preparation/smoke vẫn PASS nhưng kết quả Local không được gộp hoặc so trực tiếp với Kaggle. Historical upstream notebook được giữ nguyên để bảo toàn provenance; notebook mới nằm cạnh nó với tên khác.
 
-Một nhãn “Kaggle CPU” không đủ chứng minh phần cứng cố định. Mỗi run phải ghi CPU model, logical core count, exact `MemTotal`, OS image/version và kernel; run comparator từ chối session khác CPU model/core/RAM/OS hoặc toolchain/config/workload/dataset lock.
+Một nhãn “Kaggle CPU” không đủ chứng minh phần cứng cố định. Mỗi run phải ghi CPU model, logical core count, `MemTotal`, OS image/version và kernel. Comparator yêu cầu CPU model/core, cgroup CPU quota/cpuset và memory limit, OS/runtime cùng toolchain/config/workload/dataset lock khớp chính xác. `hardware.memory_total_bytes` host-visible được phép chênh tối đa 1 MiB vì Linux `MemTotal` có thể khác vài page do kernel/host memory accounting; cgroup memory limit và resolved limit vẫn là giới hạn RAM hiệu dụng và phải khớp tuyệt đối.
 
 ### 3. Rootless fixed toolchain design
 
@@ -681,7 +681,7 @@ Live Hikari gauges vẫn unavailable; chỉ config lock và MySQL connection beh
 
 Kaggle configuration lock giữ cùng workload/load controls của G2.4: warm-up 60 s; W1 10/5/5 RPS và W2 10 VUs trong 180 s; W3 15 rounds; cooldown 30 s; minimum 3, target 5 runs. Kaggle smoke không chạy các duration này.
 
-`compare_manifests.py` yêu cầu trùng CPU model, logical cores, total RAM, OS ID/version, exact Java/MySQL/k6 versions và binary hashes, configuration hash, workload-source hash và dataset checksum. Application SHA được báo thành treatment pair và được phép khác. CPU/resource quota khác thì run không cùng comparison group; không tự normalize hay gộp.
+`compare_manifests.py` yêu cầu trùng CPU model, logical cores, cgroup CPU quota/cpuset, cgroup memory limit/resolved limits, OS/kernel/runtime image, exact Java/MySQL/k6 versions và binary hashes, configuration hash, workload-source hash và dataset checksum. Riêng host-visible `hardware.memory_total_bytes` có dung sai tuyệt đối tối đa 1 MiB: khác biệt vài page trong `MemTotal` là nhỏ so với bộ nhớ khả dụng thực tế, vốn được giới hạn bởi memory cgroup; dung sai này không áp dụng cho cgroup limit. Prefix đường dẫn executable theo run bị bỏ qua khi so sánh output phiên bản MySQL; nội dung version còn lại và SHA-256 của executable vẫn phải khớp. CPU model mismatch hoặc quota/resource limit mismatch vẫn làm run không cùng comparison group. Application SHA được báo thành treatment pair và được phép khác. Không normalize hoặc gộp các trường khác.
 
 ### 8. Implementation and static validation
 
@@ -736,3 +736,53 @@ Verification thực tế:
 
 Kaggle runtime validation vẫn **PENDING** vì không có Kaggle session/credential/toolchain input trong môi trường này. Overall G2.4-K vẫn **PARTIAL**; blockers còn lại là chạy notebook thật, xác minh portable toolchain/lifecycle/W1–W3/reset/telemetry và chứng minh hardware manifests tương đương giữa các session trước G2.5.
 
+## G2.5.2 — Official Standard Benchmark Runner
+
+G2.5.2 bổ sung execution layer riêng cho một official standard run trên Kaggle, không thay đổi
+notebook hoặc hành vi smoke G2.4-K. Entrypoint `KaggleSession.run_official()` thực thi và ghi
+evidence theo thứ tự: prepare standard; warm-up; W1; post snapshot/reset; W2; post
+snapshot/reset; W3; post snapshot; cooldown; final reset. `official_benchmark=true` chỉ được ghi
+khi protocol validation, ba reset checksum, telemetry, cleanup, secret scan, checksum manifest và
+evidence packaging hoàn tất.
+
+Warm-up được khóa read-only trong `configuration-lock.json`: 60 giây, food list 2 RPS, food
+search 1 RPS và order list 1 RPS. Raw/summary/resource telemetry của warm-up nằm dưới
+`warmup/` riêng và không được đưa vào metric W1/W2 chính thức. W1/W2/W3 vẫn giữ nguyên
+measured semantics 180 giây 10/5/5 RPS, 180 giây 10 VUs và 15 rounds/scenario.
+
+Official validation phân biệt harness failure với application outcome. HTTP/performance errors,
+dropped iterations và W3/business consistency violations được lưu làm baseline evidence; thiếu
+phase, duration/load lock, raw/summary, CPU/RSS, reset, cleanup hoặc integrity mới làm run invalid.
+MySQL process I/O được phép là `NA` chỉ khi có sidecar unavailable evidence; không thay bằng 0.
+
+Notebook riêng là `kaggle/script/byteme_phase2_g25_official.ipynb`, thực hiện đúng một run mỗi
+fresh Kaggle CPU session và reuse bootstrap/toolchain G2.4-K. Comparator CLI đã sửa exit status
+để dùng kết quả `comparable` thay vì biến ngoài scope. Multi-run aggregation mở rộng vẫn dành
+cho G2.5.4.
+
+Local regression/acceptance verification: **83 PASS, 0 FAIL, 3 SKIP, 0 ERROR**. Ba SKIP là hai
+procfs Linux integration tests và một Windows hardlink privilege test; Kaggle official Run 01
+chưa được chạy trong G2.5.2.
+
+
+
+## G2.5.4 - Intel BEFORE Multi-run Aggregation and Baseline Lock
+
+**Status: COMPLETE for the BEFORE aggregation gate.** The selected official comparison group is the Intel Xeon group (Runs 02, 04, 05). Each ZIP passed CRC and all 62 SHA256SUMS entries, official status/classification/harness checks, the three reset checksum checks, raw W1/W2-to-validation counter checks, W3 scenario/round coverage, CPU/RSS telemetry coverage, cleanup and secret scan. All three pairwise comparisons passed the current manifest comparator. The 4,096-byte MemTotal difference is within the documented 1 MiB allowance; CPU model, quota, cpuset, cgroup memory limit, OS/kernel/runtime image, toolchain, application/JAR SHA and configuration/workload/dataset locks match.
+
+| Run | ZIP SHA-256 | CPU | MemTotal bytes | W1/W2 | W3 findings |
+|---|---|---|---:|---|---|
+| 02 | `7a2eec7738c972f4fba2706be5daa4c49781a59d04e6670362d2558e455f6a17` | Intel Xeon @ 2.20GHz | 33,658,155,008 | W1 3,602; W2 82,726 requests; 10 business rejections; 0 server errors | Admin-stock invariant violation in 12/15 rounds; same-cart server error in 1 round |
+| 04 | `9379e5661e7fd292230f4abec109b8f29b5034fbb0c1e092b8f7e9d0b0a7a51f` | Intel Xeon @ 2.20GHz | 33,658,159,104 | W1 3,603; W2 62,443 requests; 15 business rejections; 0 server errors | Admin-stock invariant violation in 12/15 rounds |
+| 05 | `c2925ebc19f8d23dd242cdc12d8f2922631739dacf569b23b859ae1c9c0222cf` | Intel Xeon @ 2.20GHz | 33,658,155,008 | W1 3,602; W2 68,928 requests; 4 business rejections; 0 server errors | Admin-stock invariant violation in 13/15 rounds |
+
+Runs 01 and 03 are valid accepted AMD evidence and remain preserved, but are excluded from this Intel aggregation because the comparator reports `hardware.cpu_model` (AMD EPYC 7B12 vs Intel Xeon). Their evidence ZIP SHA-256 values are recorded in the JSON report. No AMD and Intel values are pooled. W2 business rejections and W3 invariant/server-error findings remain application outcomes and were retained as baseline results; they did not invalidate the harness or evidence.
+
+The baseline lock has **minimum_runs=3 met (n=3)**. `target_runs=5` is not met; this is recorded as a remaining stretch target and does not block the minimum-run baseline lock. AFTER measurements must be made on a Kaggle CPU session whose manifest passes the same comparator against this locked Intel group. Do not compare or aggregate an AMD AFTER result with this baseline.
+
+Deliverables:
+
+- `docs/phase2/evidence/g2.5/2026-11-21/before-baseline-intel.md`
+- `docs/phase2/evidence/g2.5/2026-11-21/before-baseline-intel.json`
+
+Aggregator verification: 14 focused tests pass; module/test `py_compile` passes; official evidence was aggregated directly from the three immutable ZIPs. No benchmark was run and no source application, benchmark protocol, dataset, workload, or evidence archive was changed. G2.5 BEFORE acceptance, multi-run aggregation and baseline lock are complete; the five-run target remains unmet, and AFTER/G3 work is outside this lock.
