@@ -9,6 +9,7 @@ import pathlib
 import sys
 import tarfile
 import tempfile
+import types
 import unittest
 import zipfile
 from unittest import mock
@@ -155,6 +156,117 @@ class SmokeValidationTests(unittest.TestCase):
 
 
 class ReliabilityTests(unittest.TestCase):
+    def test_bundle_layout_resolves_phase2_and_preflights_all_runtime_inputs(self):
+        with tempfile.TemporaryDirectory() as temp:
+            bundle = pathlib.Path(temp) / "benchmark-kit"
+            root = bundle / "benchmarks/phase2"
+            (root / "workloads").mkdir(parents=True)
+            for relative in ("profiles.json", "prepare_dataset.py", "workloads/w1_read.js",
+                             "workloads/w2_write.js", "workloads/w3_contention.py"):
+                (root / relative).write_text("{}", encoding="utf-8")
+            (bundle / "schema.sql").write_text("SELECT 1;", encoding="utf-8")
+            session = runtime.KaggleSession(input_root=temp, working_root=temp, run_id="bundle-paths")
+            session.bundle_root = bundle
+            self.assertEqual(session._benchmark_root(), root)
+            session._preflight_benchmark_files()
+            (root / "prepare_dataset.py").unlink()
+            with self.assertRaisesRegex(RuntimeError, "prepare_dataset.py"):
+                session._preflight_benchmark_files()
+
+    def test_notebook_bootstrap_precedes_session_and_smoke(self):
+        notebook = json.loads((ROOT / "kaggle/script/byteme_phase2_g24k.ipynb").read_text(encoding="utf-8"))
+        code = ["".join(cell["source"]) for cell in notebook["cells"] if cell["cell_type"] == "code"]
+        bootstrap_cell = next(cell for cell in code if "prepared_input_root = prepare_kaggle_input" in cell)
+        self.assertLess(bootstrap_cell.index("prepare_kaggle_input("), bootstrap_cell.index("KaggleSession(input_root=prepared_input_root"))
+        self.assertLess(code.index(bootstrap_cell), next(i for i, cell in enumerate(code) if "session.run_smoke()" in cell))
+
+    def test_root_mysql_identity_drops_privileges_and_records_uid_gid(self):
+        with tempfile.TemporaryDirectory() as temp:
+            session = runtime.KaggleSession(input_root=temp, working_root=temp, run_id="root-identity")
+            account = mock.Mock(pw_uid=65534, pw_gid=65534, pw_name="nobody")
+            pwd_api = types.SimpleNamespace(getpwnam=mock.Mock(return_value=account))
+            with mock.patch.object(runtime.os, "geteuid", return_value=0, create=True), \
+                    mock.patch.object(runtime, "pwd", pwd_api):
+                identity = session._mysql_identity()
+            self.assertEqual(identity, (65534, 65534, "nobody"))
+            demote = session._drop_mysql_privileges(identity[0], identity[1])
+            with mock.patch.object(runtime.os, "setgid", create=True) as setgid, \
+                    mock.patch.object(runtime.os, "setuid", create=True) as setuid:
+                demote()
+            setgid.assert_called_once_with(65534)
+            setuid.assert_called_once_with(65534)
+
+    def test_nonroot_mysql_identity_keeps_current_uid_gid(self):
+        with tempfile.TemporaryDirectory() as temp:
+            session = runtime.KaggleSession(input_root=temp, working_root=temp, run_id="user-identity")
+            with mock.patch.object(runtime.os, "geteuid", return_value=1000, create=True), \
+                    mock.patch.object(runtime.os, "getegid", return_value=1001, create=True):
+                self.assertEqual(session._mysql_identity(), (1000, 1001, "current-user"))
+
+    def test_root_without_nonroot_account_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temp:
+            session = runtime.KaggleSession(input_root=temp, working_root=temp, run_id="missing-account")
+            pwd_api = types.SimpleNamespace(getpwnam=mock.Mock(side_effect=KeyError))
+            with mock.patch.object(runtime.os, "geteuid", return_value=0, create=True), \
+                    mock.patch.object(runtime, "pwd", pwd_api):
+                with self.assertRaisesRegex(RuntimeError, "no mysql/nobody account"):
+                    session._mysql_identity()
+
+    def test_root_account_with_root_gid_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temp:
+            session = runtime.KaggleSession(input_root=temp, working_root=temp, run_id="root-gid")
+            pwd_api = types.SimpleNamespace(getpwnam=mock.Mock(return_value=types.SimpleNamespace(
+                pw_uid=65534, pw_gid=0, pw_name="nobody")))
+            with mock.patch.object(runtime.os, "geteuid", return_value=0, create=True), \
+                    mock.patch.object(runtime, "pwd", pwd_api):
+                with self.assertRaisesRegex(RuntimeError, "refusing privileged MySQL identity"):
+                    session._mysql_identity()
+
+    def test_mysql_directory_permission_denied_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temp:
+            session = runtime.KaggleSession(input_root=temp, working_root=temp, run_id="permission-denied")
+            denied = pathlib.Path(temp) / "denied"
+            with mock.patch.object(runtime.os, "access", return_value=False):
+                with self.assertRaisesRegex(RuntimeError, "cannot write directory"):
+                    session._prepare_mysql_writable_paths([denied], 65534, 65534)
+
+    def test_mysql_startup_root_failure_regression_runs_init_and_server_demoted(self):
+        with tempfile.TemporaryDirectory() as temp:
+            session = runtime.KaggleSession(input_root=temp, working_root=temp, run_id="root-regression")
+            session.config = {"runtime": {"mysql_port": 13309, "mysql_transaction_isolation": "REPEATABLE-READ",
+                                           "mysql_max_connections": 100, "mysql_innodb_buffer_pool_size": 536870912,
+                                           "database": "testdb", "database_user": "tester"}}
+            session.tools = {"mysqld": pathlib.Path(temp) / "mysql/bin/mysqld"}
+            session.tools["mysqld"].parent.mkdir(parents=True)
+            session.evidence.mkdir(parents=True)
+            session.evidence.joinpath("logs").mkdir()
+            schema = pathlib.Path(temp) / "schema.sql"
+            schema.write_text("SELECT 1;", encoding="utf-8")
+            session._mysql_identity = lambda: (65534, 65534, "nobody")
+            calls = []
+            def run(*args, **kwargs):
+                calls.append(kwargs.get("preexec_fn"))
+                return runtime.subprocess.CompletedProcess(args[0], 0, "", "")
+            class Process:
+                def poll(self): return None
+            def popen(*args, **kwargs):
+                calls.append(kwargs.get("preexec_fn"))
+                return Process()
+            pings = iter([runtime.subprocess.CompletedProcess([], 0, "", "")])
+            session.tools.update({"mysqladmin": pathlib.Path(temp) / "mysql/bin/mysqladmin"})
+            with mock.patch.object(session, "_drop_mysql_privileges", return_value=lambda: None), \
+                    mock.patch.object(runtime.os, "geteuid", return_value=0, create=True), \
+                    mock.patch.object(runtime.os, "chown", create=True), \
+                    mock.patch.object(session, "_mysql"), mock.patch.object(session, "_find_single", return_value=schema), \
+                    mock.patch.object(runtime.subprocess, "run", side_effect=lambda *a, **kw: next(pings) if "mysqladmin" in str(a[0][0]) else run(*a, **kw)), \
+                    mock.patch.object(runtime.subprocess, "Popen", side_effect=popen), \
+                    mock.patch.object(session, "_prepare_mysql_writable_paths"):
+                session.start_mysql()
+            self.assertEqual(len(calls), 2)
+            self.assertTrue(all(call is not None for call in calls))
+            self.assertIs(calls[0], calls[1], "initialization and server must use the same demotion")
+            self.assertEqual(session.mysql_process_identity["uid"], 65534)
+
     def test_mysql_early_exit_diagnostics_survive_cleanup_and_zip(self):
         with tempfile.TemporaryDirectory() as temp:
             session = runtime.KaggleSession(input_root=temp, working_root=temp, run_id="mysql-exit")

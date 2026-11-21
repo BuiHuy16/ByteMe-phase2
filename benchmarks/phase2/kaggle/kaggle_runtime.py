@@ -11,9 +11,14 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import json
+import math
 import os
 import pathlib
 import platform
+try:
+    import pwd
+except ImportError:  # Windows unit-test host; Kaggle is Linux.
+    pwd = None
 import re
 import secrets
 import shutil
@@ -23,6 +28,7 @@ import stat
 import subprocess
 import tarfile
 import threading
+import traceback
 import time
 import urllib.error
 import urllib.request
@@ -514,11 +520,40 @@ def validate_resource_samples(path: pathlib.Path, required_labels: set[str]) -> 
         label_index = header.index("label")
     except ValueError as exc:
         raise RuntimeError(f"resource telemetry lacks label column: {path}") from exc
-    labels = {line.split("\t")[label_index] for line in lines[1:] if len(line.split("\t")) > label_index}
+    required_columns = {"label", "pid", "process_cpu_percent", "rss_bytes", "read_bytes", "write_bytes"}
+    if not required_columns.issubset(header):
+        raise RuntimeError(f"resource telemetry missing columns {sorted(required_columns - set(header))}: {path}")
+    unavailable_path = path.with_suffix(".unavailable.jsonl")
+    unavailable = [json.loads(line) for line in unavailable_path.read_text(encoding="utf-8").splitlines()] if unavailable_path.exists() else []
+    labels = set()
+    io_unavailable_rows = 0
+    for line in lines[1:]:
+        fields = line.split("\t")
+        if len(fields) != len(header):
+            raise RuntimeError(f"resource telemetry malformed row: {path}")
+        row = dict(zip(header, fields))
+        try:
+            pid = int(row["pid"])
+            cpu = float(row["process_cpu_percent"])
+            rss = int(row["rss_bytes"])
+            if pid <= 0 or not math.isfinite(cpu) or cpu < 0 or rss < 0:
+                raise ValueError("invalid CPU/RSS/PID")
+            for metric in ("read_bytes", "write_bytes"):
+                if row[metric] == "NA":
+                    if not any(item.get("label") == row["label"] and item.get("pid") == pid
+                               and metric in item.get("metrics", []) and item.get("reason") for item in unavailable):
+                        raise ValueError(f"{metric}=NA without unavailable evidence")
+                elif int(row[metric]) < 0:
+                    raise ValueError(f"negative {metric}")
+        except (ValueError, TypeError) as exc:
+            raise RuntimeError(f"resource telemetry invalid/missing CPU/RSS or I/O evidence: {path}: {exc}") from exc
+        labels.add(row["label"])
+        io_unavailable_rows += int(row["read_bytes"] == "NA" or row["write_bytes"] == "NA")
     missing = sorted(required_labels - labels)
     if missing:
         raise RuntimeError(f"resource telemetry missing process labels {missing}: {path}")
-    return {"sample_rows": len(lines) - 1, "labels": sorted(labels)}
+    return {"sample_rows": len(lines) - 1, "labels": sorted(labels),
+            "cpu_rss_complete": True, "io_unavailable_rows": io_unavailable_rows}
 
 
 def validate_k6_smoke_summary(path: pathlib.Path, workload: str, expected_checks: int | None = None,
@@ -599,6 +634,7 @@ class ResourceSampler:
         self.thread = threading.Thread(target=self._run, daemon=True)
         self.previous_system = None
         self.previous_process: dict[int, int] = {}
+        self.failure: str | None = None
 
     @staticmethod
     def _system_cpu() -> tuple[int, int]:
@@ -606,16 +642,22 @@ class ResourceSampler:
         return sum(values), values[3] + (values[4] if len(values) > 4 else 0)
 
     @staticmethod
-    def _process(pid: int) -> tuple[int, int, int, int]:
-        stat = pathlib.Path(f"/proc/{pid}/stat").read_text().split()
-        ticks = int(stat[13]) + int(stat[14])
+    def _process(pid: int) -> tuple[int, int, int | None, int | None, str | None]:
+        # comm (field 2) may contain spaces; utime/stime are fields 14/15.
+        stat = pathlib.Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()
+        ticks = int(stat[11]) + int(stat[12])
         status = pathlib.Path(f"/proc/{pid}/status").read_text()
         match = re.search(r"^VmRSS:\s+(\d+)\s+kB", status, re.MULTILINE)
-        rss = int(match.group(1)) * 1024 if match else 0
-        io = pathlib.Path(f"/proc/{pid}/io").read_text()
+        if match is None:
+            raise RuntimeError(f"required VmRSS unavailable: /proc/{pid}/status")
+        rss = int(match.group(1)) * 1024
+        try:
+            io = pathlib.Path(f"/proc/{pid}/io").read_text()
+        except PermissionError:
+            return ticks, rss, None, None, f"PermissionError: access denied to /proc/{pid}/io"
         read_b = int(re.search(r"^read_bytes:\s+(\d+)", io, re.MULTILINE).group(1))
         write_b = int(re.search(r"^write_bytes:\s+(\d+)", io, re.MULTILINE).group(1))
-        return ticks, rss, read_b, write_b
+        return ticks, rss, read_b, write_b, None
 
     @staticmethod
     def _available_memory() -> int:
@@ -624,6 +666,8 @@ class ResourceSampler:
         return int(match.group(1)) * 1024 if match else 0
 
     def start(self) -> None:
+        if self.stop_event.is_set() or self.thread.ident is not None:
+            raise RuntimeError("resource sampler cannot be restarted")
         self.output.parent.mkdir(parents=True, exist_ok=True)
         self.output.write_text("timestamp_utc\tsystem_cpu_percent\tmemory_total_bytes\tmemory_available_bytes\tlabel\tpid\tprocess_cpu_percent\trss_bytes\tread_bytes\twrite_bytes\n", encoding="utf-8")
         self._sample_once()
@@ -641,24 +685,37 @@ class ResourceSampler:
         rows = []
         for label, pid in list(self.processes.items()):
             try:
-                ticks, rss, read_b, write_b = self._process(pid)
+                ticks, rss, read_b, write_b, io_reason = self._process(pid)
             except (FileNotFoundError, ProcessLookupError, AttributeError):
                 continue
             previous = self.previous_process.get(pid, ticks)
             process_percent = (ticks - previous) / clock_ticks / self.interval * 100.0
             self.previous_process[pid] = ticks
+            if io_reason:
+                with self.output.with_suffix(".unavailable.jsonl").open("a", encoding="utf-8") as stream:
+                    stream.write(json.dumps({"timestamp_utc": utc_now(), "label": label, "pid": pid,
+                                             "metrics": ["read_bytes", "write_bytes"], "reason": io_reason}) + "\n")
+            read_b = "NA" if read_b is None else read_b
+            write_b = "NA" if write_b is None else write_b
             rows.append(f"{utc_now()}\t{system_percent:.3f}\t{memory_total()}\t{self._available_memory()}\t{label}\t{pid}\t{process_percent:.3f}\t{rss}\t{read_b}\t{write_b}\n")
         if rows:
             with self.output.open("a", encoding="utf-8") as stream:
                 stream.writelines(rows)
 
     def _run(self) -> None:
-        while not self.stop_event.wait(self.interval):
-            self._sample_once()
+        try:
+            while not self.stop_event.wait(self.interval):
+                self._sample_once()
+        except Exception:
+            self.failure = traceback.format_exc()
+            self.stop_event.set()
 
     def stop(self) -> None:
         self.stop_event.set()
-        self.thread.join(timeout=5)
+        if self.thread.ident is not None:
+            self.thread.join(timeout=5)
+            if self.thread.is_alive():
+                raise RuntimeError("resource sampler did not stop within 5 seconds")
 
 
 class KaggleSession:
@@ -676,6 +733,7 @@ class KaggleSession:
         self.runtime = self.run_dir / "runtime-secret"
         self.toolchain_dir = self.run_dir / "toolchain"
         self.processes: dict[str, subprocess.Popen] = {}
+        self.active_driver: subprocess.Popen | None = None
         self.bundle_root: pathlib.Path | None = None
         self.config_path: pathlib.Path | None = None
         self.config: dict = {}
@@ -760,6 +818,7 @@ class KaggleSession:
         self.config = json.loads(self.config_path.read_text(encoding="utf-8"))
         if self.config.get("baseline_sha") != BASELINE_SHA:
             raise RuntimeError("configuration baseline mismatch")
+        self._preflight_benchmark_files()
         shutil.copy2(manifest_path, self.evidence / "environment/bundle-manifest.json")
 
     def setup_offline_dependencies(self) -> None:
@@ -912,7 +971,7 @@ class KaggleSession:
         runtime = self.config["runtime"]
         command = [str(self.tools["mysql"]), "--batch", "--raw", "--user", user]
         if user == "root":
-            command.extend(["--protocol=SOCKET", "--socket", str(self.run_dir / "mysql.sock")])
+            command.extend(["--protocol=SOCKET", "--socket", str(self.run_dir / "mysql-runtime/mysql.sock")])
         else:
             command.extend(["--protocol=TCP", "--host", runtime["mysql_host"],
                             "--port", str(runtime["mysql_port"])])
@@ -925,30 +984,78 @@ class KaggleSession:
             raise RuntimeError(proc.stderr.strip())
         return proc.stdout
 
+    def _mysql_identity(self) -> tuple[int, int, str]:
+        """Return an unprivileged identity; Kaggle notebooks can run as UID 0."""
+        current_uid = os.geteuid() if hasattr(os, "geteuid") else -1
+        current_gid = os.getegid() if hasattr(os, "getegid") else -1
+        if current_uid != 0:
+            return current_uid, current_gid, "current-user"
+        if pwd is None:
+            raise RuntimeError("root privilege drop is only supported on Linux")
+        try:
+            account = pwd.getpwnam("mysql")
+        except KeyError:
+            try:
+                account = pwd.getpwnam("nobody")
+            except KeyError as exc:
+                raise RuntimeError("running as root but no mysql/nobody account is available") from exc
+        if account.pw_uid == 0 or account.pw_gid == 0:
+            raise RuntimeError(f"refusing privileged MySQL identity: uid={account.pw_uid}, gid={account.pw_gid}")
+        return account.pw_uid, account.pw_gid, account.pw_name
+
+    @staticmethod
+    def _drop_mysql_privileges(uid: int, gid: int):
+        def demote() -> None:
+            os.setgid(gid)
+            os.setuid(uid)
+        return demote
+
+    def _prepare_mysql_writable_paths(self, paths: list[pathlib.Path], uid: int, gid: int) -> None:
+        for path in paths:
+            path.mkdir(parents=True, exist_ok=True)
+            if hasattr(os, "geteuid") and os.geteuid() == 0:
+                os.chown(path, uid, gid)
+            try:
+                mode = stat.S_IMODE(path.stat().st_mode)
+                path.chmod(mode | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
+                           stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP)
+            except OSError as exc:
+                raise RuntimeError(f"cannot prepare MySQL writable directory {path}: {exc}") from exc
+            if not os.access(path, os.W_OK | os.X_OK):
+                raise RuntimeError(f"MySQL identity cannot write directory: {path}")
+
     def start_mysql(self) -> None:
         runtime = self.config["runtime"]
         base = self.tools["mysqld"].parent.parent
         data = self.run_dir / "mysql-data"
-        data.mkdir(parents=True)
-        (self.evidence / "logs").mkdir(parents=True, exist_ok=True)
+        mysql_runtime = self.run_dir / "mysql-runtime"
+        mysql_log_dir = self.evidence / "logs/mysql-server"
+        mysql_uid, mysql_gid, mysql_account = self._mysql_identity()
+        self._prepare_mysql_writable_paths([data, mysql_runtime, mysql_log_dir], mysql_uid, mysql_gid)
         config = self.run_dir / "mysql.cnf"
         config.write_text("\n".join([
             "[mysqld]", f"basedir={base}", f"datadir={data}", f"port={runtime['mysql_port']}",
-            "bind-address=127.0.0.1", f"socket={self.run_dir / 'mysql.sock'}", f"pid-file={self.run_dir / 'mysql.pid'}",
-            f"log-error={self.evidence / 'logs/mysql.log'}", "skip-name-resolve=ON", "mysqlx=OFF",
+            "bind-address=127.0.0.1", f"socket={mysql_runtime / 'mysql.sock'}", f"pid-file={mysql_runtime / 'mysql.pid'}",
+            f"log-error={mysql_log_dir / 'mysql.log'}", "skip-name-resolve=ON", "mysqlx=OFF",
             f"transaction-isolation={runtime['mysql_transaction_isolation']}",
             f"max-connections={runtime['mysql_max_connections']}",
             f"innodb-buffer-pool-size={runtime['mysql_innodb_buffer_pool_size']}", "performance-schema=ON", "",
         ]), encoding="utf-8")
+        self.mysql_process_identity = {"uid": mysql_uid, "gid": mysql_gid, "account": mysql_account}
+        self._write_json("environment/mysql-process-identity.json", self.mysql_process_identity)
+        demote = self._drop_mysql_privileges(mysql_uid, mysql_gid) if hasattr(os, "geteuid") and os.geteuid() == 0 else None
         init = subprocess.run([str(self.tools["mysqld"]), f"--defaults-file={config}", "--initialize-insecure"],
-                              text=True, capture_output=True, env=self.mysql_env)
+                              text=True, capture_output=True, env=self.mysql_env, preexec_fn=demote)
         if init.returncode:
-            raise RuntimeError(f"mysqld initialize failed: {init.stderr}")
+            raise RuntimeError(f"mysqld initialize failed under uid={mysql_uid}, gid={mysql_gid}: {init.stderr}")
+        for path in (data, mysql_runtime, mysql_log_dir):
+            if hasattr(os, "geteuid") and os.geteuid() == 0:
+                os.chown(path, mysql_uid, mysql_gid)
         startup_stdout = self.evidence / "logs/mysql-startup.stdout.log"
         startup_stderr = self.evidence / "logs/mysql-startup.stderr.log"
         with startup_stdout.open("wb") as stdout, startup_stderr.open("wb") as stderr:
             process = subprocess.Popen([str(self.tools["mysqld"]), f"--defaults-file={config}"],
-                                       stdout=stdout, stderr=stderr, env=self.mysql_env)
+                                       stdout=stdout, stderr=stderr, env=self.mysql_env, preexec_fn=demote)
         self.processes["mysql"] = process
         deadline = time.time() + 120
         while time.time() < deadline:
@@ -958,7 +1065,7 @@ class KaggleSession:
                                    "logs/mysql-startup.stdout.log, logs/mysql.log and "
                                    "environment/mysql-startup-failure.json in the evidence ZIP")
             ping = subprocess.run([str(self.tools["mysqladmin"]), "--protocol=SOCKET",
-                                   "--socket", str(self.run_dir / "mysql.sock"), "-uroot", "ping"],
+                                   "--socket", str(mysql_runtime / "mysql.sock"), "-uroot", "ping"],
                                   capture_output=True, env=self.mysql_env)
             if ping.returncode == 0:
                 break
@@ -981,8 +1088,10 @@ class KaggleSession:
         """Capture startup facts before cleanup removes the run's datadir and socket."""
         code = process.poll()
         runtime = self.config["runtime"]
-        paths = {"datadir": data, "socket_parent": self.run_dir,
-                 "socket": self.run_dir / "mysql.sock", "pid_file": self.run_dir / "mysql.pid"}
+        mysql_runtime = self.run_dir / "mysql-runtime"
+        paths = {"datadir": data, "socket_parent": mysql_runtime,
+                 "socket": mysql_runtime / "mysql.sock", "pid_file": mysql_runtime / "mysql.pid",
+                 "log_directory": self.evidence / "logs/mysql-server"}
         path_status = {}
         for name, path in paths.items():
             try:
@@ -1079,8 +1188,20 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
         assert self.bundle_root
         matches = list(self.bundle_root.rglob("benchmarks/phase2/profiles.json"))
         if len(matches) != 1:
-            raise RuntimeError("bundled benchmark root missing or ambiguous")
-        return matches[0].parents[1]
+            raise RuntimeError(f"bundled benchmark root missing or ambiguous below {self.bundle_root}; matches={matches}")
+        return matches[0].parent
+
+    def _preflight_benchmark_files(self) -> None:
+        root = self._benchmark_root()
+        required = [root / "profiles.json", root / "prepare_dataset.py",
+                    root / "workloads/w1_read.js", root / "workloads/w2_write.js",
+                    root / "workloads/w3_contention.py", self.bundle_root / "schema.sql"]
+        missing = [str(path) for path in required if not path.is_file()]
+        if missing:
+            raise RuntimeError(f"benchmark bundle preflight missing required files: {missing}")
+        workloads = root / "workloads"
+        if not workloads.is_dir():
+            raise RuntimeError(f"benchmark bundle preflight missing workloads directory: {workloads}")
 
     def _dataset_command(self, mode: str, profile: str, output: pathlib.Path) -> list[str]:
         root = self._benchmark_root()
@@ -1092,6 +1213,35 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
                 "--mysql-password-env", "BENCH_DB_PASSWORD", "--base-url", f"http://127.0.0.1:{runtime['backend_port']}",
                 "--runtime-actors", str(self.runtime / "actors.json"), "--output", str(output)]
 
+    def _backend_alive(self, stage: str, health: bool = False) -> None:
+        backend = self.processes.get("backend")
+        code = backend.poll() if backend is not None else None
+        self._write_json("environment/backend-lifecycle.json", {
+            "stage": stage, "captured_at_utc": utc_now(),
+            "pid": backend.pid if backend else None, "exit_code": code,
+            "log": "logs/backend.log", "alive": backend is not None and code is None,
+        })
+        if backend is None or code is not None:
+            raise RuntimeError(f"backend unavailable at {stage}: pid={backend.pid if backend else None}, "
+                               f"exit_code={code}; see logs/backend.log and environment/backend-lifecycle.json")
+        if health:
+            url = f"http://127.0.0.1:{self.config['runtime']['backend_port']}/actuator/health"
+            with urllib.request.urlopen(url, timeout=5) as response:
+                if response.status != 200:
+                    raise RuntimeError(f"backend health failed before {stage}: HTTP {response.status}")
+
+    def _stop_driver(self) -> None:
+        process = self.active_driver
+        if process is not None:
+            if process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=10)
+            self.active_driver = None
+
     def _run(self, command: list[str], relative_console: str, relative_resources: str | None = None,
              extra_env: dict[str, str] | None = None,
              required_resource_labels: set[str] | None = None) -> dict | None:
@@ -1101,19 +1251,52 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
             env.update(extra_env)
         console = self.evidence / relative_console
         console.parent.mkdir(parents=True, exist_ok=True)
+        if relative_resources:
+            self._backend_alive(relative_console, health=True)
         with console.open("w", encoding="utf-8") as stream:
             process = subprocess.Popen(command, stdout=stream, stderr=subprocess.STDOUT, env=env)
+            self.active_driver = process
             sampler = None
+            primary = None
             try:
                 if relative_resources:
                     pids = {key: value.pid for key, value in self.processes.items() if value.poll() is None}
                     pids["driver"] = process.pid
                     sampler = ResourceSampler(self.evidence / relative_resources, pids)
                     sampler.start()
-                code = process.wait()
+                while True:
+                    if relative_resources:
+                        self._backend_alive(relative_console)
+                    if sampler and sampler.failure:
+                        raise RuntimeError(f"resource sampler failed:\n{sampler.failure}")
+                    try:
+                        code = process.wait(timeout=0.25)
+                        break
+                    except subprocess.TimeoutExpired:
+                        continue
+                if relative_resources:
+                    self._backend_alive(relative_console + ":completed")
+            except BaseException as exc:
+                primary = exc
+                raise
             finally:
+                errors = []
+                try:
+                    self._stop_driver()
+                except Exception as exc:
+                    errors.append(f"driver stop: {exc}")
                 if sampler:
-                    sampler.stop()
+                    try:
+                        sampler.stop()
+                        if sampler.failure:
+                            errors.append(f"sampler: {sampler.failure}")
+                    except Exception as exc:
+                        errors.append(f"sampler stop: {exc}")
+                if errors:
+                    if primary is not None:
+                        primary.add_note("; ".join(errors))
+                    else:
+                        raise RuntimeError("; ".join(errors))
         if code:
             raise RuntimeError(f"command failed ({code}): {' '.join(command[:4])}; see {relative_console}")
         if relative_resources:
@@ -1233,6 +1416,10 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
 
     def cleanup(self) -> dict:
         errors = []
+        try:
+            self._stop_driver()
+        except Exception as exc:
+            return {"success": False, "errors": [f"driver still active; services retained: {exc}"]}
         backend = self.processes.get("backend")
         if backend and backend.poll() is None:
             try:
@@ -1249,7 +1436,7 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
             try:
                 runtime = self.config["runtime"]
                 shutdown = subprocess.run([str(self.tools["mysqladmin"]), "--protocol=SOCKET",
-                                           "--socket", str(self.run_dir / "mysql.sock"), "-uroot", "shutdown"],
+                                           "--socket", str(self.run_dir / "mysql-runtime/mysql.sock"), "-uroot", "shutdown"],
                                           timeout=20, capture_output=True, env=self.mysql_env)
                 if shutdown.returncode:
                     mysql.send_signal(signal.SIGTERM)
@@ -1312,6 +1499,15 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
             status = "PASS"
         except Exception as exc:
             error = f"{type(exc).__name__}: {exc}"
+            failure_trace = traceback.format_exc()
+            for secret in (self.db_password, self.actor_password):
+                failure_trace = failure_trace.replace(secret, "[REDACTED]")
+                error = error.replace(secret, "[REDACTED]")
+            failure_trace = re.sub(r"eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}",
+                                   "[REDACTED JWT]", failure_trace)
+            trace_path = self.evidence / "logs/smoke-failure-traceback.txt"
+            trace_path.parent.mkdir(parents=True, exist_ok=True)
+            trace_path.write_text(failure_trace, encoding="utf-8")
         finally:
             try:
                 cleanup = self.cleanup()

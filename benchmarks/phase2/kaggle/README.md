@@ -1,5 +1,15 @@
 # ByteMe G2.4-K — Thích ứng cho Kaggle CPU
 
+### Proc I/O trên runtime hạn chế quyền
+
+CPU/RSS vẫn bắt buộc cho backend, MySQL và driver. Nếu Linux từ chối đọc
+`/proc/<pid>/io`, các cột `read_bytes`/`write_bytes` trong TSV ghi `NA`;
+file cùng tên với suffix `.unavailable.jsonl` ghi timestamp, label, PID và lý do.
+Validator từ chối CPU/RSS thiếu hoặc không hợp lệ và I/O `NA` không có evidence.
+I/O là telemetry bổ sung, chưa có yêu cầu bắt buộc khả dụng trong configuration
+lock; không dùng `NA` như số 0 khi phân tích before/after. CPU/RSS hoàn chỉnh
+không có nghĩa I/O hoàn chỉnh. Không thay đổi quyền MySQL hoặc bảo mật procfs.
+
 Adapter này giữ nguyên semantics của workload và dataset G2.4, đồng thời thay cách thực thi phụ thuộc Docker bằng các user-space process chạy trên loopback. Adapter không thay đổi application source, schema, seed hoặc notebook upstream lịch sử.
 
 ## Trạng thái

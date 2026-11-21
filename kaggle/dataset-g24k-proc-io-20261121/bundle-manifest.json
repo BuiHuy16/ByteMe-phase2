@@ -1,0 +1,106 @@
+﻿{
+    "schema_version":  2,
+    "protocol_baseline_sha":  "510f6415b6af535ceec77213f0b0c7d5082123f7",
+    "repository_sha":  "72dd551970df4c04c77aeeabd8a046844ae74f19",
+    "application_sha":  "510f6415b6af535ceec77213f0b0c7d5082123f7",
+    "application_jar_sha256":  "eed3d70045a6884f36f1fc398ccc1de6f6fc8c661f170df08905c0bf76195311",
+    "build_provenance_path":  "build/build-provenance.json",
+    "generated_at_utc":  "2026-11-21T05:23:15.6809719Z",
+    "files":  [
+                  {
+                      "path":  "application.jar",
+                      "sha256":  "eed3d70045a6884f36f1fc398ccc1de6f6fc8c661f170df08905c0bf76195311",
+                      "bytes":  66980148
+                  },
+                  {
+                      "path":  "benchmark-kit/benchmarks/phase2/kaggle/compare_manifests.py",
+                      "sha256":  "c6a43234eadd3914e30a3eb8be5b3ce300ed5d7e0a06e9f5ff7493884b06d4cb",
+                      "bytes":  3528
+                  },
+                  {
+                      "path":  "benchmark-kit/benchmarks/phase2/kaggle/configuration-lock.json",
+                      "sha256":  "fef0fcf03b4dadd66a7b1f8619da9263e1500bf8b903f760aad3abd541b89620",
+                      "bytes":  2502
+                  },
+                  {
+                      "path":  "benchmark-kit/benchmarks/phase2/kaggle/generate_notebook.py",
+                      "sha256":  "5d9166ab3c64bbcd51cb8d5c23e3395119dc9642f1037c6e72b3afac5366c695",
+                      "bytes":  5400
+                  },
+                  {
+                      "path":  "benchmark-kit/benchmarks/phase2/kaggle/kaggle_runtime.py",
+                      "sha256":  "041698f26167f9967ee54605a722b4ebeeade4db6ddea27a69aba64d50a7b9e1",
+                      "bytes":  86360
+                  },
+                  {
+                      "path":  "benchmark-kit/benchmarks/phase2/kaggle/prepare_bundle.ps1",
+                      "sha256":  "0507cad9f54c676c4be74098a23948139d9a14d2b2ddcb6759d91ae6c29d1da5",
+                      "bytes":  5634
+                  },
+                  {
+                      "path":  "benchmark-kit/benchmarks/phase2/kaggle/README.md",
+                      "sha256":  "5db5afe044ca4d04b46c250ef26050373efaca5112f068f4953fb028597dd725",
+                      "bytes":  6790
+                  },
+                  {
+                      "path":  "benchmark-kit/benchmarks/phase2/kaggle/tests/test_proc_io.py",
+                      "sha256":  "0993e44ee09067c180fd0a1504881978edf920a7a33ea4efe220ad813e4ebd6f",
+                      "bytes":  6744
+                  },
+                  {
+                      "path":  "benchmark-kit/benchmarks/phase2/kaggle/tests/test_remediation.py",
+                      "sha256":  "1ff61ad4effef81220709141bd1438f9ae2d4597a9886e49848ca68d1051008c",
+                      "bytes":  54544
+                  },
+                  {
+                      "path":  "benchmark-kit/benchmarks/phase2/kaggle/tests/test_sampler_lifecycle.py",
+                      "sha256":  "e9e519cfb7b641826a2368044744712f3db26eaa5bc6e51eed70aaeb17fa1ff5",
+                      "bytes":  6826
+                  },
+                  {
+                      "path":  "benchmark-kit/benchmarks/phase2/prepare_dataset.py",
+                      "sha256":  "24631a9c84bf2fe4416aac18dab6f51f709681266c246b965b54bc7fb476356d",
+                      "bytes":  16982
+                  },
+                  {
+                      "path":  "benchmark-kit/benchmarks/phase2/profiles.json",
+                      "sha256":  "441b521d864799a4779caede7595b4b0322265f47936f134d00c4aeb329dad3b",
+                      "bytes":  432
+                  },
+                  {
+                      "path":  "benchmark-kit/benchmarks/phase2/README.md",
+                      "sha256":  "0e9b026aac399e715b4844433398c90132a87daba00fba20f38c91a88e88138a",
+                      "bytes":  7061
+                  },
+                  {
+                      "path":  "benchmark-kit/benchmarks/phase2/workloads/w1_read.js",
+                      "sha256":  "50e0e4386d5561d3c405a5a0ee33f9d9a3ac9846727bbdd360a67460285c739b",
+                      "bytes":  3280
+                  },
+                  {
+                      "path":  "benchmark-kit/benchmarks/phase2/workloads/w2_write.js",
+                      "sha256":  "8d491590d16176a4a506cc9c938b1a8aadfadce67807f3d054ca2ce9252a6969",
+                      "bytes":  4376
+                  },
+                  {
+                      "path":  "benchmark-kit/benchmarks/phase2/workloads/w3_contention.py",
+                      "sha256":  "6c5f96c8ae95b1c800e173be900f3703008ecd1cd01a1b319910f2628b79dc60",
+                      "bytes":  10823
+                  },
+                  {
+                      "path":  "build/build-provenance.json",
+                      "sha256":  "ac32f6a01c00e4a2f269a67083ece32725342384314bac2971856a6402ef3f05",
+                      "bytes":  1898
+                  },
+                  {
+                      "path":  "build/maven-build.txt",
+                      "sha256":  "97379eda3b27f8e3a30d452bb555f47c9ad55a6a763e72a01d1391dfdb61c234",
+                      "bytes":  4458
+                  },
+                  {
+                      "path":  "schema.sql",
+                      "sha256":  "287a0b47c078386182ff1ccc691c7ab2d908e30fb0c578531d9e56f4ee7aa870",
+                      "bytes":  6636
+                  }
+              ]
+}

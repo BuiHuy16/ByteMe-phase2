@@ -1,0 +1,22 @@
+{
+  "smoke": {
+    "categories": 3,
+    "read_foods": 60,
+    "read_orders": 20,
+    "items_per_order": 2,
+    "write_actors": 2,
+    "contention_actors": 4,
+    "write_stock": 1000,
+    "shared_stock": 10
+  },
+  "standard": {
+    "categories": 10,
+    "read_foods": 5000,
+    "read_orders": 500,
+    "items_per_order": 2,
+    "write_actors": 20,
+    "contention_actors": 4,
+    "write_stock": 1000000,
+    "shared_stock": 10
+  }
+}
