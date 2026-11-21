@@ -15,6 +15,11 @@ spec.loader.exec_module(runtime)
 
 
 class SamplerTests(unittest.TestCase):
+    @staticmethod
+    def details(pid=415, start=999):
+        return {"state": "S", "ticks": 30, "start_time": start, "rss": 43008,
+                "read_bytes": 123, "write_bytes": 456, "io_reason": None}
+
     def test_stop_before_start_and_repeated_stop(self):
         sampler = runtime.ResourceSampler(pathlib.Path("unused"), {})
         sampler.stop()
@@ -46,6 +51,104 @@ class SamplerTests(unittest.TestCase):
         with mock.patch.object(sampler, "_sample_once", side_effect=OSError("sample failed")):
             sampler._run()
         self.assertIn("OSError: sample failed", sampler.failure)
+
+    def test_driver_normal_exit_and_zombie_are_lifecycle_events(self):
+        for event, state in (("PROCESS_EXITED_DURING_SAMPLE", None), ("PROCESS_ZOMBIE", "Z")):
+            with self.subTest(event=event), tempfile.TemporaryDirectory() as temp:
+                path = pathlib.Path(temp) / "resources.tsv"
+                driver = mock.Mock(pid=415, poll=mock.Mock(return_value=0))
+                sampler = runtime.ResourceSampler(path, {"driver": driver}, interval=60,
+                                                  allowed_exit_labels={"driver"})
+                lifecycle = runtime.ProcessLifecycle(event, 415, state, 999, 999)
+                with mock.patch.object(sampler, "_process_details",
+                                       side_effect=[self.details(), lifecycle]), \
+                        mock.patch.object(sampler, "_system_cpu", return_value=(100, 10)), \
+                        mock.patch.object(sampler, "_available_memory", return_value=100000), \
+                        mock.patch.object(runtime.os, "sysconf", return_value=100, create=True), \
+                        mock.patch.object(runtime.os, "sysconf_names", {"SC_CLK_TCK": 2}, create=True):
+                    sampler.start()
+                    sampler._sample_once()
+                    sampler.stop()
+                self.assertIsNone(sampler.failure)
+                validation = runtime.validate_resource_samples(path, {"driver"})
+                self.assertEqual(validation["rows_by_label"]["driver"], 1)
+                self.assertEqual(validation["lifecycle_events"][0]["event"], event)
+
+    def test_required_service_exit_and_pid_reuse_fail_closed(self):
+        for label, event in (("backend", "PROCESS_EXITED"), ("mysql", "PID_REUSED")):
+            with self.subTest(label=label, event=event), tempfile.TemporaryDirectory() as temp:
+                process = mock.Mock(pid=222, poll=mock.Mock(return_value=9 if event == "PROCESS_EXITED" else None))
+                sampler = runtime.ResourceSampler(pathlib.Path(temp) / "resources.tsv", {label: process})
+                sampler.output.parent.mkdir(parents=True, exist_ok=True)
+                sampler.output.write_text("header\n", encoding="utf-8")
+                lifecycle = runtime.ProcessLifecycle(event, 222, "S", 999, 1000)
+                with mock.patch.object(sampler, "_process_details", side_effect=lifecycle), \
+                        mock.patch.object(sampler, "_system_cpu", return_value=(100, 10)), \
+                        mock.patch.object(runtime.os, "sysconf", return_value=100, create=True), \
+                        mock.patch.object(runtime.os, "sysconf_names", {"SC_CLK_TCK": 2}, create=True):
+                    with self.assertRaisesRegex(RuntimeError, "required process lifecycle failure"):
+                        sampler._sample_once()
+                event_doc = json.loads(sampler.output.with_suffix(".lifecycle.jsonl").read_text())
+                self.assertEqual((event_doc["label"], event_doc["event"]), (label, event))
+
+    def test_alive_process_telemetry_denial_fails_and_records_label(self):
+        with tempfile.TemporaryDirectory() as temp:
+            process = mock.Mock(pid=333, poll=mock.Mock(return_value=None))
+            sampler = runtime.ResourceSampler(pathlib.Path(temp) / "resources.tsv", {"mysql": process})
+            sampler.output.parent.mkdir(parents=True, exist_ok=True)
+            sampler.output.write_text("header\n", encoding="utf-8")
+            with mock.patch.object(sampler, "_process_details",
+                                   side_effect=runtime.ProcessTelemetryUnavailable("VmRSS denied")), \
+                    mock.patch.object(sampler, "_system_cpu", return_value=(100, 10)), \
+                    mock.patch.object(runtime.os, "sysconf", return_value=100, create=True), \
+                    mock.patch.object(runtime.os, "sysconf_names", {"SC_CLK_TCK": 2}, create=True):
+                with self.assertRaisesRegex(runtime.ProcessTelemetryUnavailable, "VmRSS denied"):
+                    sampler._sample_once()
+            event_doc = json.loads(sampler.output.with_suffix(".lifecycle.jsonl").read_text())
+            self.assertEqual((event_doc["label"], event_doc["event"]), ("mysql", "TELEMETRY_UNAVAILABLE"))
+
+    def test_later_service_failure_preserves_earlier_valid_sample(self):
+        with tempfile.TemporaryDirectory() as temp:
+            sampler = runtime.ResourceSampler(pathlib.Path(temp) / "resources.tsv",
+                                              {"backend": 1, "mysql": 2})
+            with mock.patch.object(sampler, "_process_details", side_effect=[
+                    self.details(), runtime.ProcessLifecycle("PROCESS_EXITED", 2)]), \
+                    mock.patch.object(sampler, "_system_cpu", return_value=(100, 10)), \
+                    mock.patch.object(sampler, "_available_memory", return_value=10000), \
+                    mock.patch.object(runtime.os, "sysconf", return_value=100, create=True), \
+                    mock.patch.object(runtime.os, "sysconf_names", {"SC_CLK_TCK": 2}, create=True):
+                with self.assertRaisesRegex(RuntimeError, "required process lifecycle failure"):
+                    sampler.start()
+            self.assertIn("\tbackend\t1\t", sampler.output.read_text())
+            self.assertNotIn("\tmysql\t2\t", sampler.output.read_text())
+
+    def test_official_validator_requires_samples_and_rejects_service_lifecycle(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = pathlib.Path(temp) / "resources.tsv"
+            header = "timestamp_utc\tsystem_cpu_percent\tmemory_total_bytes\tmemory_available_bytes\tlabel\tpid\tprocess_cpu_percent\trss_bytes\tread_bytes\twrite_bytes\n"
+            row = "now\t1\t100\t50\t{label}\t{pid}\t1\t42\t1\t2\n"
+            path.write_text(header + "".join(row.format(label=label, pid=index) for index, label in
+                                              enumerate(("backend", "mysql", "driver"), 1)), encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "insufficient rows"):
+                runtime.validate_resource_samples(path, {"backend", "mysql", "driver"}, 2)
+            with path.open("a", encoding="utf-8") as stream:
+                stream.write("".join(row.format(label=label, pid=index) for index, label in
+                                     enumerate(("backend", "mysql", "driver"), 1)))
+            driver_event = {"label": "driver", "pid": 3, "event": "PROCESS_EXITED",
+                            "exit_code": 0, "reason": "normal"}
+            path.with_suffix(".lifecycle.jsonl").write_text(json.dumps(driver_event) + "\n", encoding="utf-8")
+            self.assertTrue(runtime.validate_resource_samples(
+                path, {"backend", "mysql", "driver"}, 2)["cpu_rss_complete"])
+            path.write_text(path.read_text().replace("now", "2026-11-21T00:00:00+00:00"))
+            with self.assertRaisesRegex(RuntimeError, "duration insufficient"):
+                runtime.validate_resource_samples(path, {"backend", "mysql", "driver"}, 2,
+                                                  minimum_span_seconds=171)
+            backend_event = {"label": "backend", "pid": 1, "event": "PROCESS_EXITED",
+                             "exit_code": 1, "reason": "unexpected"}
+            with path.with_suffix(".lifecycle.jsonl").open("a", encoding="utf-8") as stream:
+                stream.write(json.dumps(backend_event) + "\n")
+            with self.assertRaisesRegex(RuntimeError, "invalid process lifecycle"):
+                runtime.validate_resource_samples(path, {"backend", "mysql", "driver"}, 2)
 
 
 class DriverTests(unittest.TestCase):

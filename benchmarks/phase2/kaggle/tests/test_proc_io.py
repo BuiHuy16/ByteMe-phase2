@@ -6,6 +6,7 @@ import pathlib
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -24,7 +25,7 @@ class ProcIOTests(unittest.TestCase):
             driver = mock.Mock(pid=103, poll=mock.Mock(return_value=0), wait=mock.Mock(return_value=0))
             with mock.patch.object(session, "_backend_alive"), \
                     mock.patch.object(runtime.subprocess, "Popen", return_value=driver), \
-                    mock.patch.object(runtime.ResourceSampler, "_process", return_value=(30, 43008, None, None, "PermissionError")), \
+                    mock.patch.object(runtime.ResourceSampler, "_process_details", return_value={"state": "S", "start_time": 999, "ticks": 30, "rss": 43008, "read_bytes": None, "write_bytes": None, "io_reason": "PermissionError"}), \
                     mock.patch.object(runtime.ResourceSampler, "_system_cpu", return_value=(100, 10)), \
                     mock.patch.object(runtime.ResourceSampler, "_available_memory", return_value=100000), \
                     mock.patch.object(runtime.os, "sysconf", return_value=100, create=True), \
@@ -36,7 +37,8 @@ class ProcIOTests(unittest.TestCase):
 
     def proc_reader(self, path, *args, **kwargs):
         if path.name == "stat":
-            return "123 (mysql process) " + " ".join(["S"] + ["0"] * 10 + ["10", "20"])
+            return "123 (mysql process) " + " ".join(
+                ["S"] + ["0"] * 10 + ["10", "20"] + ["0"] * 6 + ["999"])
         if path.name == "status":
             return "VmRSS: 42 kB\n"
         if path.name == "io":
@@ -60,11 +62,59 @@ class ProcIOTests(unittest.TestCase):
             result = runtime.ResourceSampler._process(123)
         self.assertEqual(result[2:], (1234, 5678, None))
 
+    def test_missing_vmrss_for_active_process_is_mandatory_telemetry_failure(self):
+        def reader(path, *args, **kwargs):
+            if path.name == "status":
+                return "Name:\tmysql\nState:\tS (sleeping)\n"
+            return self.proc_reader(path)
+        with mock.patch.object(pathlib.Path, "read_text", reader):
+            with self.assertRaisesRegex(runtime.ProcessTelemetryUnavailable, "active process"):
+                runtime.ResourceSampler._process_details(123)
+
+    def test_status_permission_error_for_alive_process_is_failure(self):
+        def reader(path, *args, **kwargs):
+            if path.name == "status":
+                raise PermissionError(13, "Permission denied")
+            return self.proc_reader(path)
+        with mock.patch.object(pathlib.Path, "read_text", reader):
+            with self.assertRaisesRegex(runtime.ProcessTelemetryUnavailable, "permission denied"):
+                runtime.ResourceSampler._process_details(123)
+
+    def test_zombie_and_pid_reuse_are_distinguished(self):
+        zombie = {"state": "Z", "ticks": 30, "start_time": 999}
+        with mock.patch.object(runtime.ResourceSampler, "_stat", return_value=zombie):
+            with self.assertRaises(runtime.ProcessLifecycle) as caught:
+                runtime.ResourceSampler._process_details(123)
+        self.assertEqual(caught.exception.event, "PROCESS_ZOMBIE")
+        active = {"state": "S", "ticks": 30, "start_time": 1000}
+        with mock.patch.object(runtime.ResourceSampler, "_stat", return_value=active):
+            with self.assertRaises(runtime.ProcessLifecycle) as caught:
+                runtime.ResourceSampler._process_details(123, expected_start_time=999)
+        self.assertEqual(caught.exception.event, "PID_REUSED")
+
+    def test_exit_race_after_stat_is_lifecycle_not_fake_rss(self):
+        active = {"state": "S", "ticks": 30, "start_time": 999}
+        with mock.patch.object(runtime.ResourceSampler, "_stat",
+                               side_effect=[active, runtime.ProcessLifecycle("PROCESS_EXITED", 123)]), \
+                mock.patch.object(pathlib.Path, "read_text", return_value="Name:\tk6\n"):
+            with self.assertRaises(runtime.ProcessLifecycle) as caught:
+                runtime.ResourceSampler._process_details(123)
+        self.assertEqual(caught.exception.event, "PROCESS_EXITED")
+
+    def test_pid_reuse_between_stat_and_status_rejects_sample(self):
+        first = {"state": "S", "ticks": 30, "start_time": 999}
+        replacement = {"state": "S", "ticks": 1, "start_time": 1000}
+        with mock.patch.object(runtime.ResourceSampler, "_stat", side_effect=[first, replacement]), \
+                mock.patch.object(pathlib.Path, "read_text", return_value="VmRSS: 42 kB\n"):
+            with self.assertRaises(runtime.ProcessLifecycle) as caught:
+                runtime.ResourceSampler._process_details(123)
+        self.assertEqual(caught.exception.event, "PID_REUSED_DURING_SAMPLE")
+
     def test_unavailable_io_start_stop_and_validation(self):
         with tempfile.TemporaryDirectory() as temp:
             path = pathlib.Path(temp) / "resources.tsv"
             sampler = runtime.ResourceSampler(path, {"mysql": 123})
-            with mock.patch.object(sampler, "_process", return_value=(30, 43008, None, None, "PermissionError /proc/123/io")), \
+            with mock.patch.object(sampler, "_process_details", return_value={"state": "S", "start_time": 999, "ticks": 30, "rss": 43008, "read_bytes": None, "write_bytes": None, "io_reason": "PermissionError /proc/123/io"}), \
                     mock.patch.object(sampler, "_system_cpu", return_value=(100, 10)), \
                     mock.patch.object(sampler, "_available_memory", return_value=100000), \
                     mock.patch.object(runtime.os, "sysconf", return_value=100, create=True), \
@@ -91,6 +141,38 @@ class ProcIOTests(unittest.TestCase):
 
 @unittest.skipUnless(sys.platform == "linux", "requires real Linux procfs")
 class LinuxProcIntegrationTests(unittest.TestCase):
+    def test_real_child_zombie_then_reaped_driver_preserves_samples(self):
+        with tempfile.TemporaryDirectory() as temp:
+            child = subprocess.Popen([sys.executable, "-c", "import sys; sys.stdin.read()"],
+                                     stdin=subprocess.PIPE)
+            sampler = runtime.ResourceSampler(pathlib.Path(temp) / "resources.tsv",
+                                              {"driver": child}, interval=60,
+                                              allowed_exit_labels={"driver"})
+            try:
+                sampler.start()
+                sampler._sample_once()
+                child.stdin.close()
+                deadline = time.monotonic() + 5
+                while runtime.ResourceSampler._stat(child.pid)["state"] != "Z":
+                    if time.monotonic() > deadline:
+                        self.fail("child did not become zombie")
+                    time.sleep(.01)
+                with self.assertRaises(runtime.ProcessLifecycle) as caught:
+                    runtime.ResourceSampler._process_details(child.pid)
+                self.assertEqual(caught.exception.event, "PROCESS_ZOMBIE")
+                sampler._sample_once()
+                self.assertEqual(child.wait(timeout=5), 0)
+                sampler.stop()
+                result = runtime.validate_resource_samples(sampler.output, {"driver"}, 2)
+                self.assertEqual(result["rows_by_label"]["driver"], 2)
+                with self.assertRaises(runtime.ProcessLifecycle):
+                    runtime.ResourceSampler._process_details(child.pid)
+            finally:
+                sampler.stop()
+                if child.poll() is None:
+                    child.kill()
+                child.wait(timeout=5)
+
     def test_real_current_process_io(self):
         result = runtime.ResourceSampler._process(os.getpid())
         self.assertGreater(result[1], 0)

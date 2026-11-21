@@ -99,6 +99,101 @@ class DatasetSemanticsTests(unittest.TestCase):
         self.assertFalse(result["no_orphan_order_items"])
 
 
+class DatasetAuthenticationTests(unittest.TestCase):
+    def setUp(self):
+        self.profile = {"categories": 1, "read_foods": 1, "read_orders": 0, "items_per_order": 1,
+                        "write_actors": 20, "contention_actors": 4, "write_stock": 1000,
+                        "shared_stock": 10}
+
+    def harness(self, root: pathlib.Path):
+        state = {"next_id": 1, "users": {}, "login_requests": 0, "register_requests": 0,
+                 "valid_tokens": {}}
+        args = types.SimpleNamespace(base_url="http://fixture", runtime_actors=str(root / "actors.json"),
+                                     profile="standard")
+
+        def reset(_args):
+            state["next_id"], state["users"] = 1, {}
+
+        def fake_mysql(_args, sql):
+            if sql.startswith("SELECT id FROM users WHERE email="):
+                email = sql.split("'", 2)[1]
+                return str(state["users"][email])
+            if sql.startswith("UPDATE users SET role="):
+                return ""
+            raise AssertionError(f"unexpected SQL outside patched batches: {sql}")
+
+        def fake_api(_base, method, path, payload=None, token=None):
+            if path == "/api/auth/register":
+                state["register_requests"] += 1
+                email = payload["email"]
+                state["users"][email] = state["next_id"]
+                state["next_id"] += 1
+                return {"status": 201, "body": {"id": state["users"][email]}}
+            if path == "/api/auth/token":
+                state["login_requests"] += 1
+                if state["login_requests"] > 100:
+                    return {"status": 429, "body": {"code": "LOGIN_RATE_LIMITED"}}
+                issued = f"token-{payload['email']}"
+                state["valid_tokens"][issued] = "ADMIN" if payload["email"] == "bench.admin@example.test" else "CUSTOMER"
+                return {"status": 200, "body": {"accessToken": issued}}
+            role = state["valid_tokens"].get(token)
+            if role is None:
+                return {"status": 401, "body": {"code": "UNAUTHENTICATED"}}
+            if path.startswith("/api/orders"):
+                return {"status": 403 if role == "ADMIN" else 200, "body": {}}
+            if path == "/api/cart":
+                return {"status": 200 if role == "CUSTOMER" else 403, "body": {}}
+            raise AssertionError(f"unexpected API request: {method} {path}")
+
+        return args, state, reset, fake_mysql, fake_api
+
+    def test_initial_and_three_resets_reuse_tokens_with_live_validation(self):
+        with tempfile.TemporaryDirectory() as temp:
+            args, state, reset, fake_mysql, fake_api = self.harness(pathlib.Path(temp))
+            with mock.patch.dict(os.environ, {"BENCH_ACTOR_PASSWORD": "fixture"}), \
+                    mock.patch.object(dataset, "reset_database", side_effect=reset), \
+                    mock.patch.object(dataset, "batches"), \
+                    mock.patch.object(dataset, "mysql", side_effect=fake_mysql), \
+                    mock.patch.object(dataset, "api", side_effect=fake_api):
+                preparations = [dataset.prepare(args, self.profile) for _ in range(4)]
+            self.assertEqual(preparations[0], {
+                "token_strategy": "initial_login", "actor_count": 26, "login_requests": 26,
+                "reused_tokens": 0, "live_token_validations": 0})
+            for reset_metadata in preparations[1:]:
+                self.assertEqual(reset_metadata, {
+                    "token_strategy": "reuse_initial_tokens", "actor_count": 26, "login_requests": 0,
+                    "reused_tokens": 26, "live_token_validations": 26})
+            self.assertEqual(state["login_requests"], 26)
+            self.assertEqual(state["register_requests"], 26 * 4)
+
+    def test_rate_limit_429_is_not_retried_or_hidden(self):
+        args = types.SimpleNamespace(base_url="http://fixture")
+        responses = [
+            {"status": 201, "body": {"id": 1}},
+            {"status": 429, "body": {"code": "LOGIN_RATE_LIMITED"}},
+        ]
+        with mock.patch.object(dataset, "api", side_effect=responses) as request, \
+                mock.patch.object(dataset, "mysql", return_value="1"):
+            with self.assertRaisesRegex(RuntimeError, "HTTP 429.*LOGIN_RATE_LIMITED"):
+                dataset.register(args, "c1a", 500, "fixture")
+        self.assertEqual(request.call_count, 2)
+
+    def test_reused_token_authentication_failure_fails_without_login_fallback(self):
+        with tempfile.TemporaryDirectory() as temp:
+            args, state, reset, fake_mysql, fake_api = self.harness(pathlib.Path(temp))
+            patches = (mock.patch.dict(os.environ, {"BENCH_ACTOR_PASSWORD": "fixture"}),
+                       mock.patch.object(dataset, "reset_database", side_effect=reset),
+                       mock.patch.object(dataset, "batches"),
+                       mock.patch.object(dataset, "mysql", side_effect=fake_mysql),
+                       mock.patch.object(dataset, "api", side_effect=fake_api))
+            with patches[0], patches[1], patches[2], patches[3], patches[4]:
+                dataset.prepare(args, self.profile)
+                state["valid_tokens"].pop("token-bench.read@example.test")
+                with self.assertRaisesRegex(RuntimeError, "reused token validation read: HTTP 401"):
+                    dataset.prepare(args, self.profile)
+            self.assertEqual(state["login_requests"], 26)
+
+
 class SmokeValidationTests(unittest.TestCase):
     def write_summary(self, directory: pathlib.Path, workload: str, document: dict | None = None) -> pathlib.Path:
         path = directory / "summary.json"
@@ -546,6 +641,42 @@ class HardwareComparatorTests(unittest.TestCase):
         first, second = full_manifest("a" * 40), full_manifest("z" * 40)
         self.assertTrue(comparator.compare_documents([first, second])["comparable"])
         second["hardware"]["cgroup"]["cpuset_effective"] = "0-2"
+        self.assertFalse(comparator.compare_documents([first, second])["comparable"])
+
+    def test_memtotal_difference_at_one_mib_boundary_is_comparable(self):
+        for difference in (comparator.MEMORY_TOTAL_TOLERANCE_BYTES,
+                           -comparator.MEMORY_TOTAL_TOLERANCE_BYTES):
+            with self.subTest(difference=difference):
+                first, second = full_manifest(), full_manifest()
+                second["hardware"]["memory_total_bytes"] += difference
+                self.assertTrue(comparator.compare_documents([first, second])["comparable"])
+
+    def test_memtotal_difference_over_one_mib_is_not_comparable(self):
+        first, second = full_manifest(), full_manifest()
+        second["hardware"]["memory_total_bytes"] += comparator.MEMORY_TOTAL_TOLERANCE_BYTES + 1
+        result = comparator.compare_documents([first, second])
+        self.assertFalse(result["comparable"])
+        mismatch = next(item for item in result["mismatches"]
+                        if item["field"] == "hardware.memory_total_bytes")
+        self.assertEqual(mismatch["reason"], "tolerance_exceeded")
+        self.assertEqual(mismatch["absolute_difference_bytes"],
+                         comparator.MEMORY_TOTAL_TOLERANCE_BYTES + 1)
+        self.assertEqual(mismatch["tolerance_bytes"], comparator.MEMORY_TOTAL_TOLERANCE_BYTES)
+
+    def test_cpu_model_mismatch_is_still_not_comparable(self):
+        first, second = full_manifest(), full_manifest()
+        second["hardware"]["memory_total_bytes"] += 4096
+        second["hardware"]["cpu_model"] = "different CPU"
+        result = comparator.compare_documents([first, second])
+        self.assertFalse(result["comparable"])
+        self.assertTrue(any(item["field"] == "hardware.cpu_model" for item in result["mismatches"]))
+
+    def test_mysql_version_comparison_ignores_run_specific_executable_path(self):
+        first, second = full_manifest(), full_manifest()
+        first["toolchain"]["mysql_version"] = "/run/first/mysql/bin/mysqld Ver 8.4.13 for Linux"
+        second["toolchain"]["mysql_version"] = "/run/second/mysql/bin/mysqld Ver 8.4.13 for Linux"
+        self.assertTrue(comparator.compare_documents([first, second])["comparable"])
+        second["toolchain"]["mysql_version"] = "/run/second/mysql/bin/mysqld Ver 8.4.14 for Linux"
         self.assertFalse(comparator.compare_documents([first, second])["comparable"])
 
     def test_missing_quota_evidence_is_rejected(self):

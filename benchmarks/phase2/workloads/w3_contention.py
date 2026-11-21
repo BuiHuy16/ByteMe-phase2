@@ -24,6 +24,14 @@ def now() -> str:
     return dt.datetime.now(dt.timezone.utc).isoformat(timespec="microseconds")
 
 
+def require_benchmark_project(project: str | None) -> str:
+    """Fail closed unless the caller uses an established isolated benchmark namespace."""
+    if not isinstance(project, str) or not project or not (
+            project.startswith("byteme-g24-") or project.startswith("byteme-benchmark-")):
+        raise SystemExit("Refusing non-benchmark project")
+    return project
+
+
 def compose(args) -> list[str]:
     return ["docker", "compose", "--env-file", args.env_file, "-p", args.project,
             "-f", "compose.yaml", "-f", "benchmarks/phase2/compose.benchmark.yaml"]
@@ -190,8 +198,7 @@ def main() -> int:
         parser.error("--mysql-user and --mysql-database are required in direct mode")
     if args.db_mode == "compose" and not args.env_file:
         parser.error("--env-file is required in compose mode")
-    if not (args.project.startswith("byteme-g24-") or args.project.startswith("byteme-benchmark-")):
-        raise SystemExit("Refusing non-benchmark project")
+    require_benchmark_project(args.project)
     fixture = json.loads(pathlib.Path(args.actors).read_text(encoding="utf-8"))
     by_label = {actor["label"]: actor for actor in fixture["contention"]}
     food = fixture["shared_food"]

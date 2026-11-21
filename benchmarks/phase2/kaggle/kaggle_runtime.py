@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""User-space Kaggle CPU smoke orchestration for the Phase 2 benchmark kit.
+"""User-space Kaggle CPU smoke and official orchestration for the Phase 2 benchmark kit.
 
 No Docker or root access is assumed. Exact portable toolchain archives may be
 attached as Kaggle inputs; an already installed binary is accepted only when
@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import datetime as dt
 import hashlib
+import importlib.util
 import json
 import math
 import os
@@ -36,6 +37,8 @@ import zipfile
 
 
 BASELINE_SHA = "510f6415b6af535ceec77213f0b0c7d5082123f7"
+SMOKE_PROJECT = "byteme-g24-kaggle"
+OFFICIAL_PROJECT = "byteme-benchmark-g25-kaggle"
 
 TOOLCHAIN_ARCHIVE_PATTERNS = {
     "java": ("*jdk*21*.tar.gz", "*jre*21*.tar.gz"),
@@ -509,7 +512,10 @@ def parse_ldd_missing(output: str) -> list[str]:
     return sorted(set(re.findall(r"^\s*([^\s]+)\s+=>\s+not found\s*$", output, re.MULTILINE)))
 
 
-def validate_resource_samples(path: pathlib.Path, required_labels: set[str]) -> dict:
+def validate_resource_samples(path: pathlib.Path, required_labels: set[str],
+                              minimum_rows_per_label: int = 1,
+                              allowed_exit_labels: set[str] | None = None,
+                              minimum_span_seconds: float | None = None) -> dict:
     if not path.is_file():
         raise RuntimeError(f"resource telemetry missing: {path}")
     lines = [line for line in path.read_text(encoding="utf-8-sig").splitlines() if line.strip()]
@@ -525,7 +531,21 @@ def validate_resource_samples(path: pathlib.Path, required_labels: set[str]) -> 
         raise RuntimeError(f"resource telemetry missing columns {sorted(required_columns - set(header))}: {path}")
     unavailable_path = path.with_suffix(".unavailable.jsonl")
     unavailable = [json.loads(line) for line in unavailable_path.read_text(encoding="utf-8").splitlines()] if unavailable_path.exists() else []
+    lifecycle_path = path.with_suffix(".lifecycle.jsonl")
+    lifecycle = [json.loads(line) for line in lifecycle_path.read_text(encoding="utf-8").splitlines()] if lifecycle_path.exists() else []
+    allowed_exit_labels = allowed_exit_labels or {"driver"}
+    invalid_lifecycle = []
+    for event in lifecycle:
+        label, kind = event.get("label"), event.get("event")
+        normal_driver_exit = (label in allowed_exit_labels and kind != "TELEMETRY_UNAVAILABLE"
+                              and (event.get("exit_code") is not None or str(kind).startswith("PROCESS_")))
+        if label in required_labels and not normal_driver_exit:
+            invalid_lifecycle.append(event)
+    if invalid_lifecycle:
+        raise RuntimeError(f"resource telemetry has invalid process lifecycle events: {invalid_lifecycle}")
     labels = set()
+    rows_by_label: dict[str, int] = {}
+    timestamps_by_label: dict[str, list] = {}
     io_unavailable_rows = 0
     for line in lines[1:]:
         fields = line.split("\t")
@@ -548,12 +568,28 @@ def validate_resource_samples(path: pathlib.Path, required_labels: set[str]) -> 
         except (ValueError, TypeError) as exc:
             raise RuntimeError(f"resource telemetry invalid/missing CPU/RSS or I/O evidence: {path}: {exc}") from exc
         labels.add(row["label"])
+        rows_by_label[row["label"]] = rows_by_label.get(row["label"], 0) + 1
+        if minimum_span_seconds is not None:
+            timestamps_by_label.setdefault(row["label"], []).append(
+                dt.datetime.fromisoformat(row["timestamp_utc"]))
         io_unavailable_rows += int(row["read_bytes"] == "NA" or row["write_bytes"] == "NA")
     missing = sorted(required_labels - labels)
     if missing:
         raise RuntimeError(f"resource telemetry missing process labels {missing}: {path}")
+    insufficient = {label: rows_by_label.get(label, 0) for label in required_labels
+                    if rows_by_label.get(label, 0) < minimum_rows_per_label}
+    if insufficient:
+        raise RuntimeError(f"resource telemetry has insufficient rows per process label {insufficient}: {path}")
+    if minimum_span_seconds is not None:
+        for label in required_labels:
+            times = timestamps_by_label[label]
+            span = (max(times) - min(times)).total_seconds()
+            if span < minimum_span_seconds:
+                raise RuntimeError(f"resource telemetry duration insufficient: {label} span={span}s < {minimum_span_seconds}s")
     return {"sample_rows": len(lines) - 1, "labels": sorted(labels),
-            "cpu_rss_complete": True, "io_unavailable_rows": io_unavailable_rows}
+            "rows_by_label": rows_by_label, "minimum_rows_per_label": minimum_rows_per_label,
+            "cpu_rss_complete": True, "io_unavailable_rows": io_unavailable_rows,
+            "lifecycle_events": lifecycle}
 
 
 def validate_k6_smoke_summary(path: pathlib.Path, workload: str, expected_checks: int | None = None,
@@ -627,13 +663,108 @@ def validate_w3_smoke_result(path: pathlib.Path, expected_rounds: int) -> dict:
             "note": "Baseline defects are evidence and do not make the correctness harness fail."}
 
 
+def validate_k6_official_summary(path: pathlib.Path, workload: str, expected_duration_seconds: int,
+                                 expected_load: dict, duration_tolerance_seconds: int = 60) -> dict:
+    """Validate measurement completeness without turning application errors into harness errors."""
+    if not path.is_file():
+        raise RuntimeError(f"{workload} k6 summary missing: {path}")
+    summary = json.loads(path.read_text(encoding="utf-8-sig"))
+    metrics = summary.get("metrics", {})
+
+    def values(name: str, required: bool = True) -> dict:
+        metric = metrics.get(name)
+        if metric is None:
+            if required:
+                raise RuntimeError(f"{workload} summary missing metric: {name}")
+            return {}
+        result = metric.get("values")
+        if not isinstance(result, dict):
+            raise RuntimeError(f"{workload} metric has no values: {name}")
+        return result
+
+    duration_ms = summary.get("state", {}).get("testRunDurationMs")
+    if not isinstance(duration_ms, (int, float)) or not math.isfinite(duration_ms):
+        raise RuntimeError(f"{workload} summary has no finite test duration")
+    minimum_ms = expected_duration_seconds * 1000 * 0.95
+    maximum_ms = (expected_duration_seconds + duration_tolerance_seconds) * 1000
+    if duration_ms < minimum_ms or duration_ms > maximum_ms:
+        raise RuntimeError(f"{workload} duration outside official tolerance: {duration_ms}ms")
+
+    requests = values("http_reqs")
+    iterations = values("iterations")
+    checks = values("checks")
+    failures = values("http_req_failed")
+    if requests.get("count", 0) <= 0 or iterations.get("count", 0) <= 0:
+        raise RuntimeError(f"{workload} executed no requests/iterations")
+    error_metric = "write_error_rate" if workload == "W2" else "application_error_rate"
+    workload_errors = values(error_metric)
+    unexpected = values("unexpected_responses", required=False)
+    server_errors = values("server_errors", required=False)
+    business_rejections = values("business_rejections", required=False)
+    dropped = values("dropped_iterations", required=False)
+    observed_errors = any([
+        checks.get("fails", 0) > 0,
+        failures.get("rate", 0) > 0,
+        workload_errors.get("rate", 0) > 0,
+        unexpected.get("count", 0) > 0,
+        server_errors.get("count", 0) > 0,
+        dropped.get("count", 0) > 0,
+    ])
+    return {
+        "harness_valid": True,
+        "workload": workload,
+        "expected_duration_seconds": expected_duration_seconds,
+        "actual_duration_ms": duration_ms,
+        "expected_load": expected_load,
+        "requests": requests.get("count"),
+        "iterations": iterations.get("count"),
+        "checks_passed": checks.get("passes", 0),
+        "checks_failed": checks.get("fails", 0),
+        "http_failure_rate": failures.get("rate"),
+        "application_error_rate": workload_errors.get("rate"),
+        "unexpected_responses": unexpected.get("count", 0),
+        "server_errors": server_errors.get("count", 0),
+        "business_rejections": business_rejections.get("count", 0),
+        "dropped_iterations": dropped.get("count", 0),
+        "outcome": "HTTP_OR_PERFORMANCE_FAILURE" if observed_errors else "COMPLETED_WITHOUT_OBSERVED_ERRORS",
+        "note": "HTTP/performance failures are baseline outcomes; structural incompleteness is a harness failure.",
+    }
+
+
+class ProcessLifecycle(Exception):
+    def __init__(self, event: str, pid: int, state: str | None = None,
+                 expected_start_time: int | None = None, actual_start_time: int | None = None):
+        self.event = event
+        self.pid = pid
+        self.state = state
+        self.expected_start_time = expected_start_time
+        self.actual_start_time = actual_start_time
+        super().__init__(f"{event}: pid={pid}, state={state}, expected_start={expected_start_time}, "
+                         f"actual_start={actual_start_time}")
+
+
+class ProcessTelemetryUnavailable(RuntimeError):
+    pass
+
+
 class ResourceSampler:
-    def __init__(self, output: pathlib.Path, processes: dict[str, int], interval: float = 1.0):
-        self.output, self.processes, self.interval = output, processes, interval
+    def __init__(self, output: pathlib.Path, processes: dict[str, object], interval: float = 1.0,
+                 allowed_exit_labels: set[str] | None = None):
+        self.output, self.interval = output, interval
+        self.processes: dict[str, int] = {}
+        self.process_handles: dict[str, object] = {}
+        for label, value in processes.items():
+            if isinstance(value, int):
+                self.processes[label] = value
+            else:
+                self.processes[label] = value.pid
+                self.process_handles[label] = value
+        self.allowed_exit_labels = allowed_exit_labels or set()
         self.stop_event = threading.Event()
         self.thread = threading.Thread(target=self._run, daemon=True)
         self.previous_system = None
         self.previous_process: dict[int, int] = {}
+        self.process_start_times: dict[str, int] = {}
         self.failure: str | None = None
 
     @staticmethod
@@ -642,22 +773,77 @@ class ResourceSampler:
         return sum(values), values[3] + (values[4] if len(values) > 4 else 0)
 
     @staticmethod
-    def _process(pid: int) -> tuple[int, int, int | None, int | None, str | None]:
+    def _stat(pid: int) -> dict:
         # comm (field 2) may contain spaces; utime/stime are fields 14/15.
-        stat = pathlib.Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()
-        ticks = int(stat[11]) + int(stat[12])
-        status = pathlib.Path(f"/proc/{pid}/status").read_text()
+        try:
+            fields = pathlib.Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()
+        except (FileNotFoundError, ProcessLookupError) as exc:
+            raise ProcessLifecycle("PROCESS_EXITED", pid) from exc
+        except PermissionError as exc:
+            raise ProcessTelemetryUnavailable(f"required CPU/RSS telemetry permission denied: /proc/{pid}/stat") from exc
+        return {"state": fields[0], "ticks": int(fields[11]) + int(fields[12]),
+                "start_time": int(fields[19])}
+
+    @classmethod
+    def _process_details(cls, pid: int, expected_start_time: int | None = None) -> dict:
+        identity = cls._stat(pid)
+        if expected_start_time is not None and identity["start_time"] != expected_start_time:
+            raise ProcessLifecycle("PID_REUSED", pid, identity["state"], expected_start_time,
+                                   identity["start_time"])
+        if identity["state"] in {"Z", "X", "x"}:
+            raise ProcessLifecycle("PROCESS_ZOMBIE", pid, "Z", expected_start_time,
+                                   identity["start_time"])
+        try:
+            status = pathlib.Path(f"/proc/{pid}/status").read_text()
+        except (FileNotFoundError, ProcessLookupError) as exc:
+            raise ProcessLifecycle("PROCESS_EXITED_DURING_SAMPLE", pid, identity["state"],
+                                   expected_start_time, identity["start_time"]) from exc
+        except PermissionError as exc:
+            raise ProcessTelemetryUnavailable(
+                f"required CPU/RSS telemetry permission denied: /proc/{pid}/status") from exc
         match = re.search(r"^VmRSS:\s+(\d+)\s+kB", status, re.MULTILINE)
         if match is None:
-            raise RuntimeError(f"required VmRSS unavailable: /proc/{pid}/status")
+            # Re-read identity to distinguish an exit/zombie/reuse race from an active process
+            # whose mandatory RSS telemetry is genuinely unavailable.
+            current = cls._stat(pid)
+            if current["start_time"] != identity["start_time"]:
+                raise ProcessLifecycle("PID_REUSED_DURING_SAMPLE", pid, current["state"],
+                                       identity["start_time"], current["start_time"])
+            if current["state"] in {"Z", "X", "x"}:
+                raise ProcessLifecycle("PROCESS_ZOMBIE_DURING_SAMPLE", pid, "Z",
+                                       identity["start_time"], current["start_time"])
+            raise ProcessTelemetryUnavailable(
+                f"required VmRSS unavailable for active process: /proc/{pid}/status; "
+                f"state={current['state']}; start_time={current['start_time']}")
         rss = int(match.group(1)) * 1024
+        current = cls._stat(pid)
+        if current["start_time"] != identity["start_time"]:
+            raise ProcessLifecycle("PID_REUSED_DURING_SAMPLE", pid, current["state"],
+                                   identity["start_time"], current["start_time"])
+        if current["state"] in {"Z", "X", "x"}:
+            raise ProcessLifecycle("PROCESS_ZOMBIE_DURING_SAMPLE", pid, current["state"],
+                                   identity["start_time"], current["start_time"])
         try:
             io = pathlib.Path(f"/proc/{pid}/io").read_text()
         except PermissionError:
-            return ticks, rss, None, None, f"PermissionError: access denied to /proc/{pid}/io"
-        read_b = int(re.search(r"^read_bytes:\s+(\d+)", io, re.MULTILINE).group(1))
-        write_b = int(re.search(r"^write_bytes:\s+(\d+)", io, re.MULTILINE).group(1))
-        return ticks, rss, read_b, write_b, None
+            return {**identity, "rss": rss, "read_bytes": None, "write_bytes": None,
+                    "io_reason": f"PermissionError: access denied to /proc/{pid}/io"}
+        except (FileNotFoundError, ProcessLookupError):
+            return {**identity, "rss": rss, "read_bytes": None, "write_bytes": None,
+                    "io_reason": f"process exited before optional /proc/{pid}/io read"}
+        read_match = re.search(r"^read_bytes:\s+(\d+)", io, re.MULTILINE)
+        write_match = re.search(r"^write_bytes:\s+(\d+)", io, re.MULTILINE)
+        if read_match is None or write_match is None:
+            return {**identity, "rss": rss, "read_bytes": None, "write_bytes": None,
+                    "io_reason": f"optional I/O fields unavailable: /proc/{pid}/io"}
+        return {**identity, "rss": rss, "read_bytes": int(read_match.group(1)),
+                "write_bytes": int(write_match.group(1)), "io_reason": None}
+
+    @classmethod
+    def _process(cls, pid: int) -> tuple[int, int, int | None, int | None, str | None]:
+        details = cls._process_details(pid)
+        return (details["ticks"], details["rss"], details["read_bytes"],
+                details["write_bytes"], details["io_reason"])
 
     @staticmethod
     def _available_memory() -> int:
@@ -673,6 +859,17 @@ class ResourceSampler:
         self._sample_once()
         self.thread.start()
 
+    def _lifecycle_event(self, label: str, pid: int, event: str, reason: str,
+                         state: str | None = None, exit_code: int | None = None,
+                         expected_start_time: int | None = None,
+                         actual_start_time: int | None = None) -> None:
+        path = self.output.with_suffix(".lifecycle.jsonl")
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps({"timestamp_utc": utc_now(), "label": label, "pid": pid,
+                                     "event": event, "state": state, "exit_code": exit_code,
+                                     "expected_start_time": expected_start_time,
+                                     "actual_start_time": actual_start_time, "reason": reason}) + "\n")
+
     def _sample_once(self) -> None:
         clock_ticks = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
         total, idle = self._system_cpu()
@@ -682,12 +879,30 @@ class ResourceSampler:
             idle_delta = idle - self.previous_system[1]
             system_percent = 100.0 * (total_delta - idle_delta) / total_delta if total_delta else 0.0
         self.previous_system = (total, idle)
-        rows = []
         for label, pid in list(self.processes.items()):
             try:
-                ticks, rss, read_b, write_b, io_reason = self._process(pid)
-            except (FileNotFoundError, ProcessLookupError, AttributeError):
-                continue
+                details = self._process_details(pid, self.process_start_times.get(label))
+            except ProcessLifecycle as exc:
+                handle = self.process_handles.get(label)
+                exit_code = handle.poll() if handle is not None else None
+                self._lifecycle_event(label, pid, exc.event, str(exc), exc.state, exit_code,
+                                      exc.expected_start_time, exc.actual_start_time)
+                if label in self.allowed_exit_labels and (exit_code is not None or exc.event.startswith("PROCESS_")):
+                    self.processes.pop(label, None)
+                    self.previous_process.pop(pid, None)
+                    continue
+                raise RuntimeError(f"required process lifecycle failure: label={label}, pid={pid}, "
+                                   f"event={exc.event}, exit_code={exit_code}") from exc
+            except ProcessTelemetryUnavailable as exc:
+                handle = self.process_handles.get(label)
+                exit_code = handle.poll() if handle is not None else None
+                self._lifecycle_event(label, pid, "TELEMETRY_UNAVAILABLE", str(exc),
+                                      exit_code=exit_code,
+                                      expected_start_time=self.process_start_times.get(label))
+                raise
+            self.process_start_times.setdefault(label, details["start_time"])
+            ticks, rss = details["ticks"], details["rss"]
+            read_b, write_b, io_reason = details["read_bytes"], details["write_bytes"], details["io_reason"]
             previous = self.previous_process.get(pid, ticks)
             process_percent = (ticks - previous) / clock_ticks / self.interval * 100.0
             self.previous_process[pid] = ticks
@@ -697,10 +912,9 @@ class ResourceSampler:
                                              "metrics": ["read_bytes", "write_bytes"], "reason": io_reason}) + "\n")
             read_b = "NA" if read_b is None else read_b
             write_b = "NA" if write_b is None else write_b
-            rows.append(f"{utc_now()}\t{system_percent:.3f}\t{memory_total()}\t{self._available_memory()}\t{label}\t{pid}\t{process_percent:.3f}\t{rss}\t{read_b}\t{write_b}\n")
-        if rows:
+            row = f"{utc_now()}\t{system_percent:.3f}\t{memory_total()}\t{self._available_memory()}\t{label}\t{pid}\t{process_percent:.3f}\t{rss}\t{read_b}\t{write_b}\n"
             with self.output.open("a", encoding="utf-8") as stream:
-                stream.writelines(rows)
+                stream.write(row)
 
     def _run(self) -> None:
         try:
@@ -819,6 +1033,7 @@ class KaggleSession:
         if self.config.get("baseline_sha") != BASELINE_SHA:
             raise RuntimeError("configuration baseline mismatch")
         self._preflight_benchmark_files()
+        self._preflight_w3_project_guards()
         shutil.copy2(manifest_path, self.evidence / "environment/bundle-manifest.json")
 
     def setup_offline_dependencies(self) -> None:
@@ -1203,11 +1418,40 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
         if not workloads.is_dir():
             raise RuntimeError(f"benchmark bundle preflight missing workloads directory: {workloads}")
 
+    def _load_bundled_w3(self):
+        path = self._benchmark_root() / "workloads/w3_contention.py"
+        spec = importlib.util.spec_from_file_location(f"byteme_w3_{self.run_id}", path)
+        if spec is None or spec.loader is None:
+            raise RuntimeError(f"unable to load bundled W3 guard: {path}")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        guard = getattr(module, "require_benchmark_project", None)
+        if not callable(guard):
+            raise RuntimeError(f"bundled W3 project guard is absent: {path}")
+        return module, path
+
+    def _preflight_w3_project_guards(self) -> None:
+        module, path = self._load_bundled_w3()
+        accepted = {}
+        for label, project in (("smoke", SMOKE_PROJECT), ("official", OFFICIAL_PROJECT)):
+            accepted[label] = module.require_benchmark_project(project)
+        rejected = []
+        for project in (None, "", "byteme-g25-kaggle", "production"):
+            try:
+                module.require_benchmark_project(project)
+            except SystemExit as exc:
+                rejected.append({"project": project, "message": str(exc)})
+            else:
+                raise RuntimeError(f"bundled W3 guard accepted unsafe project marker: {project!r}")
+        self._write_json("environment/w3-project-guard-preflight.json", {
+            "guard_source": str(path), "accepted": accepted, "rejected": rejected})
+
     def _dataset_command(self, mode: str, profile: str, output: pathlib.Path) -> list[str]:
         root = self._benchmark_root()
         runtime = self.config["runtime"]
+        project = OFFICIAL_PROJECT if profile == "standard" else SMOKE_PROJECT
         return ["python", "-X", "utf8", str(root / "prepare_dataset.py"), "--mode", mode, "--profile", profile,
-                "--project", "byteme-g24-kaggle", "--db-mode", "direct", "--mysql-bin", str(self.tools["mysql"]),
+                "--project", project, "--db-mode", "direct", "--mysql-bin", str(self.tools["mysql"]),
                 "--mysql-host", runtime["mysql_host"], "--mysql-port", str(runtime["mysql_port"]),
                 "--mysql-user", runtime["database_user"], "--mysql-database", runtime["database"],
                 "--mysql-password-env", "BENCH_DB_PASSWORD", "--base-url", f"http://127.0.0.1:{runtime['backend_port']}",
@@ -1242,9 +1486,18 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
                     process.wait(timeout=10)
             self.active_driver = None
 
+    def _mysql_alive_for_workload(self, stage: str) -> None:
+        process = self.processes.get("mysql")
+        if process is not None and process.poll() is not None:
+            self._write_json("environment/mysql-workload-exit.json", {
+                "stage": stage, "pid": process.pid, "exit_code": process.poll(),
+                "timestamp_utc": utc_now(), "log": "logs/mysql.log"})
+            raise RuntimeError(f"mysql exited during workload: pid={process.pid}; see logs/mysql.log")
+
     def _run(self, command: list[str], relative_console: str, relative_resources: str | None = None,
              extra_env: dict[str, str] | None = None,
-             required_resource_labels: set[str] | None = None) -> dict | None:
+             required_resource_labels: set[str] | None = None,
+             allowed_exit_codes: set[int] | None = None) -> dict | None:
         env = os.environ.copy()
         env.update({"BENCH_DB_PASSWORD": self.db_password, "BENCH_ACTOR_PASSWORD": self.actor_password})
         if extra_env:
@@ -1253,6 +1506,7 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
         console.parent.mkdir(parents=True, exist_ok=True)
         if relative_resources:
             self._backend_alive(relative_console, health=True)
+            self._mysql_alive_for_workload(relative_console)
         with console.open("w", encoding="utf-8") as stream:
             process = subprocess.Popen(command, stdout=stream, stderr=subprocess.STDOUT, env=env)
             self.active_driver = process
@@ -1260,13 +1514,15 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
             primary = None
             try:
                 if relative_resources:
-                    pids = {key: value.pid for key, value in self.processes.items() if value.poll() is None}
-                    pids["driver"] = process.pid
-                    sampler = ResourceSampler(self.evidence / relative_resources, pids)
+                    tracked = dict(self.processes)
+                    tracked["driver"] = process
+                    sampler = ResourceSampler(self.evidence / relative_resources, tracked,
+                                              allowed_exit_labels={"driver"})
                     sampler.start()
                 while True:
                     if relative_resources:
                         self._backend_alive(relative_console)
+                        self._mysql_alive_for_workload(relative_console)
                     if sampler and sampler.failure:
                         raise RuntimeError(f"resource sampler failed:\n{sampler.failure}")
                     try:
@@ -1276,6 +1532,7 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
                         continue
                 if relative_resources:
                     self._backend_alive(relative_console + ":completed")
+                    self._mysql_alive_for_workload(relative_console + ":completed")
             except BaseException as exc:
                 primary = exc
                 raise
@@ -1297,12 +1554,217 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
                         primary.add_note("; ".join(errors))
                     else:
                         raise RuntimeError("; ".join(errors))
-        if code:
+        allowed_exit_codes = allowed_exit_codes or {0}
+        if code not in allowed_exit_codes:
             raise RuntimeError(f"command failed ({code}): {' '.join(command[:4])}; see {relative_console}")
         if relative_resources:
             return validate_resource_samples(self.evidence / relative_resources,
                                              required_resource_labels or {"backend", "mysql", "driver"})
         return None
+
+    def _official_event(self, phase: str, state: str, details: dict | None = None) -> None:
+        path = self.evidence / "official/phase-events.json"
+        events = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
+        events.append({"phase": phase, "state": state, "timestamp_utc": utc_now(), "details": details or {}})
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(events, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    def _official_dataset(self, phase: str, mode: str, output_relative: str,
+                          expected_sha: str | None = None) -> dict:
+        output = self.evidence / output_relative
+        self._official_event(phase, "started")
+        try:
+            self._run(self._dataset_command(mode, "standard", output),
+                      f"dataset/{phase}-console.txt", allowed_exit_codes={0, 2} if mode == "snapshot" else {0})
+            document = json.loads(output.read_text(encoding="utf-8"))
+            expected_validation = "initial" if mode == "prepare" else "post_workload"
+            if document.get("profile") != "standard" or document.get("validation_phase") != expected_validation:
+                raise RuntimeError(f"{phase} dataset profile/validation phase mismatch")
+            if mode == "prepare" and not document.get("all_invariants_pass"):
+                raise RuntimeError(f"{phase} dataset invariants failed")
+            if expected_sha is not None and document.get("overall_sha256") != expected_sha:
+                raise RuntimeError(f"{phase} checksum mismatch: {document.get('overall_sha256')} != {expected_sha}")
+            document["consistency_outcome"] = ("CONSISTENT" if document.get("all_invariants_pass")
+                                                else "BUSINESS_INVARIANT_VIOLATION")
+            self._official_event(phase, "completed", {"overall_sha256": document.get("overall_sha256"),
+                                                       "consistency_outcome": document["consistency_outcome"]})
+            return document
+        except BaseException as exc:
+            self._official_event(phase, "failed", {"error": f"{type(exc).__name__}: {exc}"})
+            raise
+
+    def _official_k6(self, phase: str, workload: str, script: pathlib.Path, duration: int,
+                     environment: dict[str, str], expected_load: dict) -> dict:
+        output = self.evidence / phase
+        output.mkdir(parents=True, exist_ok=False)
+        raw, summary = output / "raw.json", output / "summary.json"
+        self._official_event(phase, "started", {"duration_seconds": duration, "load": expected_load})
+        try:
+            resource_validation = self._run(
+                [str(self.tools["k6"]), "run", "--no-color", "--out", f"json={raw}", str(script)],
+                f"{phase}/console.txt", f"{phase}/resources.tsv",
+                {**environment, "BENCH_MODE": "official", "MEASUREMENT_DURATION": f"{duration}s",
+                 "SUMMARY_PATH": str(summary)},
+                {"backend", "mysql", "driver"})
+            if not raw.is_file() or raw.stat().st_size == 0:
+                raise RuntimeError(f"{phase} raw k6 output missing or empty")
+            minimum = self.config["official_validation"]["minimum_resource_samples_per_label"]
+            resource_validation = validate_resource_samples(output / "resources.tsv",
+                                                            {"backend", "mysql", "driver"}, minimum,
+                                                            minimum_span_seconds=duration * 0.95)
+            validation = validate_k6_official_summary(
+                summary, workload, duration, expected_load,
+                self.config["official_validation"]["k6_duration_tolerance_seconds"])
+            validation["resource_validation"] = resource_validation
+            validation["exit_code"] = 0
+            self._write_json(f"{phase}/validation.json", validation)
+            self._official_event(phase, "completed", {"outcome": validation["outcome"]})
+            return validation
+        except BaseException as exc:
+            self._official_event(phase, "failed", {"error": f"{type(exc).__name__}: {exc}"})
+            raise
+
+    def _w3_command(self, project: str, actors: pathlib.Path, base: str,
+                    rounds: int, output: pathlib.Path) -> list[str]:
+        root, runtime = self._benchmark_root(), self.config["runtime"]
+        return ["python", "-X", "utf8", str(root / "workloads/w3_contention.py"),
+                   "--project", project, "--db-mode", "direct",
+                   "--mysql-bin", str(self.tools["mysql"]), "--mysql-host", runtime["mysql_host"],
+                   "--mysql-port", str(runtime["mysql_port"]), "--mysql-user", runtime["database_user"],
+                   "--mysql-database", runtime["database"], "--mysql-password-env", "BENCH_DB_PASSWORD",
+                   "--base-url", base, "--actors", str(actors), "--rounds", str(rounds),
+                   "--output", str(output)]
+
+    def _preflight_official_w3(self, actors: pathlib.Path, base: str) -> dict:
+        module, source = self._load_bundled_w3()
+        project = module.require_benchmark_project(OFFICIAL_PROJECT)
+        if not actors.is_file():
+            raise RuntimeError(f"official W3 actors fixture missing before warm-up: {actors}")
+        if not self.db_password:
+            raise RuntimeError("official W3 database password environment source is absent")
+        command = self._w3_command(project, actors, base, self.config["workloads"]["w3_rounds"],
+                                   self.evidence / "w3/result.json")
+        required = {"--project": project, "--mysql-password-env": "BENCH_DB_PASSWORD",
+                    "--actors": str(actors)}
+        for option, expected in required.items():
+            try:
+                actual = command[command.index(option) + 1]
+            except (ValueError, IndexError) as exc:
+                raise RuntimeError(f"official W3 invocation missing marker: {option}") from exc
+            if actual != expected:
+                raise RuntimeError(f"official W3 invocation mismatch: {option}={actual!r}, expected={expected!r}")
+        result = {"status": "PASS", "checked_before": "warmup",
+                  "project": project, "guard_source": str(source),
+                  "script": command[3], "actors": str(actors),
+                  "mysql_password_environment": "BENCH_DB_PASSWORD"}
+        self._write_json("official/w3-preflight.json", result)
+        return result
+
+    def _official_w3(self, actors: pathlib.Path, base: str) -> dict:
+        phase, rounds = "w3", self.config["workloads"]["w3_rounds"]
+        output = self.evidence / phase
+        output.mkdir(parents=True, exist_ok=False)
+        command = self._w3_command(OFFICIAL_PROJECT, actors, base, rounds, output / "result.json")
+        self._official_event(phase, "started", {"rounds_per_scenario": rounds})
+        try:
+            self._run(command, "w3/console.txt", "w3/resources.tsv", required_resource_labels={"backend", "mysql", "driver"})
+            minimum = self.config["official_validation"]["minimum_resource_samples_per_label"]
+            resources = validate_resource_samples(output / "resources.tsv", {"backend", "mysql", "driver"}, minimum)
+            validation = validate_w3_smoke_result(output / "result.json", rounds)
+            validation["resource_validation"] = resources
+            validation["exit_code"] = 0
+            self._write_json("w3/validation.json", validation)
+            self._official_event(phase, "completed", {"violation_rounds": validation["violation_rounds"]})
+            return validation
+        except BaseException as exc:
+            self._official_event(phase, "failed", {"error": f"{type(exc).__name__}: {exc}"})
+            raise
+
+    def _official_cooldown(self, seconds: int) -> None:
+        self._official_event("cooldown", "started", {"duration_seconds": seconds})
+        started = time.monotonic()
+        try:
+            while True:
+                remaining = seconds - (time.monotonic() - started)
+                if remaining <= 0:
+                    break
+                self._backend_alive("official cooldown")
+                time.sleep(min(5, remaining))
+            self._official_event("cooldown", "completed", {"duration_seconds": seconds})
+        except BaseException as exc:
+            self._official_event("cooldown", "failed", {"error": f"{type(exc).__name__}: {exc}"})
+            raise
+
+    def run_official_workloads(self) -> dict:
+        """Execute one locked standard run. Service lifecycle is owned by run_official()."""
+        root, workloads = self._benchmark_root(), self.config["workloads"]
+        actors = self.runtime / "actors.json"
+        base = f"http://127.0.0.1:{self.config['runtime']['backend_port']}"
+        plan = {
+            "profile": "standard",
+            "phase_order": ["prepare_standard", "warmup", "w1", "post_w1", "reset_after_w1",
+                            "w2", "post_w2", "reset_after_w2", "w3", "post_w3", "cooldown",
+                            "final_reset"],
+            "warmup": {"duration_seconds": workloads["warmup_seconds"],
+                       "food_list_rps": workloads["warmup_food_list_rps"],
+                       "food_search_rps": workloads["warmup_food_search_rps"],
+                       "order_list_rps": workloads["warmup_order_list_rps"]},
+            "w1": {"duration_seconds": workloads["measurement_seconds"],
+                   "food_list_rps": workloads["w1_food_list_rps"],
+                   "food_search_rps": workloads["w1_food_search_rps"],
+                   "order_list_rps": workloads["w1_order_list_rps"],
+                   "order_page_size": workloads["w1_order_page_size"]},
+            "w2": {"duration_seconds": workloads["measurement_seconds"], "vus": workloads["w2_vus"]},
+            "w3": {"rounds_per_scenario": workloads["w3_rounds"]},
+            "cooldown_seconds": workloads["cooldown_seconds"],
+        }
+        self._write_json("official/execution-plan.json", plan)
+
+        initial = self._official_dataset("prepare_standard", "prepare", "dataset/initial.json")
+        initial_sha = initial["overall_sha256"]
+        common = {"ACTORS_FILE": str(actors), "BASE_URL": base,
+                  "ORDER_PAGE_SIZE": str(workloads["w1_order_page_size"])}
+        self._preflight_official_w3(actors, base)
+        warmup_load = plan["warmup"]
+        warmup = self._official_k6(
+            "warmup", "W1", root / "workloads/w1_read.js", workloads["warmup_seconds"],
+            {**common, "FOOD_LIST_RPS": str(workloads["warmup_food_list_rps"]),
+             "FOOD_SEARCH_RPS": str(workloads["warmup_food_search_rps"]),
+             "ORDER_LIST_RPS": str(workloads["warmup_order_list_rps"])}, warmup_load)
+
+        self._db_telemetry("database/before-w1.txt")
+        w1 = self._official_k6(
+            "w1", "W1", root / "workloads/w1_read.js", workloads["measurement_seconds"],
+            {**common, "FOOD_LIST_RPS": str(workloads["w1_food_list_rps"]),
+             "FOOD_SEARCH_RPS": str(workloads["w1_food_search_rps"]),
+             "ORDER_LIST_RPS": str(workloads["w1_order_list_rps"])}, plan["w1"])
+        self._db_telemetry("database/after-w1.txt")
+        post_w1 = self._official_dataset("post_w1", "snapshot", "dataset/post-w1.json")
+        reset_w1 = self._official_dataset("reset_after_w1", "prepare", "dataset/after-reset-w1.json", initial_sha)
+
+        self._db_telemetry("database/before-w2.txt")
+        w2 = self._official_k6(
+            "w2", "W2", root / "workloads/w2_write.js", workloads["measurement_seconds"],
+            {"ACTORS_FILE": str(actors), "BASE_URL": base, "WRITE_VUS": str(workloads["w2_vus"])},
+            plan["w2"])
+        self._db_telemetry("database/after-w2.txt")
+        post_w2 = self._official_dataset("post_w2", "snapshot", "dataset/post-w2.json")
+        reset_w2 = self._official_dataset("reset_after_w2", "prepare", "dataset/after-reset-w2.json", initial_sha)
+
+        self._db_telemetry("database/before-w3.txt")
+        w3 = self._official_w3(actors, base)
+        self._db_telemetry("database/after-w3.txt")
+        post_w3 = self._official_dataset("post_w3", "snapshot", "dataset/post-w3.json")
+        self._official_cooldown(workloads["cooldown_seconds"])
+        final_reset = self._official_dataset("final_reset", "prepare", "dataset/after-final-reset.json", initial_sha)
+        return {"initial_sha256": initial_sha,
+                "reset_sha256": [reset_w1["overall_sha256"], reset_w2["overall_sha256"],
+                                  final_reset["overall_sha256"]],
+                "warmup": warmup, "w1": w1, "w2": w2, "w3": w3,
+                "consistency_outcomes": {"post_w1": post_w1["consistency_outcome"],
+                                         "post_w2": post_w2["consistency_outcome"],
+                                         "post_w3": post_w3["consistency_outcome"]},
+                "plan": plan}
 
     def run_workloads(self) -> tuple[str, str]:
         root = self._benchmark_root()
@@ -1341,12 +1803,8 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
         self._db_telemetry("database/after-w2.txt")
         w3 = self.evidence / "w3"
         w3.mkdir(parents=True)
-        command = ["python", "-X", "utf8", str(root / "workloads/w3_contention.py"),
-                   "--project", "byteme-g24-kaggle", "--db-mode", "direct", "--mysql-bin", str(self.tools["mysql"]),
-                   "--mysql-host", runtime["mysql_host"], "--mysql-port", str(runtime["mysql_port"]),
-                   "--mysql-user", runtime["database_user"], "--mysql-database", runtime["database"],
-                   "--mysql-password-env", "BENCH_DB_PASSWORD", "--base-url", base, "--actors", str(actors),
-                   "--rounds", str(self.config["smoke"]["w3_rounds"]), "--output", str(w3 / "result.json")]
+        command = self._w3_command(SMOKE_PROJECT, actors, base, self.config["smoke"]["w3_rounds"],
+                                   w3 / "result.json")
         self._run(command, "w3/console.txt", "w3/resources.tsv")
         self._write_json("w3/validation.json", validate_w3_smoke_result(
             w3 / "result.json", self.config["smoke"]["w3_rounds"]))
@@ -1375,7 +1833,7 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
                 digest.update(bytes.fromhex(sha256(path)))
         return digest.hexdigest()
 
-    def write_run_manifest(self, dataset_sha: str | None) -> None:
+    def write_run_manifest(self, dataset_sha: str | None, benchmark: dict | None = None) -> None:
         hardware = json.loads((self.evidence / "environment/hardware-runtime.json").read_text(encoding="utf-8"))
         toolchain = json.loads((self.evidence / "environment/toolchain.json").read_text(encoding="utf-8")) if (self.evidence / "environment/toolchain.json").exists() else {}
         libaio = toolchain.get("offline_dependencies", {}).get("libaio", {})
@@ -1405,7 +1863,99 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
                       "workload_source_sha256": self._source_hash() if self.bundle_root else None,
                       "dataset_sha256": dataset_sha},
         }
+        if benchmark is not None:
+            manifest["benchmark"] = benchmark
         self._write_json("manifest/run-manifest.json", manifest)
+
+    def validate_official_execution(self, execution: dict) -> dict:
+        plan = execution["plan"]
+        events = json.loads((self.evidence / "official/phase-events.json").read_text(encoding="utf-8"))
+        failed = [event for event in events if event.get("state") == "failed"]
+        completed = [event.get("phase") for event in events if event.get("state") == "completed"]
+        if failed or completed != plan["phase_order"]:
+            raise RuntimeError(f"official phase order incomplete: completed={completed}, failed={failed}")
+        if len(execution.get("reset_sha256", [])) != 3 or any(
+                value != execution.get("initial_sha256") for value in execution["reset_sha256"]):
+            raise RuntimeError("official dataset resets do not all match the initial checksum")
+        initial = json.loads((self.evidence / "dataset/initial.json").read_text(encoding="utf-8"))
+        profiles = json.loads((self._benchmark_root() / "profiles.json").read_text(encoding="utf-8"))
+        if initial.get("profile") != "standard" or initial.get("profile_parameters") != profiles["standard"]:
+            raise RuntimeError("official initial fixture does not match the locked standard profile")
+        actor_count = 2 + profiles["standard"]["write_actors"] + profiles["standard"]["contention_actors"]
+        required = [
+            "official/execution-plan.json", "official/phase-events.json", "official/w3-preflight.json",
+            "environment/w3-project-guard-preflight.json",
+            "dataset/initial.json", "dataset/post-w1.json", "dataset/after-reset-w1.json",
+            "dataset/post-w2.json", "dataset/after-reset-w2.json", "dataset/post-w3.json",
+            "dataset/after-final-reset.json", "warmup/raw.json", "warmup/summary.json",
+            "warmup/validation.json", "warmup/resources.tsv", "w1/raw.json", "w1/summary.json",
+            "w1/validation.json", "w1/resources.tsv", "w2/raw.json", "w2/summary.json",
+            "w2/validation.json", "w2/resources.tsv", "w3/result.json", "w3/validation.json",
+            "w3/resources.tsv", "database/before-w1.txt", "database/after-w1.txt",
+            "database/before-w2.txt", "database/after-w2.txt", "database/before-w3.txt",
+            "database/after-w3.txt",
+        ]
+        missing = [relative for relative in required
+                   if not (self.evidence / relative).is_file() or (self.evidence / relative).stat().st_size == 0]
+        if missing:
+            raise RuntimeError(f"official evidence missing or empty: {missing}")
+        w3_preflight = json.loads((self.evidence / "official/w3-preflight.json").read_text(encoding="utf-8"))
+        if (w3_preflight.get("status") != "PASS" or w3_preflight.get("project") != OFFICIAL_PROJECT
+                or w3_preflight.get("checked_before") != "warmup"):
+            raise RuntimeError(f"official W3 preflight evidence mismatch: {w3_preflight}")
+        authentication_evidence = {}
+        for label, relative, expected in (
+                ("initial", "dataset/initial.json", {
+                    "token_strategy": "initial_login", "actor_count": actor_count,
+                    "login_requests": actor_count, "reused_tokens": 0, "live_token_validations": 0}),
+                ("reset_after_w1", "dataset/after-reset-w1.json", {
+                    "token_strategy": "reuse_initial_tokens", "actor_count": actor_count,
+                    "login_requests": 0, "reused_tokens": actor_count,
+                    "live_token_validations": actor_count}),
+                ("reset_after_w2", "dataset/after-reset-w2.json", {
+                    "token_strategy": "reuse_initial_tokens", "actor_count": actor_count,
+                    "login_requests": 0, "reused_tokens": actor_count,
+                    "live_token_validations": actor_count}),
+                ("final_reset", "dataset/after-final-reset.json", {
+                    "token_strategy": "reuse_initial_tokens", "actor_count": actor_count,
+                    "login_requests": 0, "reused_tokens": actor_count,
+                    "live_token_validations": actor_count})):
+            document = json.loads((self.evidence / relative).read_text(encoding="utf-8"))
+            actual = document.get("preparation_authentication")
+            if actual != expected:
+                raise RuntimeError(f"official dataset authentication evidence mismatch for {label}: "
+                                   f"{actual} != {expected}")
+            authentication_evidence[label] = actual
+        workloads = self.config["workloads"]
+        expected = {
+            "warmup": {"duration_seconds": workloads["warmup_seconds"],
+                       "food_list_rps": workloads["warmup_food_list_rps"],
+                       "food_search_rps": workloads["warmup_food_search_rps"],
+                       "order_list_rps": workloads["warmup_order_list_rps"]},
+            "w1": {"duration_seconds": workloads["measurement_seconds"],
+                   "food_list_rps": workloads["w1_food_list_rps"],
+                   "food_search_rps": workloads["w1_food_search_rps"],
+                   "order_list_rps": workloads["w1_order_list_rps"],
+                   "order_page_size": workloads["w1_order_page_size"]},
+            "w2": {"duration_seconds": workloads["measurement_seconds"], "vus": workloads["w2_vus"]},
+            "w3": {"rounds_per_scenario": workloads["w3_rounds"]},
+            "cooldown_seconds": workloads["cooldown_seconds"],
+        }
+        for key, value in expected.items():
+            if plan.get(key) != value:
+                raise RuntimeError(f"official execution plan mismatch for {key}: {plan.get(key)} != {value}")
+        result = {"harness_valid": True, "profile": "standard", "phase_order": completed,
+                  "initial_dataset_sha256": execution["initial_sha256"],
+                  "reset_dataset_sha256": execution["reset_sha256"],
+                  "warmup_excluded_from_official_metrics": True,
+                  "performance_outcomes": {"w1": execution["w1"]["outcome"],
+                                           "w2": execution["w2"]["outcome"]},
+                  "consistency_outcomes": execution["consistency_outcomes"],
+                  "w3_violation_rounds": execution["w3"]["violation_rounds"],
+                  "dataset_authentication": authentication_evidence,
+                  "note": "Application errors and W3 defects remain measured baseline outcomes."}
+        self._write_json("official/protocol-validation.json", result)
+        return result
 
     def _checksums(self) -> None:
         lines = []
@@ -1480,6 +2030,109 @@ SELECT DIGEST, LEFT(DIGEST_TEXT,500), COUNT_STAR, ROUND(SUM_TIMER_WAIT/100000000
             if any(secret and secret in data for secret in exact) or jwt.search(data):
                 violations.append(path.relative_to(self.evidence).as_posix())
         return violations
+
+    def run_official(self, expected_application_sha: str = BASELINE_SHA) -> dict:
+        """Run one official standard benchmark; never marks HTTP/W3 defects as harness failures."""
+        if not self.evidence.exists():
+            self.probe()
+        status, error, execution, protocol_validation = "FAIL", None, None, None
+        cleanup, finalization_errors, secret_violations = {}, [], []
+        archive = self.working_root / f"{self.run_id}-evidence.zip"
+        try:
+            probe = json.loads((self.evidence / "environment/hardware-runtime.json").read_text(encoding="utf-8"))
+            if not probe.get("is_kaggle"):
+                raise RuntimeError("not a Kaggle runtime; refusing to label this as an official Kaggle benchmark")
+            self.resolve_bundle()
+            if self.application_sha != expected_application_sha:
+                raise RuntimeError(f"official application SHA mismatch: {self.application_sha} != {expected_application_sha}")
+            self.setup_toolchain()
+            self.start_mysql()
+            self.start_backend()
+            execution = self.run_official_workloads()
+            protocol_validation = self.validate_official_execution(execution)
+            status = "PASS"
+        except Exception as exc:
+            error = f"{type(exc).__name__}: {exc}"
+            failure_trace = traceback.format_exc()
+            for secret in (self.db_password, self.actor_password):
+                failure_trace = failure_trace.replace(secret, "[REDACTED]")
+                error = error.replace(secret, "[REDACTED]")
+            failure_trace = re.sub(r"eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}",
+                                   "[REDACTED JWT]", failure_trace)
+            trace_path = self.evidence / "logs/official-failure-traceback.txt"
+            trace_path.parent.mkdir(parents=True, exist_ok=True)
+            trace_path.write_text(failure_trace, encoding="utf-8")
+        finally:
+            try:
+                cleanup = self.cleanup()
+            except Exception as exc:
+                cleanup = {"success": False, "errors": [f"cleanup raised: {type(exc).__name__}: {exc}"]}
+            if not cleanup.get("success"):
+                finalization_errors.extend(cleanup.get("errors", ["cleanup failed"]))
+            initial_sha = execution.get("initial_sha256") if execution else None
+            try:
+                self.write_run_manifest(initial_sha, {
+                    "requested_official_benchmark": True, "profile": "standard",
+                    "configuration": self.config.get("workloads", {}),
+                })
+            except Exception as exc:
+                finalization_errors.append(f"manifest: {type(exc).__name__}: {exc}")
+            secret_violations = self.scan_evidence_secrets()
+            if secret_violations:
+                finalization_errors.append(f"secret scan failed for {secret_violations}")
+            if finalization_errors:
+                status = "FAIL"
+                suffix = "; ".join(finalization_errors)
+                error = f"{error}; {suffix}" if error else suffix
+
+            application_outcome = None
+            if execution:
+                application_outcome = {
+                    "w1": execution["w1"]["outcome"], "w2": execution["w2"]["outcome"],
+                    "consistency_outcomes": execution["consistency_outcomes"],
+                    "w3_violation_rounds": execution["w3"]["violation_rounds"],
+                    "w3_server_error_rounds": execution["w3"]["server_error_rounds"],
+                }
+            result = {
+                "started_at_utc": self.started_at, "finished_at_utc": utc_now(),
+                "requested_official_benchmark": True, "official_benchmark": status == "PASS",
+                "profile": "standard", "status": status,
+                "classification": "VALID_BASELINE_MEASUREMENT" if status == "PASS" else "HARNESS_FAILURE",
+                "error": error, "application_outcome": application_outcome,
+                "initial_dataset_sha256": initial_sha,
+                "reset_dataset_sha256": execution.get("reset_sha256", []) if execution else [],
+                "reset_matches_initial": bool(execution and all(
+                    item == initial_sha for item in execution.get("reset_sha256", []))),
+                "protocol_validation": protocol_validation, "cleanup": cleanup,
+                "secret_scan_violations": secret_violations, "evidence_zip": str(archive),
+            }
+            self._write_json("official-result.json", result)
+            try:
+                self._checksums()
+                with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as bundle:
+                    for path in self.evidence.rglob("*"):
+                        if path.is_file():
+                            bundle.write(path, path.relative_to(self.evidence))
+                with zipfile.ZipFile(archive, "r") as bundle:
+                    bad = bundle.testzip()
+                    if bad:
+                        raise RuntimeError(f"corrupt evidence ZIP member: {bad}")
+            except Exception as exc:
+                result["status"] = "FAIL"
+                result["official_benchmark"] = False
+                result["classification"] = "HARNESS_FAILURE"
+                packaging = f"evidence packaging: {type(exc).__name__}: {exc}"
+                result["error"] = f"{result['error']}; {packaging}" if result["error"] else packaging
+                self._write_json("official-result.json", result)
+                try:
+                    self._checksums()
+                    with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as bundle:
+                        for path in self.evidence.rglob("*"):
+                            if path.is_file():
+                                bundle.write(path, path.relative_to(self.evidence))
+                except Exception:
+                    pass
+        return result
 
     def run_smoke(self) -> dict:
         if not self.evidence.exists():
