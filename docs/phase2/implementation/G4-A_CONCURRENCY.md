@@ -173,13 +173,13 @@ Implementation-specific gates:
 
 ## 8. Ownership và merge contract
 
-- G3 review/approval/publish diễn ra 23–24/11/2026; hai workstream bắt đầu từ 25/11 sau M1. Hoàng triển khai G4-A độc lập 25–28/11; Bùi Công Huy review khi khả dụng. G4-A hoàn tất review/merge ngày 29/11. G4-B có thể phát triển song song trên method riêng với workload linh hoạt/nhẹ đến 30/11 do Huy vướng bài tập lớn, nhưng chỉ rebase/finalize merge sau A, ngày 01/12.
+- G3 review/approval/publish diễn ra 23–24/11/2026; bốn workstream bắt đầu từ 25/11 sau M1. Nguyễn Văn Huy Hoàng sở hữu G4-A trong toàn cửa sổ 25/11–02/12; Bùi Công Huy review từng task và PR A.
 - A sở hữu `OrderService.create/cancel/confirm/updateStatus/moveTo`; B sở hữu duy nhất `OrderService.list`.
 - Trong `OrderRepository`, A chỉ thêm lock-by-ID method; B sở hữu filter/page/fetch/count methods. Không format/rename toàn file.
 - Trong `OrderServiceTest`, A chỉ sửa checkout/status/cancel tests và shared setup tối thiểu. B sửa list test sau khi rebase.
 - File riêng A: `CartRepository`, `FoodRepository`, `CartService`, `FoodService`, `FoodServiceTest`, `GlobalErrors`, concurrency integration test và conflict OpenAPI entries.
 - **Merge order bắt buộc:** G4-A merge trước. G4-B rebase lên G4-A, resolve imports/constructor/shared tests theo method ownership, rồi merge sau review chéo.
-- Sau merge B, cả hai cùng review combined diff và chạy combined regression/benchmark gate; A không sửa list fetch plan, B không sửa locking semantics trong conflict resolution.
+- Sau merge A, B/C/D tiếp tục theo integration contract A → B → C → D. A không sửa list fetch plan, Auth dependency boundary hoặc authorization fallback; các workstream sau không sửa locking semantics khi resolve conflict.
 
 ## 9. Approval checklist
 

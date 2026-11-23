@@ -101,14 +101,14 @@ Test-only configuration bật Hibernate statistics cho class query-count; clear 
 ## 5. Thứ tự task
 
 1. **B0 — Approval gate:** team duyệt ADR-002, query shapes, invariant behavior và ownership.
-2. **B1 — Parallel branch start:** từ 25/11, phát triển trên B-owned methods song song với G4-A; workload của Huy linh hoạt/nhẹ 25–30/11 do bài tập lớn môn khác; không chạm A-owned mutation/lock methods.
+2. **B1 — Parallel branch start:** từ 25/11, phát triển trên B-owned methods song song với G4-A/G4-C/G4-D; không chạm A-owned mutation/lock methods hoặc C/D Auth/security scope.
 3. **B2 — Tests-first baseline:** tạo query-count test với page sizes 1/5/20/50 và chứng minh baseline `4/8/23/53` hoặc N+3 behavior trong test harness phù hợp.
 4. **B3 — Repository two-step:** thêm ID page và fetch-with-items queries; giữ count.
 5. **B4 — Service assembly:** cập nhật duy nhất `OrderService.list`; implement validation/reorder/DTO mapping.
 6. **B5 — Unit/contract coverage:** cập nhật list unit test; thêm empty/zero-item/multi-item/tie-order/page-boundary cases.
 7. **B6 — Pre-integration targeted verification:** chạy unit + query-count integration suite trên MySQL; inspect SQL không N+1.
-8. **B7 — A-first integration gate:** sau G4-A merge ngày 29/11, rebase B, preserve A-owned methods/imports/tests và rerun targeted A+B.
-9. **B8 — PR/combined handoff:** review/merge B ngày 01/12; combined regression thuộc G5 ngày 02/12, official AFTER chỉ sau Code Freeze.
+8. **B7 — A-first integration gate:** sau G4-A merge ngày 02/12, rebase B, preserve A-owned methods/imports/tests và rerun targeted A+B.
+9. **B8 — PR/combined handoff:** review/merge B ngày 02/12 trước C/D; combined regression thuộc G5 ngày 03–04/12, official AFTER chỉ sau Code Freeze.
 
 ## 6. Test cần viết/cập nhật
 
@@ -154,13 +154,13 @@ Implementation-specific gates:
 
 ## 8. Ownership và merge contract
 
-- G3 được review/approve/publish 23–24/11; hai workstream code/test song song từ 25/11 trên method ownership riêng. Bùi Công Huy giữ workload linh hoạt/nhẹ đến 30/11. B không chờ A merge để triển khai, nhưng B không được merge trước A; A merge 29/11 và B rebase/merge 01/12.
+- G3 được review/approve/publish 23–24/11; bốn workstream code/test song song từ 25/11 trên method ownership riêng. Bùi Công Huy sở hữu G4-B trong toàn cửa sổ 25/11–02/12. B không chờ A merge để triển khai, nhưng B không được merge trước A; cả hai hoàn tất integration/merge ngày 02/12.
 - B sở hữu `OrderService.list` và private helper chỉ phục vụ list; A sở hữu mọi mutation method.
 - B sở hữu `OrderRepository` FILTER/page-ID/fetch-items/count methods; A sở hữu lock-by-ID method. B phải preserve method/annotations của A sau rebase.
 - Trong `OrderServiceTest`, B chỉ sửa list test và shared setup/import tối thiểu sau A; không rewrite checkout/status assertions.
 - B sở hữu file query-count integration mới. Không sửa A-owned concurrency integration test.
 - **Merge order bắt buộc:** A merge trước; B rebase, resolve shared files theo method ownership, chạy targeted B + targeted A, rồi merge.
-- Conflict resolution không được format toàn file hoặc đổi method signature của owner kia. Mọi cross-owner change cần explicit review comment của cả hai.
+- Sau B, C rồi D rebase/merge theo dependency thực tế. Conflict resolution không được format toàn file hoặc đổi method signature của owner kia. Mọi cross-owner change cần explicit review comment của cả hai.
 
 ## 9. Approval checklist
 

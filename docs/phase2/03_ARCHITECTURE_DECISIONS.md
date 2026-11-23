@@ -1,6 +1,6 @@
 # ByteMe Phase 2 — Architecture Decisions
 
-Ngày lập: 2026-11-22. Tài liệu gồm **G3.1–G3.5**: tổng hợp bằng chứng G1–G2, ưu tiên vấn đề, xác định phạm vi, so sánh giải pháp, đề xuất kiến trúc To-Be và lập implementation plan để review trước G4. Các lựa chọn kỹ thuật ở G3.3–G3.4 mang trạng thái **PROPOSED**; các plan G3.5 mang trạng thái **PENDING_TEAM_APPROVAL** và chưa cấp quyền sửa application code.
+Ngày lập: 2026-11-22; cập nhật G4-C/G4-D ngày 2026-11-23. Tài liệu gồm **G3.1–G3.5**: tổng hợp bằng chứng G1–G2, ưu tiên vấn đề, xác định phạm vi, so sánh giải pháp, đề xuất kiến trúc To-Be và lập implementation plan để review trước G4. Các lựa chọn kỹ thuật ở G3.3–G3.4 mang trạng thái **PROPOSED**; các plan G3.5 mang trạng thái **PENDING_TEAM_APPROVAL** và chưa cấp quyền sửa application code.
 
 ## G3.1 — Tổng hợp và ưu tiên architecture findings
 
@@ -12,7 +12,7 @@ Quy ước trong G3:
 
 - **CONFIRMED**: đã có runtime evidence tái hiện issue hoặc có static evidence trực tiếp cho đặc tính kiến trúc được nêu.
 - **RISK — UNVERIFIED**: đã thấy plan/behavior hoặc design exposure, nhưng chưa có bằng chứng đủ để kết luận impact đối với quality attribute.
-- **DEFERRED**: có thể là issue thật, nhưng không nằm trong hai lát cải tiến nhỏ nhất có giá trị đo được cho nhóm hai người.
+- **DEFERRED**: có thể là issue thật, nhưng không nằm trong các lát cải tiến nhỏ nhất có giá trị đo được cho nhóm hai người.
 - Số latency đơn lẻ của G2.3 chỉ là diagnostic; số BEFORE chính thức dùng cho so sánh hiệu năng là median của ba run Intel đã khóa ở G2.5.
 
 Baseline chính thức đã khóa ở application SHA `510f6415b6af535ceec77213f0b0c7d5082123f7`, nhóm `kaggle-intel-xeon`, ba run hợp lệ. AFTER phải qua cùng manifest comparator; không gộp run AMD vào nhóm Intel. Mục tiêu năm run chưa đạt là stretch target, không chặn baseline tối thiểu ba run.
@@ -27,23 +27,26 @@ Baseline chính thức đã khóa ở application SHA `510f6415b6af535ceec77213f
 | AF-04 | **P1 guard** | **CONFIRMED symptom / correctness INCONCLUSIVE** | Same-cart checkout giữ đúng final data trong 15/15 round G2.3 nhưng loser có **2 HTTP 500**; official W3 có **1 server-error round/45**. Chưa có double order, nhưng conflict/error semantics chưa ổn định. | Không mở thành cải tiến thứ ba; G4-A phải có regression guard “không 5xx, tối đa một consumption/order”. Exact client-conflict contract cần review trước khi code. |
 | AF-05 | **P2** | **RISK — UNVERIFIED** | Food search scan 5,000 rows với `LOWER(...) LIKE '%needle%'`; official W1 cho food search p95 **31.121 ms**, p99 **38.731 ms**, 0 error ở tải khóa 5 RPS. Plan bất lợi đã xác nhận nhưng user-visible severity/SLO violation chưa có. | **DEFERRED**; không tự động thêm index/search engine/cache trong G4. Chỉ nâng scope nếu workload/cardinality đại diện chứng minh impact. |
 | AF-06 | **P2** | **RISK — UNVERIFIED** | Order filter/count dùng owner index rồi filter/sort, chưa có composite filter/sort index. G2.3 plan chỉ khoảng 0.459 ms ở 239 order của owner; performance severity được kết luận inconclusive. | **DEFERRED**; không gộp với N+1 để tránh thay nhiều biến cùng lúc. |
-| AF-07 | **P2** | **CONFIRMED design debt, impact chưa đo** | Package cycle `service ↔ repository`, DTO/entity coupling và `OrderService` hotspot đã được static assessment xác nhận, nhưng chưa có change-cost/defect evidence gắn với mục tiêu G4. | **DEFERRED**; không refactor package/module trong lát performance/consistency. Chỉ sửa tối thiểu nếu implementation G4 bắt buộc chạm boundary. |
+| AF-07 | **P1** | **CONFIRMED design issue / impact runtime chưa đo** | Package cycle `service ↔ repository` do `MySqlAccountRepository` import hai service exceptions; ArchitectureTest chưa cấm hướng dependency hoặc package cycle. DTO/entity coupling và `OrderService` hotspot cũng tồn tại nhưng chưa có change-cost evidence. | Đưa phần cycle hẹp vào G4-C với ArchUnit BEFORE/AFTER; tiếp tục **DEFERRED** DTO/entity, `OrderService` và package/module redesign. |
 | AF-08 | — | **OBSERVED CORRECT trong protocol đã chạy** | Same-order cancellation không double-release stock 15/15; first-cart race giữ đúng một cart/item 15/15. Đây không phải bằng chứng tuyệt đối về mọi interleaving. | Không coi là defect cần sửa; giữ làm regression scenarios nếu code G4 chạm logic liên quan. |
 | AF-09 | — | **NO JUSTIFICATION** | Layered monolith hiện phù hợp một nhà hàng, một deployable, nhóm hai người; G1–G2 không có evidence yêu cầu scale-out hoặc microservices. | **DEFERRED/REJECTED FOR G4**: không phân rã service, không thêm broker/distributed cache. |
+| AF-10 | **P1** | **CONFIRMED policy exposure / chưa có production exploit** | G1 `SEC2-03` xác định protected chain kết thúc bằng `.anyRequest().authenticated()`: endpoint mới quên matcher vẫn mở cho mọi role đã đăng nhập. 18 endpoint hiện tại đã có matcher cụ thể; `TEST-06` xác nhận chưa có fail-closed route-registration test. `AuthIntegrationTest` còn có test-only route ngoài matcher đang dựa vào fallback này. | Đưa phạm vi hẹp vào G4-D: terminal `denyAll`, role matrix 18/18 và synthetic-unlisted-route test. Không mở rộng sang key rotation, audit logging hoặc endpoint/business change. |
 
 ### 3. Kết luận G3.1
 
-Ba finding đủ bằng chứng để hành động là AF-01, AF-02 và AF-03. AF-01/AF-02 cùng thuộc một consistency boundary nên được gom thành một cải tiến; AF-03 thành cải tiến thứ hai. AF-04 là acceptance guard. AF-05/AF-06 là rủi ro hiệu năng chưa xác minh; AF-07 là debt đã xác nhận nhưng không có bằng chứng ưu tiên hơn hai lỗi runtime; AF-08 không cần remediation; AF-09 không có căn cứ mở rộng topology.
+Năm finding đủ bằng chứng cho bốn phạm vi hẹp là AF-01, AF-02, AF-03, phần dependency cycle của AF-07 và authorization exposure AF-10. AF-01/AF-02 cùng thuộc G4-A; AF-03 thành G4-B; AF-07 chỉ mở G4-C cho cycle/gates; AF-10 thành G4-D fail-closed boundary. AF-04 là acceptance guard. AF-05/AF-06 và phần DTO/entity/`OrderService` của AF-07 tiếp tục deferred; AF-08 không cần remediation; AF-09 không có căn cứ mở rộng topology.
 
 ## G3.2 — Phạm vi cải tiến và tiêu chí dự kiến cho G4
 
-### 1. Nguyên tắc chia scope cho hai thành viên
+### 1. Nguyên tắc chia scope cho các workstream
 
 | Workstream | Owner đề xuất | Mục tiêu | Ranh giới chính |
 |---|---|---|---|
-| **G4-A — Inventory transaction/concurrency consistency** | Thành viên A | Làm checkout và admin stock update cho kết quả tương đương một thứ tự tuần tự hợp lệ; không oversell/lost update; conflict không thành 5xx. | Food stock mutation, checkout/admin update transaction path, concurrency tests và W3 AFTER. Không mở rộng sang distributed transaction hay idempotency toàn API. |
-| **G4-B — Order-list data access efficiency** | Thành viên B | Loại query amplification phụ thuộc page size trong order list mà không đổi API behavior. | Order-list repository/mapping path, query-count tests và W1 AFTER. Không tối ưu food search, filter index, cache hay detail endpoint nếu không cần. |
-| **Shared integration** | Cả hai | Giữ contract, regression suite và BEFORE/AFTER comparability. | Review chéo vùng `Order`/`Food`, merge tuần tự, chạy full gate sau khi hai lát độc lập đạt targeted gate. |
+| **G4-A — Inventory transaction/concurrency consistency** | Nguyễn Văn Huy Hoàng | Làm checkout và admin stock update cho kết quả tương đương một thứ tự tuần tự hợp lệ; không oversell/lost update; conflict không thành 5xx. | Food stock mutation, checkout/admin update transaction path, concurrency tests và W3 AFTER. Không mở rộng sang distributed transaction hay idempotency toàn API. |
+| **G4-B — Order-list data access efficiency** | Bùi Công Huy | Loại query amplification phụ thuộc page size trong order list mà không đổi API behavior. | Order-list repository/mapping path, query-count tests và W1 AFTER. Không tối ưu food search, filter index, cache hay detail endpoint nếu không cần. |
+| **G4-C — Dependency boundaries** | Bùi Công Huy | Loại cycle `service ↔ repository`, ngăn dependency ngược tái diễn và giữ Auth behavior. | Auth repository/service exception boundary và ArchUnit. Không refactor `OrderService`, DTO/entity, common error policy hay module structure. |
+| **G4-D — Fail-closed authorization boundary** | Nguyễn Văn Huy Hoàng | Loại authenticated fallback cho route chưa khai báo, giữ nguyên policy của 18 endpoint hiện hữu. | Terminal authorization rule, role-matrix/synthetic-route tests. Không thêm endpoint production hoặc mở sang security concerns khác. |
+| **Shared integration** | Cả hai | Giữ contract, regression suite và BEFORE/AFTER comparability. | Review chéo, merge A → B → C → D, chạy full gate sau khi bốn lát độc lập đạt targeted gate. |
 
 G3.3 so sánh và đề xuất kỹ thuật theo correctness, contention/query behavior, migration risk và testability. Đề xuất chỉ chuyển từ `PROPOSED` sang `ACCEPTED` sau design review đầu G4.
 
@@ -109,33 +112,89 @@ G3.3 so sánh và đề xuất kỹ thuật theo correctness, contention/query b
 4. Guard bắt buộc: median-of-runs p95 không quá **28.384 ms** và p99 không quá **35.670 ms** (tối đa +5% so với BEFORE). Chỉ tuyên bố **response-time improvement** nếu p95 hoặc p99 giảm ít nhất 10% (p95 ≤ **24.329 ms** hoặc p99 ≤ **30.574 ms**); nếu không đạt, chỉ tuyên bố cải thiện data-access efficiency dựa trên query count/DB telemetry.
 5. AFTER report phải ghi total order-list SELECT/request và DB query digest/time/rows; không dùng riêng endpoint latency để suy ra nguyên nhân.
 
-### 4. Gate chung cho BEFORE/AFTER và giới hạn quyết định
+### 4. G4-C — Dependency boundaries
+
+#### Quality attribute scenarios
+
+| QAS | Source / stimulus / environment | Artifact & response mong đợi | Response measure |
+|---|---|---|---|
+| **QAS-C1: repository boundary enforcement** | Developer thay đổi Auth persistence adapter hoặc thêm repository class trong default build. | Architecture gate từ chối mọi dependency `repository → service`; adapter chỉ phát repository exceptions nội bộ. | **0** dependency violation `repository → service`; `MySqlAccountRepository` có **0** service import. |
+| **QAS-C2: package-cycle prevention** | Production packages được import vào ArchUnit trên integrated A+B+C source. | Top-level package graph không có cycle; failure nêu rõ dependency path nếu tái diễn. | **0** top-level package cycle. |
+| **QAS-C3: Auth behavior preservation** | Registration/login unit, web và MySQL integration regression chạy sau exception remapping. | Duplicate/general persistence failure giữ service/API semantics hiện hữu; không lộ DB detail. | Targeted Auth regression pass; duplicate vẫn `409 ACCOUNT_CONFLICT`; không contract drift. |
+
+#### BEFORE metrics
+
+| Measure | BEFORE |
+|---|---:|
+| Top-level package cycle | **1** — `service ↔ repository` |
+| Reverse imports trong `MySqlAccountRepository` | **2** — `AccountPersistenceException`, `DuplicateAccountException` |
+| Automated gates cho `repository → service` / package cycles | **0 / 2** |
+
+#### Acceptance criteria dự kiến
+
+1. Hai ArchUnit rules chạy trong default suite và chứng minh **0** `repository → service` dependency, **0** top-level package cycle.
+2. Repository dùng exceptions nội bộ; `RegisterService`/`LoginService` map sang service exceptions hiện hữu và giữ cause cần thiết.
+3. Auth unit/web/integration regression pass; duplicate account vẫn là `409 ACCOUNT_CONFLICT`, persistence failure khác không lộ DB/vendor message.
+4. Không sửa `OrderService`, `OrderRepository`, Cart/Food paths, DTO/entity, schema, endpoint/payload hoặc method ownership G4-A/G4-B.
+5. Không dùng G4-C để tuyên bố toàn hệ thống đã chuyển sang clean/hexagonal architecture; DTO/entity và hotspot refactor vẫn deferred.
+
+### 5. G4-D — Fail-closed authorization boundary
+
+#### Quality attribute scenarios
+
+| QAS | Source / stimulus / environment | Artifact & response mong đợi | Response measure |
+|---|---|---|---|
+| **QAS-D1: deny unregistered route** | Developer thêm controller route nhưng chưa khai báo authorization matcher; request dùng valid CUSTOMER/EMPLOYEE/ADMIN token. | Security filter chain từ chối trước controller thay vì cho mọi authenticated role đi qua. | Cả **3/3** authenticated roles nhận 403; controller invocation **0**. Anonymous nhận 401. |
+| **QAS-D2: preserve current access policy** | 18 endpoint hiện hữu được gọi bởi anonymous, CUSTOMER, EMPLOYEE và ADMIN trong web test environment. | Public routes và role permissions giữ đúng như G1 inventory; valid caller vẫn đi qua security, invalid caller bị chặn. | **18/18** endpoint patterns có matrix row; 0 unintended allow/deny drift. |
+| **QAS-D3: preserve security error contract** | Anonymous/wrong-role/unlisted requests đi qua Auth/protected chains. | 401/403 `ApiError`, `WWW-Authenticate` và `Cache-Control: no-store` giữ nguyên; không đổi business/API payload. | Representative header/body regression pass; 0 production endpoint/matcher mới. |
+
+#### BEFORE metrics
+
+| Measure | BEFORE |
+|---|---:|
+| Protected-chain terminal policy | `.anyRequest().authenticated()` |
+| Production endpoints có explicit matcher | **18/18** |
+| Automated synthetic-unlisted-route fail-closed gate | **0** |
+| Test-only authenticated route ngoài matcher | `/scope-check/echo` source hiện mong 200; source-level evidence, runtime pass chưa được tuyên bố |
+
+#### Acceptance criteria dự kiến
+
+1. Protected chain kết thúc bằng `.anyRequest().denyAll()`; explicit matcher của 18 endpoint giữ nguyên.
+2. Role matrix bao phủ **18/18** endpoint và bốn caller classes; public/role behavior không drift.
+3. Synthetic test-only unlisted route trả 403 cho valid CUSTOMER/EMPLOYEE/ADMIN, 401 cho anonymous và controller invocation bằng 0.
+4. Existing Auth/Food/Cart/Order security regression, C architecture/Auth gates và 401/403/no-store contract pass sau integration.
+5. Không thêm endpoint production, wildcard allow-list, JWT key rotation/revocation, observability hoặc business/database change.
+
+### 6. Gate chung cho BEFORE/AFTER và giới hạn quyết định
 
 - Dùng cùng configuration/workload/dataset locks của official BEFORE và chỉ nhận AFTER manifest tương thích nhóm Intel. So sánh median của tối thiểu ba run, kèm min/max/CV; không pool request samples và không chọn một run thuận lợi.
 - Chỉ application/JAR SHA được phép thay đổi theo implementation đã review. Mọi thay đổi protocol, dataset, page size, load hoặc telemetry phải version hóa và đo lại BEFORE tương ứng.
-- Mỗi cải tiến phải có targeted correctness/query-count evidence trước official load run; official W1/W2/W3 không thay thế test invariant chi tiết.
+- Mỗi cải tiến phải có targeted correctness/query-count/architecture/security evidence trước official load run; official W1/W2/W3 không thay thế test invariant chi tiết.
 - Không coi Hikari saturation là criterion vì baseline không expose live Hikari gauges. Missing telemetry giữ `null`, không đổi thành 0.
 - G3.1–G3.2 chốt **problem scope, QAS, BEFORE và acceptance proposal**; G3.3–G3.4 đưa ra lựa chọn kỹ thuật `PROPOSED`; G3.5 cụ thể hóa plan `PENDING_TEAM_APPROVAL`. Exact contract và trade-off threshold cuối cùng cần hai thành viên duyệt ở đầu G4 trước khi sửa application code.
 
-### 5. Review decision cần chốt trước G4
+### 7. Review decision cần chốt trước G4
 
-1. Phê duyệt hai workstream G4-A/G4-B và owner; không thêm AF-05/AF-06/AF-07 vào cùng iteration.
+1. Phê duyệt bốn workstream G4-A/G4-B/G4-C/G4-D cùng owner/reviewer đã chốt; không thêm AF-05/AF-06 hoặc phần DTO/entity/`OrderService` của AF-07 vào iteration.
 2. Chốt expected loser semantics cho same-cart/same-food contention (ít nhất: không 5xx và invariant đúng).
 3. Phê duyệt performance budgets dự kiến: +10% cho checkout p95/p99 và +5% guard cho order-list; đây là trade-off threshold, không phải SLO sản phẩm.
 4. Chốt protocol chứng minh overlap cho C1 để tránh tuyên bố cải thiện dựa trên official scenario vốn đã 0/45 ở BEFORE.
-5. Sau design review, cập nhật trạng thái/reviewer của ADR và giữ nguyên số BEFORE đã khóa; không hồi tố evidence để khớp lựa chọn.
+5. Chốt repository exception/service mapping và hai ArchUnit rules cho G4-C; giữ Auth API/error behavior.
+6. Chốt G4-D current-route matrix, synthetic route, C/D method ownership và merge order A → B → C → D.
+7. Sau design review, cập nhật trạng thái/reviewer của ADR và giữ nguyên số BEFORE đã khóa; không hồi tố evidence để khớp lựa chọn.
 
 ## G3.3 — So sánh giải pháp và lựa chọn đề xuất
 
 **Decision status chung: `PROPOSED` — cần hai thành viên review trước G4.**
 
-Phần này chỉ đọc các path trực tiếp liên quan: `OrderService.create/list/cancel`, `FoodService.updateFood/reserveStock/releaseStock`, `CartService.getItemsForCheckout/clearCart`, ba repository tương ứng, các entity `Food/Cart/Order`, `OrderDto` và `GlobalErrors`. Những fact chi phối lựa chọn:
+Phần này chỉ đọc các path trực tiếp liên quan: `OrderService.create/list/cancel`, `FoodService.updateFood/reserveStock/releaseStock`, `CartService.getItemsForCheckout/clearCart`, repository tương ứng, các entity `Food/Cart/Order`, `OrderDto`, `GlobalErrors`, `AccountRepository`, `MySqlAccountRepository`, `RegisterService`, `LoginService`, `ArchitectureTest`, `SecurityConfiguration` và các Auth/security tests liên quan trực tiếp. Những fact chi phối lựa chọn:
 
 - `OrderService.create` đang là outer `@Transactional`; stock reserve, order save và cart clear cùng unit of work. `FoodService.updateFood` là transaction riêng cho admin update.
 - Stock hiện dùng entity read–check–modify; `Food` không có `@Version`. Checkout nhiều món duyệt theo thứ tự cart item, chưa có thứ tự lock theo food ID.
 - Same-cart checkout đọc cart rồi clear ở cuối transaction nhưng không khóa cart trước khi đọc.
 - `OrderService.list` phân trang root `Order`, sau đó `OrderDto.fromEntity` duyệt collection `Order.items` lazy trong read-only transaction; đây là nguồn N+1.
 - `GlobalErrors` đã có response `409 CONCURRENT_UPDATE` cho `PessimisticLockingFailureException`; optimistic conflict chưa có mapping tương ứng.
+- Protected security chain đã có explicit matcher cho 18 endpoint nhưng kết thúc bằng `.anyRequest().authenticated()`; test-only `/scope-check/echo` minh họa authenticated route ngoài matcher vẫn đi qua controller.
 
 ### 1. G4-A — So sánh chiến lược concurrency control
 
@@ -203,22 +262,47 @@ Trade-offs và mitigation:
 - **Mitigation:** cùng read-only transaction/MySQL snapshot, page size đã chặn `≤100`, ID list bounded, deterministic reorder map, fixture có zero/one/many items và page-boundary tests.
 - **Rủi ro còn lại:** số item/order cực lớn có thể làm result set phình dù query count thấp; G2 không có evidence để đưa projection/streaming vào scope. DB time/rows và heap/RSS AFTER phải được quan sát, không chỉ count query.
 
-### 3. Decision summary cho review
+### 3. G4-C — So sánh chiến lược dependency boundary
+
+| Phương án | Cycle/boundary | Change surface | Đánh giá |
+|---|---|---|---|
+| Chuyển service exceptions sang `common` | Có thể xóa import `repository → service`, nhưng đưa persistence/business signal vào package đang pha trộn concern. | Nhỏ nhưng làm RC-01/SC-07 khó rõ hơn và controller/common coupling tăng. | **REJECTED**; xóa cycle bằng cách mở rộng `common` không tạo boundary rõ. |
+| Di chuyển `AccountRepository` và Auth models sang application port package | Có dependency inversion rõ hơn, có thể chuẩn hóa ports/adapters. | Lớn: đổi package/interface/model/wiring/test; vượt evidence và dễ kéo DTO/entity/transaction redesign. | **DEFERRED**; chỉ xem lại khi có module/boundary redesign riêng. |
+| Repository exceptions nội bộ, service mapping tại use case | Giữ package-by-layer hiện tại, loại `repository → service`, xóa cycle và giữ controller contract. | Hẹp: adapter, hai service, hai exception mới, ArchUnit/Auth tests. | **PROPOSED cho G4-C**; phù hợp bằng chứng confirmed và không chạm A/B ownership. |
+
+#### Lựa chọn đề xuất C: repository-local exceptions + automated architecture gates
+
+`MySqlAccountRepository` giữ vendor/constraint detection nhưng chỉ phát repository exceptions. `RegisterService`/`LoginService` dịch signal này sang service exceptions hiện hữu. ArchUnit cấm `repository → service` và kiểm tra top-level package cycles. G4-C không di chuyển port/model package, không tách DTO/entity và không refactor hotspot.
+
+### 4. G4-D — So sánh chiến lược authorization fallback
+
+| Phương án | Security boundary | Change surface | Đánh giá |
+|---|---|---|---|
+| Giữ `.anyRequest().authenticated()` và dựa vào review thủ công | Endpoint mới quên matcher vẫn mở cho mọi authenticated role. | Không đổi code nhưng giữ SEC2-03/TEST-06. | **REJECTED**; không fail-safe và không có executable guard. |
+| Thêm deny rules theo từng wildcard/package route | Có thể chặn một số path nhưng dễ tạo gap mới, phụ thuộc naming và vẫn cần fallback. | Nhiều matcher, khó chứng minh complete. | **REJECTED**; policy phức tạp hơn mà không mạnh bằng terminal deny. |
+| Giữ explicit current matchers, đổi terminal fallback sang `denyAll`, thêm role matrix + synthetic route | Fail-safe defaults; route mới phải được cấp quyền rõ ràng. | Hẹp: một production rule, file test mới và D-owned Auth test blocks. | **PROPOSED cho G4-D**; giữ 18 endpoint/behavior và đo được trực tiếp. |
+
+#### Lựa chọn đề xuất D: explicit allow/role rules + terminal default deny
+
+Protected chain giữ nguyên thứ tự matcher và error handlers, chỉ đổi terminal rule. Role-matrix test khóa chính sách 18 endpoint; synthetic test-only controller chứng minh route chưa khai báo bị chặn trước controller. Không thêm production endpoint hoặc mở rộng sang JWT key lifecycle.
+
+### 5. Decision summary cho review
 
 | Workstream | Proposed choice | Why now | Reconsider trigger |
 |---|---|---|---|
 | G4-A | Pessimistic write lock trên Cart/Order aggregate root và Food rows, outer service transaction, deterministic lock order, 409 conflict | Correctness defect đã lặp; hợp entity read–modify–write, không migration, giải quyết C1/C4 và guard C2 trong một protocol | Không đạt latency budget; lock timeout/deadlock cao; targeted tests cho thấy lock plan không bao phủ invariant |
 | G4-B | Two-step page Order IDs → fetch Orders+items → reorder, count trong cùng read-only transaction | Query count xác định, pagination safe, giữ API contract | Result-set/heap regression; query count >4; provider không de-duplicate đúng hoặc contract/page tests fail |
+| G4-C | Repository exceptions nội bộ → service exception mapping; ArchUnit direction + cycle gates | Cycle/import ngược đã confirmed; phạm vi hẹp, đo được, tách khỏi A/B | Auth/API regression; architecture rules phát hiện thêm cycle ngoài scope; change surface vượt file list đã duyệt |
+| G4-D | Explicit current matchers + terminal `.denyAll()`; 18-route matrix và synthetic-unlisted-route gate | SEC2-03/TEST-06 có source evidence trực tiếp; security tactic rõ, change hẹp, không đổi 18 endpoint | Current route bị deny/allow sai; synthetic test dựa vào production allow-list; C/D method-ownership contract bị vi phạm |
 
 ## G3.4 — Kiến trúc To-Be và Architecture Decision Records
 
-**Architecture status: `PROPOSED` — chưa triển khai.** Topology vẫn là layered monolith + MySQL; không thêm service, cache, broker hay datastore. Thay đổi chỉ nằm trong transaction/fetch policy của hai use case đã chọn.
+**Architecture status: `PROPOSED` — chưa triển khai.** Topology vẫn là layered monolith + MySQL; không thêm service, cache, broker hay datastore. Thay đổi nằm trong transaction/fetch policy, Auth dependency boundary hẹp và HTTP authorization fallback.
 
 ### 1. To-Be component view
 
 ```mermaid
 flowchart LR
-    Client --> Controller
     Controller --> OrderService
     Controller --> FoodService
 
@@ -229,6 +313,7 @@ flowchart LR
         LockPolicy[Repository lock methods\nCart/Order first; Food IDs ascending]
         PagePlan[Order page fetch plan\npage IDs -> Orders + items -> reorder]
         ErrorMap[GlobalErrors\ncontention -> 409]
+        SecurityPolicy[SecurityFilterChain\nexplicit rules -> default deny]
     end
 
     OrderService --> LockPolicy
@@ -236,64 +321,150 @@ flowchart LR
     OrderService --> PagePlan
     LockPolicy --> MySQL[(MySQL/InnoDB)]
     PagePlan --> MySQL
+    Client --> SecurityPolicy
+    SecurityPolicy --> Controller
     OrderService -. exception .-> ErrorMap
     FoodService -. exception .-> ErrorMap
     ErrorMap --> Controller
 ```
 
+
+
 ### 2. To-Be checkout/admin concurrency sequence
 
 ```mermaid
 sequenceDiagram
+    autonumber
+
     participant C as Controller
-    participant S as Service transaction
+    participant S as Service Transaction
     participant R as Repositories
-    participant DB as MySQL/InnoDB
+    participant DB as MySQL InnoDB
 
     C->>S: checkout(customer, request)
-    S->>R: lock Cart before reading items
-    R->>DB: SELECT cart ... FOR UPDATE
-    S->>R: lock distinct Food IDs ascending
-    R->>DB: SELECT foods ... ORDER BY id FOR UPDATE
-    S->>S: validate stock/status and build snapshots
-    S->>R: save Order + items; clear Cart
-    R->>DB: INSERT/DELETE/UPDATE in same transaction
-    DB-->>S: commit
-    S-->>C: 201 OrderDto
 
-    Note over C,DB: Admin update uses its own short transaction and the same Food row lock.
-    Note over C,DB: Timeout/deadlock rolls back and maps to 409 CONCURRENT_UPDATE; no automatic retry.
+    S->>R: Lock Cart before reading items
+    R->>DB: SELECT Cart FOR UPDATE
+    DB-->>R: Locked Cart
+    R-->>S: Cart and items
+
+    S->>R: Lock distinct Food IDs in ascending order
+    R->>DB: SELECT Food rows FOR UPDATE
+    DB-->>R: Locked Food rows
+    R-->>S: Food data
+
+    S->>S: Validate stock and status
+    S->>S: Build order snapshots
+
+    S->>R: Save Order and OrderItems
+    S->>R: Update stock and clear Cart
+    R->>DB: INSERT UPDATE DELETE
+    DB-->>R: Database operations successful
+    R-->>S: Saved result
+
+    Note over S,DB: Commit on success
+    Note over S,DB: Rollback on failure
+
+    S-->>C: HTTP 201 OrderDto
+
+    Note over S,DB: Admin updates use the same Food row locks
+    Note over S,DB: Lock timeout or deadlock maps to HTTP 409
 ```
+
 
 ### 3. To-Be order-list sequence
 
 ```mermaid
 sequenceDiagram
+    autonumber
+
     participant C as OrderController
-    participant S as OrderService read-only transaction
+    participant S as OrderService
     participant R as OrderRepository
     participant DB as MySQL
 
     C->>S: list(user, role, filters, page, size)
-    S->>R: findPageIds(scoped filters, sort, offset, limit)
-    R->>DB: SELECT order IDs
-    DB-->>S: ordered pageIds
-    alt pageIds not empty
+
+    Note over S,DB: Read-only transaction
+
+    S->>R: findPageIds(filters, sort, offset, limit)
+    R->>DB: SELECT ordered Order IDs
+    DB-->>R: Page of Order IDs
+    R-->>S: pageIds
+
+    alt Page is not empty
         S->>R: fetchOrdersWithItems(pageIds)
-        R->>DB: SELECT Orders LEFT JOIN items
-        DB-->>S: de-duplicated Orders + initialized items
-        S->>S: reorder by pageIds; map OrderDto
+        R->>DB: SELECT Orders LEFT JOIN OrderItems
+        DB-->>R: Orders with initialized items
+        R-->>S: Fetched Orders
+
+        S->>S: Remove duplicate roots
+        S->>S: Restore pageIds order
+        S->>S: Map Orders to OrderDto
     end
-    S->>R: countMatching(scoped filters)
+
+    S->>R: countMatching(filters)
     R->>DB: SELECT COUNT
-    S-->>C: OrderPage (unchanged contract)
+    DB-->>R: Total matching Orders
+    R-->>S: totalCount
+
+    S-->>C: OrderPage with unchanged API contract
 ```
 
-### 4. ADR-001 — Serialize inventory mutations with pessimistic row locks
+### 4. To-Be Auth dependency boundary
+
+```mermaid
+flowchart LR
+    AC[AuthController]
+    RS[RegisterService]
+    LS[LoginService]
+    AR[AccountRepository]
+    MAR[MySqlAccountRepository]
+    RE[Repository-local Exceptions]
+    SE[Existing Service Exceptions]
+    AE[AuthErrors]
+
+    AC --> RS
+    AC --> LS
+
+    RS --> AR
+    LS --> AR
+
+    MAR -. implements .-> AR
+    MAR --> RE
+
+    RS -->|Catches and maps| RE
+    LS -->|Catches and maps| RE
+
+    RS --> SE
+    LS --> SE
+
+    AE --> SE
+```
+
+
+`MySqlAccountRepository` không phụ thuộc service exceptions. Mũi tên mapping là control/error translation tại `RegisterService`/`LoginService`, không phải dependency từ repository trở lại service. ArchUnit bảo vệ direction và cycle-free top-level packages.
+
+### 5. To-Be fail-closed authorization boundary
+
+```mermaid
+flowchart LR
+    Request --> AuthChain{"Auth register/token?"}
+    AuthChain -->|yes| PublicAuth[permitAll Auth chain]
+    AuthChain -->|no| ProtectedChain[Protected security chain]
+    ProtectedChain --> Explicit{"Matches explicit public/role rule?"}
+    Explicit -->|yes| Authorized[Evaluate permit/role and continue]
+    Explicit -->|no| Denied[denyAll before controller]
+    Authorized --> Controller
+```
+
+Public/role matchers của 18 endpoint giữ nguyên. Terminal default deny chỉ chặn route không được khai báo; test-only synthetic route không được thêm vào production matcher.
+
+### 6. ADR-001 — Serialize inventory mutations with pessimistic row locks
 
 - **Status:** `PROPOSED`
 - **Date:** 2026-11-22
-- **Owners:** G4-A / Thành viên A, review bởi Thành viên B
+- **Owners:** G4-A / Nguyễn Văn Huy Hoàng, review bởi Bùi Công Huy
 - **Related evidence:** AF-01, AF-02, AF-04; QAS-A1–A4
 
 **Context.** Checkout và admin stock update đang dùng concurrent entity read–modify–write mà không lock/version. G2.3 tái hiện oversell 6/15 và lost admin update 12/15; official W3 lặp lost admin update 37/45. Same-cart giữ data đúng nhưng có stale-row 500. Hệ thống là một Spring Boot instance + MySQL, transaction ngắn và chưa có idempotency/retry contract.
@@ -306,11 +477,11 @@ sequenceDiagram
 
 **Approval/validation gate.** ADR chỉ chuyển `ACCEPTED` khi hai thành viên duyệt lock graph, conflict code và timeout policy. Implementation chỉ đạt khi acceptance G3.2 cho C1/C4/C2, regression và checkout latency đều pass; nếu không, ADR quay lại `PROPOSED` để xem atomic SQL hoặc optimistic alternative.
 
-### 5. ADR-002 — Use a two-step fetch plan for paginated order lists
+### 7. ADR-002 — Use a two-step fetch plan for paginated order lists
 
 - **Status:** `PROPOSED`
 - **Date:** 2026-11-22
-- **Owners:** G4-B / Thành viên B, review bởi Thành viên A
+- **Owners:** G4-B / Bùi Công Huy, review bởi Nguyễn Văn Huy Hoàng
 - **Related evidence:** AF-03; QAS-B1–B3
 
 **Context.** Root Order đang được phân trang đúng nhưng DTO mapping chạm lazy `items`, tạo `N+3` SELECT: 4/8/23/53 query cho page 1/5/20/50 và 18,020 item SELECT trong median official W1 run. API phải giữ page metadata, filter/sort/ownership và full item snapshot.
@@ -323,27 +494,66 @@ sequenceDiagram
 
 **Approval/validation gate.** ADR chỉ chuyển `ACCEPTED` khi hai thành viên duyệt query shape, ordering và empty-page behavior. Implementation chỉ đạt khi captured SELECT `≤4` ở mọi page size, contract/page regression pass và W1 latency/resource guards G3.2 đạt; nếu không, ADR quay lại `PROPOSED` để đánh giá batch fetching hoặc projection.
 
-### 6. Review checklist trước G4
+### 8. ADR-003 — Remove repository-to-service dependency and enforce package boundaries
+
+- **Status:** `PROPOSED`
+- **Date:** 2026-11-23
+- **Owners:** G4-C / Bùi Công Huy, review bởi Nguyễn Văn Huy Hoàng
+- **Related evidence:** AF-07; QAS-C1–C3; G1 RC-01, SC-01
+
+**Context.** `RegisterService` và `LoginService` phụ thuộc `repository.AccountRepository`, trong khi `MySqlAccountRepository` import hai exception từ `service`. Static assessment xác nhận một package cycle `service ↔ repository`, hai reverse imports và thiếu ArchUnit rules cho hướng dependency/cycle. Không có bằng chứng đủ để mở rộng sang tách DTO/entity, `OrderService` hoặc module redesign.
+
+**Decision proposed.** Tạo repository exceptions nội bộ cho persistence failure và duplicate record. `MySqlAccountRepository` chỉ ném các exception này; `RegisterService`/`LoginService` map sang `AccountPersistenceException`/`DuplicateAccountException` hiện hữu. Bổ sung ArchUnit rule cấm `repository → service` và rule top-level packages không có cycle. Giữ `AccountRepository` ở package hiện tại, giữ Auth controller/API/error contract và transaction behavior.
+
+**Consequences.** Cycle và dependency ngược được loại bằng change surface hẹp; architecture boundary trở thành executable gate. Đổi lại có thêm hai exception types và explicit mapping tại service. Thiết kế vẫn là package-by-layer, service vẫn phụ thuộc repository interface/DTO/entity-backed models; ADR không tuyên bố giải quyết mọi coupling.
+
+**Alternatives rejected/deferred.** Đưa exceptions vào `common` bị từ chối vì làm mixed-concern package rộng hơn. Di chuyển port/models sang application/domain package và refactor DTO/entity được deferred vì change surface lớn, thiếu change-impact evidence và xung đột phạm vi A/B.
+
+**Approval/validation gate.** ADR chỉ chuyển `ACCEPTED` khi hai thành viên chốt repository exception contract, service mapping, hai ArchUnit rules, C/D test ownership và merge order A → B → C → D. Implementation đạt khi AFTER có 0 `repository → service` dependency, 0 top-level cycle, Auth regression pass và API/error behavior không đổi. Nếu rules phát hiện cycle khác ngoài scope hoặc behavior drift, dừng và review ADR; không thêm allow-list hoặc refactor rộng âm thầm.
+
+### 9. ADR-004 — Deny authorization by default for unmatched routes
+
+- **Status:** `PROPOSED`
+- **Date:** 2026-11-23
+- **Owners:** G4-D / Nguyễn Văn Huy Hoàng, review bởi Bùi Công Huy
+- **Related evidence:** AF-10; QAS-D1–D3; G1 SEC2-03, TEST-06
+
+**Context.** Protected security chain đã khai báo matcher cụ thể cho 18 endpoint hiện hữu nhưng kết thúc bằng `.anyRequest().authenticated()`. Vì vậy controller route mới bị quên policy vẫn cho mọi valid authenticated role đi qua. G1 không phát hiện production endpoint hiện tại bị mở sai; đây là fail-safe/default policy exposure. `AuthIntegrationTest` có test-only route ngoài matcher đang dựa vào fallback, còn test suite chưa có synthetic-unlisted-route guard.
+
+**Decision proposed.** Giữ nguyên Auth chain, public documentation/health/Food matchers và role matchers của 18 endpoint; đổi terminal protected-chain rule thành `.anyRequest().denyAll()`. Bổ sung executable 18-endpoint role matrix và test-only unlisted controller route để chứng minh anonymous nhận 401, valid CUSTOMER/EMPLOYEE/ADMIN đều nhận 403 và controller không được gọi. Không thêm synthetic path vào production allow-list.
+
+**Consequences.** Endpoint mới fail closed cho tới khi policy được khai báo/review, áp dụng tactics least privilege và fail-safe defaults mà không đổi business/API hiện hữu. Đổi lại, developer phải cập nhật matcher và tests khi thêm route hợp lệ; test-only controllers dựa vào fallback cần security setup riêng. Security configuration vẫn là explicit matcher list, nên role matrix trở thành architecture regression gate.
+
+**Alternatives rejected/deferred.** Giữ authenticated fallback và review thủ công không ngăn regression. Wildcard deny theo từng prefix phức tạp hơn và vẫn có thể bỏ sót. Sinh policy từ OpenAPI hoặc refactor toàn bộ security DSL vượt scope. JWT rotation/revocation, audit logging và observability là concerns khác, không thuộc ADR này.
+
+**Approval/validation gate.** ADR chỉ chuyển `ACCEPTED` sau khi hai thành viên duyệt current-route matrix, synthetic-route design, 401/403 contract, C/D Auth-test ownership và merge order. Implementation đạt khi 18/18 route behavior giữ nguyên, unlisted route bị chặn trước controller cho mọi authenticated role, existing security/Auth regression và C gates pass, không có endpoint/matcher production mới. Nếu current behavior drift hoặc cần wildcard exception để làm test xanh, dừng và review ADR thay vì nới scope.
+
+### 10. Review checklist trước G4
 
 - [ ] Hai thành viên xác nhận ADR-001 lock graph: `Cart/Order → Food IDs ascending`; không có path trong scope khóa ngược chiều.
 - [ ] Chốt lock timeout và `409` error code/message; xác nhận không auto-retry khi chưa có idempotency contract.
 - [ ] Xác nhận cancellation dùng cùng Food lock protocol nhưng cart add/update concurrency vẫn ngoài scope G4-A.
 - [ ] Hai thành viên xác nhận ADR-002 query shape, root de-duplication, root/item ordering và empty-page/count semantics.
+- [ ] Hai thành viên xác nhận ADR-003 repository exceptions, service mapping và ArchUnit direction/cycle rules.
+- [ ] Hai thành viên xác nhận ADR-004 terminal deny, 18-endpoint role matrix, synthetic route và 401/403 contract.
+- [ ] Xác nhận C sở hữu Auth persistence methods/fixtures; D sở hữu `scope-check`/test-only security blocks và chỉ tích hợp sau C.
 - [ ] Xác nhận API/OpenAPI success payload không đổi; nếu conflict response documentation thay đổi thì cập nhật contract trong G4.
-- [ ] Chỉ sau review mới đổi ADR status sang `ACCEPTED` và bắt đầu sửa application code.
+- [ ] Chỉ sau review mới đổi từng ADR status sang `ACCEPTED` và bắt đầu sửa application code của workstream tương ứng; tài liệu hiện vẫn `PROPOSED`.
 
 ## G3.5 — Implementation planning và coordination gate
 
-**Plan status: `PENDING_TEAM_APPROVAL`.** G3.5 cụ thể hóa ADR-001/ADR-002 thành kế hoạch G4 nhưng không đổi trạng thái hai ADR, không cấp quyền sửa application code và không thay số BEFORE/acceptance G3.2.
+**Plan status: `PENDING_TEAM_APPROVAL`.** G3.5 cụ thể hóa ADR-001/002/003/004 thành kế hoạch G4 nhưng không đổi trạng thái bốn ADR, không cấp quyền sửa application code và không thay số BEFORE/acceptance G3.2.
 
-Hai plan độc lập:
+Bốn plan độc lập:
 
 - [G4-A — Pessimistic Locking](implementation/G4-A_CONCURRENCY.md)
 - [G4-B — Two-Step Fetching](implementation/G4-B_DATA_ACCESS.md)
+- [G4-C — Dependency Boundaries](implementation/G4-C_DEPENDENCY_BOUNDARIES.md)
+- [G4-D — Fail-Closed Authorization Boundary](implementation/G4-D_FAIL_CLOSED_AUTHORIZATION.md)
 
 ### 1. Các chi tiết implementation đã chốt để review
 
-| Concern | G4-A / G4-B decision |
+| Concern | G4-A / G4-B / G4-C / G4-D decision |
 |---|---|
 | Lock coverage | Checkout: `Cart → Food.id ASC`; admin update/delete: `Food`; cancel: `Order → Food.id ASC`; confirm/status: `Order`. Cart add/update/remove và first-cart race ngoài scope. |
 | Isolation | Giữ `Isolation.DEFAULT` / MySQL `REPEATABLE READ`; không dùng `SERIALIZABLE`. Explicit row locks bảo vệ write paths; cùng read-only transaction snapshot bảo vệ page IDs/fetch/count. |
@@ -351,33 +561,48 @@ Hai plan độc lập:
 | Conflict semantics | Lock conflict/deadlock → `409 CONCURRENT_UPDATE`, no-store, không auto-retry. Insufficient stock và unavailable giữ business code hiện tại. Request sau commit thấy cart rỗng vẫn là existing `EMPTY_CART`. |
 | Pagination consistency | Chỉ page-ID query dùng offset/limit; fetch Orders+items không paginate, dùng left fetch/de-dup; reorder theo page IDs; count cùng scoped filter và cùng read-only transaction. |
 | Query budget | Non-empty page: 3 application SELECT; captured total `≤4`. Empty page bỏ fetch query. |
+| Dependency boundary | Repository phát repository exceptions nội bộ; `RegisterService`/`LoginService` map sang service exceptions. Không `repository → service`; top-level package graph không cycle. |
+| Architecture measure | BEFORE 1 cycle/2 reverse imports; AFTER target 0 cycle/0 reverse dependency bằng ArchUnit; Auth API/error behavior không đổi. |
+| Authorization boundary | Giữ explicit public/role matchers của 18 endpoint; terminal protected-chain fallback đổi từ authenticated sang `denyAll`. |
+| Authorization measure | BEFORE 0 synthetic fail-closed gate; AFTER 18/18 matrix giữ behavior, unlisted route bị 403 cho 3/3 authenticated roles, anonymous 401, controller invocation 0. |
 
-Những chi tiết này là **proposed implementation contract**. Nếu team không duyệt no-wait, lock coverage hoặc two-step query shape, phải sửa ADR/plan trước khi code; không giải quyết khác biệt trong lúc merge.
+Những chi tiết này là **proposed implementation contract**. Nếu team không duyệt no-wait, lock coverage, two-step query shape, G4-C exception/boundary rules hoặc G4-D fail-closed policy/matrix, phải sửa ADR/plan trước khi code; không giải quyết khác biệt trong lúc merge.
 
 ### 2. Method ownership trên file dùng chung
 
-| File | Nguyễn Văn Huy Hoàng — G4-A | Bùi Công Huy — G4-B |
-|---|---|---|
-| `OrderService.java` | `create`, `cancel`, `confirm`, `updateStatus`, `moveTo` và helper mutation | `list` và helper reorder chỉ phục vụ list |
-| `OrderRepository.java` | locking lookup cho Order mutation | FILTER, page IDs, fetch Orders+items, count |
-| `OrderServiceTest.java` | checkout/cancel/status tests | list tests; sửa sau khi rebase A |
-| `OrderIntegrationTest.java` | Không mở rộng nếu dùng concurrency test file mới | Không mở rộng nếu dùng query-count test file mới |
+| File | Hoàng — G4-A | Huy — G4-B | Huy — G4-C | Hoàng — G4-D |
+|---|---|---|---|---|
+| `OrderService.java` | `create`, `cancel`, `confirm`, `updateStatus`, `moveTo` và helper mutation | `list` và helper reorder chỉ phục vụ list | Không sửa | Không sửa |
+| `OrderRepository.java` | locking lookup cho Order mutation | FILTER, page IDs, fetch Orders+items, count | Không sửa | Không sửa |
+| `OrderServiceTest.java` | checkout/cancel/status tests | list tests; sửa sau khi rebase A | Không sửa | Không sửa |
+| `OrderIntegrationTest.java` | Không mở rộng nếu dùng concurrency test file mới | Không mở rộng nếu dùng query-count test file mới | Không sửa | Không sửa |
+| `MySqlAccountRepository.java` | Không sửa | Không sửa | Repository exception translation | Không sửa |
+| `RegisterService.java`, `LoginService.java` | Không sửa | Không sửa | Repository-to-service exception mapping | Không sửa |
+| `ArchitectureTest.java` | Không làm yếu rules | Không làm yếu rules | Direction/cycle gates | Không sửa/làm yếu |
+| `SecurityConfiguration.java` | Không sửa | Không sửa | Không sửa | Chỉ terminal fallback trong `protectedApi` |
+| `AuthWebAndServiceTest.java` | Không sửa | Không sửa | Duplicate/persistence cases | Không sửa |
+| `AuthIntegrationTest.java` | Không sửa | Không sửa | Duplicate/persistence/concurrent-insert methods và repository fixture | `OtherModuleController`, `scope-check` method và test-only security setup sau C |
+| new security/authorization test | Không sửa | Không sửa | Không sửa | Toàn file `FailClosedAuthorizationTest` |
 
-Nguyễn Văn Huy Hoàng sở hữu riêng Cart/Food repository/service, lock error mapping và concurrency tests. Bùi Công Huy sở hữu riêng query-count integration test. Hai người không format/rename toàn bộ shared file và không sửa method của owner kia khi resolve conflict.
+Hoàng sở hữu riêng Cart/Food locking paths, concurrency tests và D authorization fallback/tests. Huy sở hữu query-count integration và C Auth dependency boundary. Không workstream format/rename toàn file hoặc sửa method của owner khác khi resolve conflict.
 
 ### 3. Merge order
 
-1. Ngày 23–24/11: team review G3.5/hai plan và publish sau phê duyệt; ADR tương ứng phải chuyển `ACCEPTED` trước implementation.
-2. Từ 25/11: hai workstream code/test **song song** trên method ownership riêng; B không chờ A để phát triển. Huy có workload G4-B linh hoạt/giảm tải đến 30/11 do bài tập lớn môn khác; Hoàng có thể triển khai G4-A độc lập.
-3. Ngày 29/11: G4-A hoàn tất targeted gate, được Bùi Công Huy review khi khả dụng và **merge trước**.
-4. Ngày 01/12: G4-B rebase lên A, preserve lock methods/imports/tests, rerun targeted A+B, được Nguyễn Văn Huy Hoàng review rồi merge.
-5. Ngày 02/12: hai thành viên chạy G5 combined verification; Code Freeze chỉ sau khi mọi gate đạt. AFTER prep 03/12; benchmark 04–06/12; buffer/evaluation 07/12.
-6. Không squash/rewrite evidence hoặc đổi BEFORE locks trong conflict resolution. Mọi protocol/config change phải quay lại architecture review.
+1. Ngày 23–24/11: team review G3.5/bốn plan và publish sau phê duyệt; ADR tương ứng chỉ chuyển `ACCEPTED` sau review thực tế.
+2. Từ 25/11 đến 02/12: bốn workstream code/test **song song** trên ownership riêng; C/D tuân method-level ownership trong Auth tests.
+3. Ngày 02/12: G4-A hoàn tất targeted gate, được Bùi Công Huy review và **merge trước**.
+4. Cùng ngày, G4-B rebase lên A, preserve lock methods/imports/tests, rerun targeted A+B, được Nguyễn Văn Huy Hoàng review rồi merge.
+5. Sau B, Huy rebase G4-C lên integrated A+B, chạy architecture/Auth regression cùng impacted gates, được Hoàng review rồi merge trước D ngày 02/12.
+6. Sau C, Hoàng rebase G4-D lên integrated A+B+C, resolve đúng D-owned Auth-test blocks, chạy role matrix/synthetic route và impacted C gates, được Huy review rồi merge cuối ngày 02/12.
+7. G5 combined verification chạy 03–04/12; Code Freeze 04/12 chỉ sau khi mọi gate A+B+C+D đạt. AFTER prep sau freeze 04/12; benchmark 05–07/12; buffer/evaluation 08/12.
+8. Không squash/rewrite evidence hoặc đổi BEFORE locks trong conflict resolution. Mọi protocol/config/boundary change phải quay lại architecture review.
 
 ### 4. Approval gate
 
 - [ ] Team duyệt [`G4-A_CONCURRENCY.md`](implementation/G4-A_CONCURRENCY.md), gồm no-wait, lock graph, 409 và out-of-scope.
 - [ ] Team duyệt [`G4-B_DATA_ACCESS.md`](implementation/G4-B_DATA_ACCESS.md), gồm query shapes, snapshot, reorder và query budget.
-- [ ] Hai ADR chuyển từ `PROPOSED` sang `ACCEPTED` với reviewer/date được ghi nhận.
-- [ ] Owner xác nhận method ownership và merge order.
-- [ ] Chỉ sau bốn điều kiện trên mới bắt đầu G4; tới thời điểm lập G3.5, cả hai plan vẫn chờ phê duyệt.
+- [ ] Team duyệt [`G4-C_DEPENDENCY_BOUNDARIES.md`](implementation/G4-C_DEPENDENCY_BOUNDARIES.md), gồm repository exceptions, service mapping, ArchUnit gates và out-of-scope.
+- [ ] Team duyệt [`G4-D_FAIL_CLOSED_AUTHORIZATION.md`](implementation/G4-D_FAIL_CLOSED_AUTHORIZATION.md), gồm default deny, 18-route matrix, synthetic route, C/D ownership và out-of-scope.
+- [ ] Bốn ADR chuyển từ `PROPOSED` sang `ACCEPTED` chỉ sau review thực tế, với reviewer/date được ghi nhận.
+- [ ] Ownership A/B/C/D và merge order A → B → C → D được xác nhận.
+- [ ] Chỉ sau sáu điều kiện trên mới bắt đầu G4; tới thời điểm cập nhật G3.5, cả bốn plan vẫn chờ phê duyệt.
