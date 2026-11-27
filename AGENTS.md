@@ -2,7 +2,7 @@
 
 When asked to work on a ByteMe Phase 2 task:
 
-1. Find the task by Task ID in [`docs/phase2/TASK_TRACKER.md`](docs/phase2/TASK_TRACKER.md). Check its dependencies, scope, owner and acceptance criteria before changing anything. Do not start dependent work whose prerequisites are incomplete.
+1. Find the task by Task ID in [`docs/phase2/TASK_TRACKER.md`](docs/phase2/TASK_TRACKER.md). Check its dependencies, scope, owner and acceptance criteria before changing anything. Do not start dependent work whose prerequisites are incomplete. For sequential G4-B work on the same branch, a prerequisite may be treated as locally complete when its deliverable has a local Task-ID commit and its technical acceptance evidence is recorded in the tracker; this only opens the next local implementation task and does not change the prerequisite to `DONE` before the Git workflow conditions are met.
 2. Follow [`docs/phase2/GIT_WORKFLOW.md`](docs/phase2/GIT_WORKFLOW.md) for branch, commit, review and tracker conventions. Do not commit or push unless explicitly requested.
 3. For G4 tasks, read the corresponding implementation plan
    and ADR in `docs/phase2/03_ARCHITECTURE_DECISIONS.md`:

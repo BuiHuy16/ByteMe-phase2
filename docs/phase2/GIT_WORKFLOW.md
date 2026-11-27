@@ -24,12 +24,12 @@ Tài liệu này cụ thể hóa Git strategy tại [ROADMAP.md](ROADMAP.md#9-gi
 
 ## 3. Quy trình cho mỗi task
 
-1. Chọn task TODO trong `TASK_TRACKER.md`, xác nhận dependency đã hoàn tất và làm việc trên branch của workstream tương ứng.
+1. Chọn task TODO trong `TASK_TRACKER.md`, xác nhận dependency đã hoàn tất và làm việc trên branch của workstream tương ứng. Riêng chuỗi task G4-B trên cùng branch, có thể bắt đầu task kế tiếp khi predecessor đã có local commit gắn Task ID và acceptance kỹ thuật được ghi nhận trong tracker. Đây chỉ là local dependency gate; predecessor vẫn giữ status hiện tại và chưa được tính `DONE`.
 2. Thực hiện đúng scope, method ownership và acceptance của task. Tạo/cập nhật kiểm tra cần thiết theo task plan; không gộp tối ưu hóa deferred hoặc sửa evidence baseline vào change set.
 3. Commit phần thay đổi nhỏ, có thể review độc lập. Mỗi commit message dùng Conventional Commits kèm Task ID.
 4. Push branch workstream lên remote và mở/cập nhật PR khi có một lát cắt review được; PR mô tả Task ID, thay đổi, acceptance/evidence và kiểm tra đã chạy.
 5. Reviewer chéo kiểm tra scope, ownership, behavior/API contract và evidence. Xử lý comment bằng commit mới trên cùng branch; không force-push/rewrite commit đã được review hoặc branch đã chia sẻ.
-6. Chỉ merge sau approval và các gate bắt buộc. Cập nhật `TASK_TRACKER.md` sau khi deliverable của task đã được commit/push và điều kiện DONE của task được chứng minh; ghi link PR/commit/evidence khi tracker có chỗ phù hợp. Không đánh dấu task DONE chỉ vì PR đã mở.
+6. Chỉ merge sau approval và các gate bắt buộc. Cập nhật `TASK_TRACKER.md` sau khi deliverable của task đã được commit/push và điều kiện DONE của task được chứng minh; ghi link PR/commit/evidence khi tracker có chỗ phù hợp. Local dependency gate của G4-B không thay thế push, review hoặc các điều kiện này. Không đánh dấu task DONE chỉ vì đã hoàn thành local hoặc PR đã mở.
 
 ## 4. Commit convention
 

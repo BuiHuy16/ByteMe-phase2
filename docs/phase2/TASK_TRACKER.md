@@ -51,6 +51,12 @@ Người có thẩm quyền quyết định dự án đã chấp thuận nguyên
 | G4-B-08 | G4-B | Rebase and integration tests | Rebase B sau A merge, resolve shared imports/methods và rerun targeted A+B | Bùi Công Huy | Nguyễn Văn Huy Hoàng | 2026-12-02 | 2026-12-02 | P0 | G4-B-06, G4-A-09 | Rebasing/integration evidence | A locks preserved; A+B targeted/impacted regression pass; no scope drift | TODO |
 | G4-B-09 | G4-B | PR review and merge | Mở/finalize PR B, xử lý review và merge | Bùi Công Huy | Nguyễn Văn Huy Hoàng | 2026-12-02 | 2026-12-02 | P0 | G4-B-08 | Merged G4-B PR | Reviewer approves; query/pagination/API gates pass; merge SHA recorded | TODO |
 
+### Local dependency evidence G4-B
+
+Local dependency gate chỉ cho phép triển khai tuần tự các task G4-B trên cùng branch trước khi push; đây không phải status mới và không làm thay đổi progress summary. Predecessor đủ local gate khi có commit gắn Task ID và acceptance kỹ thuật đã được kiểm tra. Status chỉ chuyển theo Update rules và Git workflow hiện hành; review trước merge cùng thứ tự A → B → C → D giữ nguyên.
+
+- G4-B-01: local commit `5323603`; query-count/pagination test skeleton đạt acceptance kỹ thuật với fixtures page size 1/5/20/50, phát hiện N+1 và bao phủ scope/order. G4-B-02 được mở local dependency gate; G4-B-01 vẫn `TODO` cho đến khi đủ điều kiện push/evidence/review của Git workflow.
+
 ## 4. G4-C — Dependency boundaries
 
 | Task ID | Phase | Task name | Description | Primary owner | Reviewer | Start | Due | Priority | Dependencies | Deliverable | Acceptance criteria | Status |
@@ -212,5 +218,6 @@ Nominal critical path:
 - Chuyển `TODO → IN_PROGRESS` khi owner thực sự bắt đầu và ghi link branch/work artifact.
 - Chuyển `IN_REVIEW` khi deliverable/evidence sẵn sàng cho reviewer.
 - Chỉ `DONE` khi acceptance của task đạt và evidence link cùng reviewer hoặc decision basis áp dụng được ghi; deadline đến không tự đổi status.
+- Local dependency evidence của G4-B chỉ mở task kế tiếp trên cùng branch; không tự đổi status, progress count hoặc thay thế push/review.
 - `BLOCKED` phải ghi blocker, ảnh hưởng milestone, owner xử lý và next review time.
 - Khi status đổi, cập nhật summary counts và milestone/critical-path impact trong cùng change.

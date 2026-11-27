@@ -1,19 +1,25 @@
 package org.example;
 
 import jakarta.persistence.EntityManagerFactory;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import org.example.dto.OrderPage;
+import org.example.entity.OrderStatus;
+import org.example.entity.OrderType;
+import org.example.repository.OrderRepository;
 import org.example.service.OrderService;
 import org.example.shared.api.Role;
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.test.context.ActiveProfiles;
@@ -49,6 +55,7 @@ class OrderQueryCountIntegrationTest {
     }
 
     @Autowired JdbcTemplate db;
+    @Autowired OrderRepository orders;
     @Autowired OrderService service;
     @Autowired EntityManagerFactory entityManagerFactory;
 
@@ -76,6 +83,31 @@ class OrderQueryCountIntegrationTest {
 
         statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
         statistics.clear();
+    }
+
+    @Test
+    void pageIdQueryAppliesScopeFiltersStableOrderAndNoImplicitCount() {
+        insertOrder(4_001L, CUSTOMER_ID, OrderStatus.PENDING, OrderType.DINE_IN,
+                "2026-10-03 10:00:00.000000");
+        insertOrder(4_002L, CUSTOMER_ID, OrderStatus.PENDING, OrderType.DINE_IN,
+                "2026-10-03 10:00:00.000000");
+        insertOrder(4_003L, CUSTOMER_ID, OrderStatus.PENDING, OrderType.DELIVERY,
+                "2026-10-04 10:00:00.000000");
+        insertOrder(4_004L, CUSTOMER_ID, OrderStatus.COMPLETED, OrderType.DINE_IN,
+                "2026-10-05 10:00:00.000000");
+        insertOrder(4_005L, 5L, OrderStatus.PENDING, OrderType.DINE_IN,
+                "2026-10-06 10:00:00.000000");
+
+        assertEquals(List.of(4_002L, 4_001L), findPageIds(
+                CUSTOMER_ID, List.of(OrderStatus.PENDING), OrderType.DINE_IN, 0, 2));
+        assertEquals(List.of(2_050L, 2_049L), findPageIds(
+                CUSTOMER_ID, List.of(OrderStatus.PENDING), OrderType.DINE_IN, 1, 2));
+        assertEquals(List.of(4_003L), findPageIds(
+                CUSTOMER_ID, List.of(OrderStatus.PENDING), OrderType.DELIVERY, 0, 10));
+        assertEquals(List.of(4_004L), findPageIds(
+                CUSTOMER_ID, List.of(OrderStatus.COMPLETED), OrderType.DINE_IN, 0, 10));
+        assertEquals(List.of(4_005L), findPageIds(
+                null, List.of(OrderStatus.PENDING), OrderType.DINE_IN, 0, 1));
     }
 
     @ParameterizedTest(name = "page size {0} exposes one lazy item SELECT per order")
@@ -107,6 +139,15 @@ class OrderQueryCountIntegrationTest {
         return new QueryResult(page, statistics.getPrepareStatementCount(), statistics.getCollectionFetchCount());
     }
 
+    private List<Long> findPageIds(Long userId, Collection<OrderStatus> statuses, OrderType type,
+                                   int page, int size) {
+        statistics.clear();
+        List<Long> ids = orders.findPageIds(userId, statuses, type, PageRequest.of(page, size));
+        assertEquals(1L, statistics.getPrepareStatementCount(),
+                "Page-ID repository call must not trigger an implicit count query");
+        return ids;
+    }
+
     private static void assertPageFixture(OrderPage page, int size) {
         assertEquals(size, page.content().size());
         assertEquals(ORDER_COUNT, page.totalElements());
@@ -123,11 +164,15 @@ class OrderQueryCountIntegrationTest {
     }
 
     private void insertOrder(long orderId, long userId, String createdAt) {
+        insertOrder(orderId, userId, OrderStatus.PENDING, OrderType.DINE_IN, createdAt);
+    }
+
+    private void insertOrder(long orderId, long userId, OrderStatus status, OrderType type, String createdAt) {
         db.update("""
                 INSERT INTO orders
                     (id, user_id, status, order_type, table_number, payment_method, created_at, updated_at)
-                VALUES (?, ?, 'PENDING', 'DINE_IN', 'B01', 'CASH', ?, ?)
-                """, orderId, userId, createdAt, createdAt);
+                VALUES (?, ?, ?, ?, 'B01', 'CASH', ?, ?)
+                """, orderId, userId, status.name(), type.name(), createdAt, createdAt);
     }
 
     private void insertItem(long orderId, long itemId) {
