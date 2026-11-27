@@ -10,7 +10,7 @@ Tài liệu này cụ thể hóa Git strategy tại [ROADMAP.md](ROADMAP.md#9-gi
 - G4-B: `feature/g4-b-two-step-fetching` — Bùi Công Huy.
 - G4-C: `feature/g4-c-dependency-boundaries` — Bùi Công Huy; Nguyễn Văn Huy Hoàng review.
 - G4-D: `feature/g4-d-fail-closed-authorization` — Nguyễn Văn Huy Hoàng; Bùi Công Huy review.
-- Tài liệu G3 được review/approve/publish 23–24/11; G4 bắt đầu 25/11. Bốn nhánh G4 phát triển song song trên ownership đã định. Ngày 02/12 merge A trước, B rebase/verify/merge sau A, C rebase/merge sau B, rồi D rebase trên integrated A+B+C và merge cuối sau C/D gates.
+- ADR/plans G3 được chốt bằng quyết định dự án ngày 28/11/2026, không yêu cầu approval riêng của từng thành viên. G4 chỉ bắt đầu sau khi bản approved được merge/publish và G3-04/M1 `DONE`. Bốn nhánh G4 phát triển song song trên ownership đã định. Ngày 02/12 merge A trước, B rebase/verify/merge sau A, C rebase/merge sau B, rồi D rebase trên integrated A+B+C và merge cuối sau C/D gates.
 - Không tạo nhánh task nhỏ cho G5, G6 hoặc G7. Các thay đổi thuộc những giai đoạn này đi qua nhánh tích hợp sau G4; nếu nhóm quyết định tách nhánh phát hành theo quy trình repository hiện hành, nhánh đó đại diện cho cả workstream/release, không phải từng task.
 
 ## 2. Method ownership và file dùng chung
@@ -121,7 +121,7 @@ Chỉ dùng `--force-with-lease` cho nhánh cá nhân G4-B/G4-C/G4-D sau rebase 
 
 ```mermaid
 flowchart TD
-    REVIEW["23–24/11: G3 review/approval/publish<br/>M1 on 24/11"] --> A["From 25/11: G4-A branch<br/>Hoàng: pessimistic locking"]
+    REVIEW["28/11: G3 decision recorded<br/>publish approved docs to close M1"] --> A["After M1: G4-A branch<br/>Hoàng: pessimistic locking"]
     REVIEW --> B["From 25/11: G4-B branch<br/>Huy: two-step fetching"]
     REVIEW --> C["From 25/11: G4-C branch<br/>Huy: dependency boundaries"]
     REVIEW --> D["From 25/11: G4-D branch<br/>Hoàng: fail-closed authorization"]

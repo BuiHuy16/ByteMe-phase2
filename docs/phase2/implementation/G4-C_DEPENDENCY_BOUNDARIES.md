@@ -1,11 +1,12 @@
 # G4-C Implementation Plan — Dependency Boundaries
 
-- **Status:** `PENDING_TEAM_APPROVAL`
+- **Status:** `APPROVED`
 - **ADR:** ADR-003 trong [`03_ARCHITECTURE_DECISIONS.md`](../03_ARCHITECTURE_DECISIONS.md)
 - **Owner:** Bùi Công Huy (workstream C)
 - **Reviewer:** Nguyễn Văn Huy Hoàng (workstream D)
 - **Branch:** `feature/g4-c-dependency-boundaries`
-- **Application changes authorized:** Chưa; chỉ bắt đầu sau khi ADR-003 chuyển `ACCEPTED`
+- **Approval basis:** Quyết định dự án ngày 28/11/2026 chấp thuận plan và ADR-003 như đã viết; không yêu cầu approval riêng của từng thành viên.
+- **Application changes authorized:** Sau khi bản approved được merge/publish và G3-04/M1 chuyển `DONE`.
 
 ## 1. Mục tiêu và phạm vi
 
@@ -34,7 +35,7 @@ Ngoài phạm vi:
 
 | Layer | Exception contract | Trách nhiệm |
 |---|---|---|
-| Repository | `AccountRepositoryException`, `DuplicateAccountRecordException` (tên cuối do team duyệt) | Bao lỗi data access/vendor detection; không phụ thuộc service/controller |
+| Repository | `AccountRepositoryException`, `DuplicateAccountRecordException` | Bao lỗi data access/vendor detection; không phụ thuộc service/controller |
 | Service | Existing `AccountPersistenceException`, `DuplicateAccountException` | Giữ use-case/error semantics mà controller và test hiện hữu quan sát |
 | Controller | Existing `AuthErrors` mapping | Giữ `409 ACCOUNT_CONFLICT`, `no-store` và generic 500 path hiện hữu |
 
@@ -96,7 +97,7 @@ Rule direction dùng package predicate rõ ràng để failure nêu class depend
 
 ## 5. Thứ tự task
 
-1. **C0 — Approval gate:** team duyệt ADR-003, exception names/mapping, owner/reviewer và out-of-scope list.
+1. **C0 — Approval gate:** hoàn tất theo quyết định dự án ngày 28/11/2026 cho ADR-003, exception names/mapping, owner/reviewer và out-of-scope list; execution chờ G3-04/M1 `DONE`.
 2. **C1 — Tests-first baseline:** thêm hai ArchUnit rules, lưu failure chứng minh một cycle và hai reverse imports trên baseline.
 3. **C2 — Repository exception contract:** thêm hai exception nội bộ, không phụ thuộc service/controller.
 4. **C3 — Adapter cleanup:** chuyển `MySqlAccountRepository` sang repository exceptions; giữ duplicate detection và cause.
@@ -146,9 +147,9 @@ Rule direction dùng package predicate rõ ràng để failure nêu class depend
 
 ## 9. Approval checklist
 
-- [ ] ADR-003 chuyển `ACCEPTED` sau review thực tế.
-- [ ] Bùi Công Huy nhận owner responsibility; Nguyễn Văn Huy Hoàng nhận review responsibility.
-- [ ] Team duyệt repository exception names, service mapping và behavior-preservation contract.
-- [ ] Team duyệt hai ArchUnit rules, BEFORE/AFTER measures và out-of-scope list.
-- [ ] Team xác nhận merge order A → B → C → D và G5 dependency trên integrated A+B+C+D SHA.
-- [ ] Chỉ sau năm điều kiện trên mới bắt đầu application change.
+- [x] ADR-003 chuyển `ACCEPTED` theo quyết định dự án.
+- [x] Bùi Công Huy giữ owner responsibility; Nguyễn Văn Huy Hoàng giữ review responsibility.
+- [x] Repository exception names, service mapping và behavior-preservation contract được chốt.
+- [x] Hai ArchUnit rules, BEFORE/AFTER measures và out-of-scope list được chốt.
+- [x] Merge order A → B → C → D và G5 dependency trên integrated A+B+C+D SHA được giữ nguyên.
+- [ ] Bản approved được merge/publish; G3-04/M1 `DONE` trước khi bắt đầu application change.

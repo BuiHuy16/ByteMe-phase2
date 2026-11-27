@@ -1,10 +1,11 @@
 # G4-B Implementation Plan — Two-Step Fetching
 
-- **Status:** `PENDING_TEAM_APPROVAL`
+- **Status:** `APPROVED`
 - **ADR:** ADR-002 trong [`03_ARCHITECTURE_DECISIONS.md`](../03_ARCHITECTURE_DECISIONS.md)
 - **Owner:** Bùi Công Huy (workstream B)
 - **Reviewer:** Nguyễn Văn Huy Hoàng (workstream A)
-- **Application changes authorized:** Chưa; chỉ bắt đầu sau khi ADR-002 chuyển `ACCEPTED`
+- **Approval basis:** Quyết định dự án ngày 28/11/2026 chấp thuận plan và ADR-002 như đã viết; không yêu cầu approval riêng của từng thành viên.
+- **Application changes authorized:** Sau khi bản approved được merge/publish và G3-04/M1 chuyển `DONE`.
 
 ## 1. Mục tiêu và phạm vi
 
@@ -100,7 +101,7 @@ Test-only configuration bật Hibernate statistics cho class query-count; clear 
 
 ## 5. Thứ tự task
 
-1. **B0 — Approval gate:** team duyệt ADR-002, query shapes, invariant behavior và ownership.
+1. **B0 — Approval gate:** hoàn tất theo quyết định dự án ngày 28/11/2026 cho ADR-002, query shapes, invariant behavior và ownership; execution chờ G3-04/M1 `DONE`.
 2. **B1 — Parallel branch start:** từ 25/11, phát triển trên B-owned methods song song với G4-A/G4-C/G4-D; không chạm A-owned mutation/lock methods hoặc C/D Auth/security scope.
 3. **B2 — Tests-first baseline:** tạo query-count test với page sizes 1/5/20/50 và chứng minh baseline `4/8/23/53` hoặc N+3 behavior trong test harness phù hợp.
 4. **B3 — Repository two-step:** thêm ID page và fetch-with-items queries; giữ count.
@@ -154,7 +155,7 @@ Implementation-specific gates:
 
 ## 8. Ownership và merge contract
 
-- G3 được review/approve/publish 23–24/11; bốn workstream code/test song song từ 25/11 trên method ownership riêng. Bùi Công Huy sở hữu G4-B trong toàn cửa sổ 25/11–02/12. B không chờ A merge để triển khai, nhưng B không được merge trước A; cả hai hoàn tất integration/merge ngày 02/12.
+- G3 approval được chốt ngày 28/11/2026; bốn workstream code/test song song sau khi G3-04/M1 publish hoàn tất trên method ownership riêng. Bùi Công Huy sở hữu G4-B. B không chờ A merge để triển khai, nhưng B không được merge trước A.
 - B sở hữu `OrderService.list` và private helper chỉ phục vụ list; A sở hữu mọi mutation method.
 - B sở hữu `OrderRepository` FILTER/page-ID/fetch-items/count methods; A sở hữu lock-by-ID method. B phải preserve method/annotations của A sau rebase.
 - Trong `OrderServiceTest`, B chỉ sửa list test và shared setup/import tối thiểu sau A; không rewrite checkout/status assertions.
@@ -164,8 +165,8 @@ Implementation-specific gates:
 
 ## 9. Approval checklist
 
-- [ ] ADR-002 chuyển `ACCEPTED`.
-- [ ] Team duyệt page-ID/fetch/count query shapes và invariant behavior.
-- [ ] Nguyễn Văn Huy Hoàng nhận review responsibility; parallel method ownership được xác nhận.
+- [x] ADR-002 chuyển `ACCEPTED`.
+- [x] Page-ID/fetch/count query shapes và invariant behavior được chốt.
+- [x] Nguyễn Văn Huy Hoàng giữ review responsibility; parallel method ownership được xác nhận.
 - [ ] Trước merge B: G4-A đã merge, branch B đã rebase và preserve lock methods.
-- [ ] Chỉ sau ba mục đầu mới bắt đầu application change; merge B còn bắt buộc mục rebase thứ tư.
+- [ ] Bản approved được merge/publish; G3-04/M1 `DONE` trước khi bắt đầu application change. Merge B còn bắt buộc mục rebase phía trên.
