@@ -1,10 +1,11 @@
 # G4-A Implementation Plan — Pessimistic Locking
 
-- **Status:** `PENDING_TEAM_APPROVAL`
+- **Status:** `APPROVED`
 - **ADR:** ADR-001 trong [`03_ARCHITECTURE_DECISIONS.md`](../03_ARCHITECTURE_DECISIONS.md)
 - **Owner:** Nguyễn Văn Huy Hoàng (workstream A)
 - **Reviewer:** Bùi Công Huy (workstream B)
-- **Application changes authorized:** Chưa; chỉ bắt đầu sau khi ADR-001 chuyển `ACCEPTED`
+- **Approval basis:** Quyết định dự án ngày 28/11/2026 chấp thuận plan và ADR-001 như đã viết; không yêu cầu approval riêng của từng thành viên.
+- **Application changes authorized:** Sau khi bản approved được merge/publish và G3-04/M1 chuyển `DONE`.
 
 ## 1. Mục tiêu và phạm vi
 
@@ -79,7 +80,7 @@ Response giữ `Cache-Control: no-store`; không lộ DB/Hibernate message và k
 | `src/main/java/org/example/repository/FoodRepository.java` | new `findAllByIdForUpdate(Collection<Long>)` | Lock distinct Food rows bằng một query `ORDER BY id`, no-wait | A |
 | `src/main/java/org/example/repository/FoodRepository.java` | optional `findByIdForUpdate(Long)` | Chỉ thêm nếu không reuse batch method cho single-row admin path | A |
 | `src/main/java/org/example/repository/OrderRepository.java` | new `findByIdForUpdate(Long)` | Lock Order cho cancel/confirm/status, no-wait; không sửa query list của B | A |
-| `src/main/java/org/example/service/CartService.java` | `getItemsForCheckout` | Dùng locked Cart lookup; đổi tên thành `getItemsForCheckoutLocked` nếu team duyệt explicit naming; copy items sau lock | A |
+| `src/main/java/org/example/service/CartService.java` | `getItemsForCheckout` | Dùng locked Cart lookup và đổi tên thành `getItemsForCheckoutLocked`; copy items sau lock | A |
 | `src/main/java/org/example/service/CartService.java` | `clearCart` | Giữ cùng outer transaction và locked persistence context; không mở transaction mới | A |
 | `src/main/java/org/example/service/FoodService.java` | `updateFood`, `deleteFood` | Load Food qua locking repository method trước validation/mutation | A |
 | `src/main/java/org/example/service/FoodService.java` | replace/extend `reserveStock` | Thêm batch reservation nhận map foodId→quantity, lock IDs ascending một lần, validate toàn bộ rồi mutate; trả snapshot keyed by ID | A |
@@ -121,7 +122,7 @@ Không sửa `Food`, `Cart`, `Order` để thêm `@Version`; không sửa `schem
 
 ## 5. Thứ tự task
 
-1. **A0 — Approval gate:** team duyệt ADR-001, no-wait semantics, method signatures và out-of-scope list.
+1. **A0 — Approval gate:** hoàn tất theo quyết định dự án ngày 28/11/2026 cho ADR-001, no-wait semantics, method signatures và out-of-scope list; execution chờ G3-04/M1 `DONE`.
 2. **A1 — Tests-first contract:** tạo skeleton MySQL concurrency tests cho C1/C2/C4, lock no-wait và rollback; xác nhận chúng fail đúng trên baseline.
 3. **A2 — Repository locks:** thêm Cart/Food/Order locking methods và repository-level integration proof cho order/no-wait behavior.
 4. **A3 — Cart serialization:** chuyển checkout snapshot sang locked Cart; giữ empty/missing semantics.
@@ -173,7 +174,7 @@ Implementation-specific gates:
 
 ## 8. Ownership và merge contract
 
-- G3 review/approval/publish diễn ra 23–24/11/2026; bốn workstream bắt đầu từ 25/11 sau M1. Nguyễn Văn Huy Hoàng sở hữu G4-A trong toàn cửa sổ 25/11–02/12; Bùi Công Huy review từng task và PR A.
+- G3 approval được chốt ngày 28/11/2026; bốn workstream bắt đầu sau khi G3-04/M1 publish hoàn tất. Nguyễn Văn Huy Hoàng sở hữu G4-A; Bùi Công Huy review từng task và PR A.
 - A sở hữu `OrderService.create/cancel/confirm/updateStatus/moveTo`; B sở hữu duy nhất `OrderService.list`.
 - Trong `OrderRepository`, A chỉ thêm lock-by-ID method; B sở hữu filter/page/fetch/count methods. Không format/rename toàn file.
 - Trong `OrderServiceTest`, A chỉ sửa checkout/status/cancel tests và shared setup tối thiểu. B sửa list test sau khi rebase.
@@ -183,8 +184,8 @@ Implementation-specific gates:
 
 ## 9. Approval checklist
 
-- [ ] ADR-001 chuyển `ACCEPTED`.
-- [ ] Team duyệt no-wait `0`, 409 semantics và no-auto-retry.
-- [ ] Team duyệt lock coverage/out-of-scope và method signatures.
-- [ ] Bùi Công Huy nhận review responsibility và merge order.
-- [ ] Chỉ sau bốn mục trên mới bắt đầu application change.
+- [x] ADR-001 chuyển `ACCEPTED`.
+- [x] No-wait `0`, 409 semantics và no-auto-retry được chốt.
+- [x] Lock coverage/out-of-scope và method signatures được chốt.
+- [x] Bùi Công Huy giữ review responsibility và merge order.
+- [ ] Bản approved được merge/publish; G3-04/M1 `DONE` trước khi bắt đầu application change.

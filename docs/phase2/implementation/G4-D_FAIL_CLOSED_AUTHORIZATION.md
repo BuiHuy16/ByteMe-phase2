@@ -1,11 +1,12 @@
 # G4-D Implementation Plan — Fail-Closed Authorization Boundary
 
-- **Status:** `PENDING_TEAM_APPROVAL`
+- **Status:** `APPROVED`
 - **ADR:** ADR-004 trong [`03_ARCHITECTURE_DECISIONS.md`](../03_ARCHITECTURE_DECISIONS.md)
 - **Owner:** Nguyễn Văn Huy Hoàng (workstream D)
 - **Reviewer:** Bùi Công Huy (workstream C)
 - **Branch:** `feature/g4-d-fail-closed-authorization`
-- **Application changes authorized:** Chưa; chỉ bắt đầu sau khi ADR-004 chuyển `ACCEPTED`
+- **Approval basis:** Quyết định dự án ngày 28/11/2026 chấp thuận plan và ADR-004 như đã viết; không yêu cầu approval riêng của từng thành viên.
+- **Application changes authorized:** Sau khi bản approved được merge/publish và G3-04/M1 chuyển `DONE`.
 
 ## 1. Mục tiêu và phạm vi
 
@@ -106,7 +107,7 @@ Representative cases giữ:
 
 ## 5. Thứ tự task
 
-1. **D0 — Approval gate:** team duyệt ADR-004, current-route matrix, synthetic test design, Auth-test method ownership và merge A → B → C → D.
+1. **D0 — Approval gate:** hoàn tất theo quyết định dự án ngày 28/11/2026 cho ADR-004, current-route matrix, synthetic test design, Auth-test method ownership và merge A → B → C → D; execution chờ G3-04/M1 `DONE`.
 2. **D1 — BEFORE/test skeleton:** lưu source-level BEFORE, tạo role-matrix và synthetic route cases để chứng minh authenticated fallback hiện tại không fail-closed.
 3. **D2 — Production fallback:** đổi terminal matcher sang `denyAll`, không chạm explicit matchers.
 4. **D3 — Current-route matrix:** hoàn thiện 18/18 public/role regression và security error headers/body.
@@ -155,9 +156,9 @@ Representative cases giữ:
 
 ## 9. Approval checklist
 
-- [ ] ADR-004 chuyển `ACCEPTED` sau review thực tế.
-- [ ] Team xác nhận 18-endpoint policy matrix và public-route nuances phải giữ nguyên.
-- [ ] Team duyệt synthetic-unlisted-route design, 401/403 contract và controller-not-invoked assertion.
-- [ ] Team duyệt method ownership C/D trong `AuthIntegrationTest` và file test mới của D.
-- [ ] Team xác nhận merge order A → B → C → D và G5 dependency trên integrated SHA.
-- [ ] Chỉ sau năm điều kiện trên mới bắt đầu application change.
+- [x] ADR-004 chuyển `ACCEPTED` theo quyết định dự án.
+- [x] 18-endpoint policy matrix và public-route nuances phải giữ nguyên.
+- [x] Synthetic-unlisted-route design, 401/403 contract và controller-not-invoked assertion được chốt.
+- [x] Method ownership C/D trong `AuthIntegrationTest` và file test mới của D được chốt.
+- [x] Merge order A → B → C → D và G5 dependency trên integrated SHA được giữ nguyên.
+- [ ] Bản approved được merge/publish; G3-04/M1 `DONE` trước khi bắt đầu application change.

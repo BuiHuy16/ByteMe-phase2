@@ -17,15 +17,15 @@
 
 ## 2. Current project status
 
-Cập nhật tại 23/11/2026. Chỉ ghi trạng thái đã có; không suy diễn công việc tương lai là hoàn tất.
+Cập nhật tại 28/11/2026. Chỉ ghi trạng thái đã có; không suy diễn công việc tương lai là hoàn tất.
 
 | Phase | Trạng thái | Kết quả hiện có / gate còn lại |
 |---|---|---|
 | G0 — Requirements & baseline setup | **COMPLETED** | Requirements/baseline documentation đã hoàn thành. Không lập lại task. |
 | G1 — System assessment | **COMPLETED** | Assessment/findings đã hoàn thành. Không audit lại. |
 | G2 — Verification & BEFORE benchmark | **COMPLETED** | Official Intel BEFORE baseline đã khóa; phải giữ nguyên locks/evidence. |
-| G3 — Architecture design & decisions | **DOCUMENTATION COMPLETE / APPROVAL PENDING** | G3.1–G3.5, ADR-001/002/003/004 và bốn implementation plans đã có; cần team review thực tế trước khi đổi bất kỳ ADR nào sang `ACCEPTED`. |
-| G4 — Architecture implementation | **NOT STARTED** | Chỉ bắt đầu sau M1. Bốn branch phát triển song song trên scope riêng; merge A → B → C → D. |
+| G3 — Architecture design & decisions | **APPROVED / PUBLICATION IN PROGRESS** | Quyết định dự án ngày 28/11/2026 đã chấp thuận ADR-001…004 và bốn plans, không yêu cầu approval riêng từng thành viên. G3-04 còn chờ merge/publish bản approved và ghi SHA. |
+| G4 — Architecture implementation | **NOT STARTED** | Chỉ bắt đầu sau khi G3-04/M1 `DONE`. Bốn branch phát triển song song trên scope riêng; merge A → B → C → D. |
 | G5 — Verification & hardening | **NOT STARTED** | Phụ thuộc cả bốn PR G4 đã merge. |
 | G6 — AFTER benchmark & evaluation | **NOT STARTED** | Phụ thuộc Code Freeze SHA và G5 pass. |
 | G7 — Final acceptance & delivery | **NOT STARTED** | Có thể pre-draft trong G6; final content phụ thuộc G6 evaluation. |
@@ -37,7 +37,7 @@ Cập nhật tại 23/11/2026. Chỉ ghi trạng thái đã có; không suy di�
 | **Bùi Công Huy** | Điều phối dự án; owner G4-B/G4-C; query count/pagination, dependency boundaries; toàn bộ Kaggle/AFTER benchmark; aggregation và đánh giá BEFORE/AFTER; experimental report | Review G4-A/G4-D; integration/freeze; final docs, reproduction guide, release/submission |
 | **Nguyễn Văn Huy Hoàng** | Owner G4-A/G4-D; locking, fail-closed authorization; lead kiểm thử tích hợp/correctness evidence và architecture/correctness report | Review G4-B/G4-C; cung cấp correctness evidence cho Huy; benchmark incident support; demo/vấn đáp/final acceptance |
 
-Cả hai cùng phê duyệt ADR/plans, review chéo, combined acceptance, demo/vấn đáp và final submission. Reviewer của từng task là thành viên còn lại; mỗi task có đúng một primary owner và reviewer đã xác định trong tracker.
+Approval G3 được chốt bằng quyết định dự án ngày 28/11/2026 và không yêu cầu xác nhận riêng của từng thành viên. Hai thành viên vẫn giữ nguyên trách nhiệm review chéo G4, combined acceptance, demo/vấn đáp và final submission. Reviewer của từng task là thành viên còn lại; mỗi task có đúng một primary owner và reviewer đã xác định trong tracker.
 
 ## 4. Project timeline
 
@@ -104,7 +104,7 @@ gantt
 
 | Workstream | Owner | Window | Deliverable | Hard dependency |
 |---|---|---|---|---|
-| G3 approval | Both (task-specific owners) | 23–24/11 | Accepted ADRs, approved plans and published coordination decisions | None |
+| G3 approval | Task-specific owners; project decision authority chốt approval | 23–28/11 | Accepted ADRs, approved plans and published coordination decision | None |
 | G4-A concurrency | Nguyễn Văn Huy Hoàng | 25/11–02/12 | Reviewed/merged pessimistic-locking change with tests | M1 |
 | G4-B data access | Bùi Công Huy | 25/11–02/12 | Reviewed/merged two-step fetch change with tests | M1; final rebase/merge waits M2 |
 | G4-C dependency boundaries | Bùi Công Huy | 25/11–02/12 | 0 `repository → service`, 0 package cycle, Auth behavior preserved | M1; final rebase/merge waits M3 |
@@ -120,7 +120,7 @@ Parallelism rule: G4-A, G4-B, G4-C và G4-D cùng triển khai từ 25/11 đến
 
 | ID | Milestone | Deadline | Exit criteria |
 |---|---|---:|---|
-| M1 | G3 approved | 24/11/2026 | Bốn ADR `ACCEPTED` chỉ sau review thực tế; bốn plan, acceptance/method ownership C/D, Git workflow và merge order được cả hai xác nhận; tài liệu approved được publish bởi task tương ứng |
+| M1 | G3 approved | 24/11/2026 | Bốn ADR `ACCEPTED`, bốn plan `APPROVED`, acceptance/method ownership C/D, Git workflow và merge order được chốt bằng quyết định dự án; bản approved được merge/publish và SHA được ghi qua G3-04 |
 | M2 | G4-A completed and merged | 02/12/2026 | C1/C2/C4 targeted tests pass; NO_WAIT runtime proof pass; rollback/error mapping/regression pass; reviewer approves; A PR merged first |
 | M3 | G4-B completed and merged | 02/12/2026 | Query count constant and captured SELECT `≤4`; pagination/filter/order/ownership/API tests pass; B rebased on A; impacted tests pass; PR merged |
 | M3-C | G4-C completed and merged | 02/12/2026 | 0 `repository → service`, 0 package cycle; Auth regression/API behavior pass; C rebased on integrated A+B; PR merged |
@@ -152,7 +152,7 @@ Không milestone nào được đánh dấu đạt chỉ vì đến deadline.
 
 Critical path trực tiếp đến 09/12:
 
-`G3 approval 23–24/11 → G4-A/G4-B/G4-C/G4-D parallel implementation and review 25/11–02/12, with merge order A → B → C → D on 02/12 → G5 combined pass & Code Freeze 03–04/12 → AFTER bundle/comparator/smoke after freeze 04/12 → official attempts 05–07/12 → buffer/final minimum-group decision, four-ADR evaluation and final reports/package 08/12 → submission 09/12`.
+`G3 decision recorded 28/11 → publish approved docs and close G3-04/M1 → G4-A/G4-B/G4-C/G4-D parallel implementation and review, with merge order A → B → C → D → G5 combined pass & Code Freeze → AFTER bundle/comparator/smoke after freeze → official attempts → buffer/final minimum-group decision, four-ADR evaluation and final reports/package → submission 09/12`.
 
 Các điểm nhạy:
 
@@ -192,11 +192,11 @@ Critical task IDs được liệt kê riêng trong [TASK_TRACKER.md](TASK_TRACKE
 
 | Risk | Probability / impact | Early trigger | Prevention/mitigation | Contingency | Owner |
 |---|---|---|---|---|---|
-| G3 approval trễ | Medium / **Critical** | ADR/plan review chưa xong 24/11 | Dành trọn 23–24/11 cho review và xử lý comment theo thứ tự ưu tiên | G4 không bắt đầu trước approval; dùng contingency trong lịch G4, không bỏ acceptance gate | Cả hai |
+| G3 publication trễ | Medium / **Critical** | Bản approved chưa merge/publish, G3-04/M1 chưa `DONE` | Giữ diff tài liệu hẹp, kiểm tra link/status/count trước publish | G4 không bắt đầu trước khi G3-04/M1 hoàn tất; không bỏ publication gate | Nguyễn Văn Huy Hoàng |
 | G4-A chậm | Medium / **Critical** | A2/A3 chưa xong 27/11 hoặc targeted suite đỏ 01/12 | Hoàng triển khai theo dependency từ 25/11; lock methods trước, scope freeze, Huy review theo lịch | Ưu tiên A blockers và cross-review để giữ A-first merge 02/12; không làm giảm verification | Nguyễn Văn Huy Hoàng |
 | G4-B integration bị nén | High / **High** | G4-B-01/02 nền tảng chưa sẵn cuối 27/11 hoặc query gate chưa đạt 01/12 | Chia lát cắt nhỏ theo dependency; ưu tiên critical methods/query gates; chuẩn bị rebase và impacted-test checklist trước 02/12 | Ưu tiên rebase/verification ngay sau A merge 02/12; không cắt contract/query verification hoặc scope | Bùi Công Huy |
-| G4-C boundary gate fail | Medium / **High** | ArchUnit còn cycle/reverse dependency ngày 01/12 hoặc Auth persistence behavior drift | Huy giữ scope Auth persistence hẹp; test-first hai architecture rules; không chạm D-owned security blocks | Nếu rule phát hiện scope rộng, giữ ADR-003 `PROPOSED`, ghi blocker và không làm yếu rule hoặc đổi A/B/D scope | Bùi Công Huy |
-| G4-D role regression hoặc shared Auth-test conflict | Medium / **High** | Một current route bị 401/403 sai; unlisted route vẫn tới controller; C/D sửa cùng Auth test block | New D-owned test file; method-level ownership; C hoàn tất persistence methods trước, D rebase sau C và rerun C+D gates | Giữ ADR-004 `PROPOSED`, revert/sửa đúng fallback hoặc test setup; không thêm production allow-list cho synthetic route và không đổi deadline/scope âm thầm | Nguyễn Văn Huy Hoàng |
+| G4-C boundary gate fail | Medium / **High** | ArchUnit còn cycle/reverse dependency ngày 01/12 hoặc Auth persistence behavior drift | Huy giữ scope Auth persistence hẹp; test-first hai architecture rules; không chạm D-owned security blocks | Mở lại ADR-003, ghi blocker và không làm yếu rule hoặc đổi A/B/D scope | Bùi Công Huy |
+| G4-D role regression hoặc shared Auth-test conflict | Medium / **High** | Một current route bị 401/403 sai; unlisted route vẫn tới controller; C/D sửa cùng Auth test block | New D-owned test file; method-level ownership; C hoàn tất persistence methods trước, D rebase sau C và rerun C+D gates | Mở lại ADR-004, revert/sửa đúng fallback hoặc test setup; không thêm production allow-list cho synthetic route và không đổi deadline/scope âm thầm | Nguyễn Văn Huy Hoàng |
 | NO_WAIT không hoạt động | Medium / **Critical** | Contender chờ DB default hoặc không map 409 trong test 26/11 | Runtime proof ngay A3; không đợi end-to-end | Dừng implementation và review ADR cùng ngày; không silent native fallback; đánh giá ảnh hưởng tới mốc M2/M3/G5 mà không giảm gate | Nguyễn Văn Huy Hoàng |
 | Merge conflict shared files | High / High | Hai branch sửa cùng method/import/setup, đặc biệt `Order*` hoặc `AuthIntegrationTest` | Method ownership, small commits, no whole-file format, merge A→B→C→D | Rebase tuần tự; owner và reviewer cùng resolve; rerun impacted prior-workstream gates trước merge | Bùi Công Huy điều phối |
 | Regression failure | Medium / **Critical** | Targeted/full suite fail hoặc behavior/API drift | Tests-first, isolated scope, frequent targeted runs | Classify root cause; fix/retest affected + full suite; không Code Freeze khi còn P0 | Nguyễn Văn Huy Hoàng |
@@ -216,7 +216,7 @@ Critical task IDs được liệt kê riêng trong [TASK_TRACKER.md](TASK_TRACKE
 
 Phase 2 chỉ `DONE` khi toàn bộ điều kiện sau đạt:
 
-- ADR-001/ADR-002/ADR-003/ADR-004 và implementation decisions có reviewer/date/status cuối dựa trên phê duyệt/evidence thực tế; scope không mở rộng ngoài bốn ADR.
+- ADR-001/ADR-002/ADR-003/ADR-004 và implementation decisions có decision basis/date/status cuối dựa trên quyết định thực tế; không tạo review cá nhân giả và không mở rộng scope ngoài bốn ADR.
 - G4-A/G4-B/G4-C/G4-D code được review/merge theo A → B → C → D, đúng ownership và không có unrelated change; C đạt 0 `repository → service`/0 package cycle; D đạt default deny, 18/18 role matrix và unlisted-route denial.
 - Targeted, full regression, role-matrix, black-box, Docker, concurrency invariant, query-count/pagination/API compatibility gates pass; no unresolved P0.
 - Frozen application SHA/JAR và benchmark locks được ghi; mọi official AFTER run dùng cùng compatible Intel group và application version.
