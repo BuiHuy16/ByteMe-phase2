@@ -6,7 +6,7 @@
 - **Status vocabulary:** `TODO`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`
 - **Roadmap:** [ROADMAP.md](ROADMAP.md)
 
-G0–G2 đã hoàn thành và không được tạo lại thành task. Bốn ADR và bốn implementation plans được chấp thuận bằng quyết định dự án ngày 28/11/2026; quyết định này thay yêu cầu xác nhận riêng của từng thành viên và không được ghi thành review cá nhân. Bản approved đang chờ merge/publish qua G3-04 trước khi M1 và các dependency G4 được mở khóa. Status chỉ được cập nhật từ evidence thực tế.
+G0–G2 đã hoàn thành và không được tạo lại thành task. Bốn ADR và bốn implementation plans được chấp thuận bằng quyết định dự án ngày 28/11/2026; quyết định này thay yêu cầu xác nhận riêng của từng thành viên và không được ghi thành review cá nhân. Bản approved đã được merge/publish qua PR #4; G3-04 và M1 hoàn tất, nên các dependency G4 trỏ tới G3-04 đã được mở khóa. Status chỉ được cập nhật từ evidence thực tế.
 
 ## 1. G3 — Approval and planning closeout
 
@@ -15,13 +15,13 @@ G0–G2 đã hoàn thành và không được tạo lại thành task. Bốn ADR
 | G3-01 | G3 | Review ADR-001/002/003/004 | Review pessimistic locking, two-step fetch, dependency boundaries, fail-closed authorization, trade-offs và acceptance | Bùi Công Huy | Nguyễn Văn Huy Hoàng | 2026-11-23 | 2026-11-23 | P0 | — | Decision record cho 4 ADR | Quyết định dự án ghi rõ bốn phương án được chấp thuận, cơ sở và ngày quyết định; không tạo review cá nhân giả | DONE |
 | G3-02 | G3 | Review implementation plans | Review scope, file/method ownership, timeout/isolation, exception mapping, authorization matrix, tests và gates của bốn plan | Nguyễn Văn Huy Hoàng | Bùi Công Huy | 2026-11-23 | 2026-11-24 | P0 | — | Approved plans/checklist | Bốn plan `APPROVED`; không còn chi tiết implementation mơ hồ ảnh hưởng G4; owner/reviewer và C/D shared-test contract rõ | DONE |
 | G3-03 | G3 | Approve coordination contract | Chốt owners, method ownership, parallel coding, A→B→C→D merge và Git workflow | Bùi Công Huy | Nguyễn Văn Huy Hoàng | 2026-11-24 | 2026-11-24 | P0 | G3-01, G3-02 | Recorded coordination decision | Quyết định ngày 28/11/2026 giữ nguyên owners/reviewers, method ownership, acceptance và merge order A→B→C→D | DONE |
-| G3-04 | G3 | Publish approved G3 docs | Cập nhật status `ACCEPTED`/`APPROVED` theo quyết định thực tế và publish tài liệu approved | Nguyễn Văn Huy Hoàng | Bùi Công Huy | 2026-11-24 | 2026-11-24 | P0 | G3-03 | Published approved G3 documentation commit | Bản approved được merge/publish; links/files đúng; merge hoặc commit SHA mới được ghi | IN_PROGRESS |
+| G3-04 | G3 | Publish approved G3 docs | Cập nhật status `ACCEPTED`/`APPROVED` theo quyết định thực tế và publish tài liệu approved | Nguyễn Văn Huy Hoàng | Bùi Công Huy | 2026-11-24 | 2026-11-24 | P0 | G3-03 | Published approved G3 documentation commit | Bản approved được merge/publish; links/files đúng; merge hoặc commit SHA mới được ghi | DONE |
 
 ### Decision và publication record G3 ngày 28/11/2026
 
 Người có thẩm quyền quyết định dự án đã chấp thuận nguyên trạng ADR-001…004 và bốn implementation plans trong tài liệu, không yêu cầu xác nhận riêng của từng thành viên. Cơ sở này hoàn tất G3-01…03 nhưng không được mô tả thành review, approval hoặc chữ ký cá nhân của Bùi Công Huy hay Nguyễn Văn Huy Hoàng.
 
-[PR #2 — tài liệu G3](https://github.com/BuiHuy16/ByteMe-phase2/pull/2), merge SHA `8668a29a8ccae80afc8ec288f56fa84f4425dbe6`, chỉ publish bản `PROPOSED`/`PENDING_TEAM_APPROVAL` trước quyết định. Bản approved hiện tại nằm trên branch `docs/update-context`; G3-04 còn `IN_PROGRESS` cho tới khi bản này được merge/publish và SHA mới được ghi. Sau merge, một cập nhật tracker kế tiếp phải ghi SHA đó rồi chuyển G3-04/M1 sang `DONE`. M1 hiện `IN_PROGRESS`; các task G4 phụ thuộc G3-04 chưa được bắt đầu.
+[PR #2 — tài liệu G3](https://github.com/BuiHuy16/ByteMe-phase2/pull/2), merge SHA `8668a29a8ccae80afc8ec288f56fa84f4425dbe6`, đã publish bản `PROPOSED`/`PENDING_TEAM_APPROVAL` trước quyết định. Bản approved sau đó được merge từ `docs/update-context` vào `main` qua [PR #4](https://github.com/BuiHuy16/ByteMe-phase2/pull/4) lúc 00:25:01 ngày 28/11/2026 (UTC+07), merge SHA `db39c50d9a8d9d53d2c41d026729e5e7905249aa`. Git xác nhận commit approval `dac1293` là ancestor của `main`; PR #4 chứa Architecture Decisions, Git Workflow, Roadmap, Task Tracker và bốn implementation plans. G3-04 và M1 `DONE`; các task G4 phụ thuộc G3-04 được phép bắt đầu theo trạng thái và ownership riêng.
 
 ## 2. G4-A — Pessimistic locking
 
@@ -137,7 +137,7 @@ Huy điều phối dự án, sở hữu G4-B/G4-C, integration, toàn bộ Kaggl
 
 | ID | Milestone | Deadline | Required task evidence | Status |
 |---|---:|---:|---|---|
-| M1 | G3 approved | 2026-11-24 | G3-01…04; ADR-001/002/003/004 và bốn plans được duyệt và bản approved được publish | IN_PROGRESS |
+| M1 | G3 approved | 2026-11-24 | G3-01…04; ADR-001/002/003/004 và bốn plans được duyệt và bản approved được publish qua PR #4, merge SHA `db39c50d9a8d9d53d2c41d026729e5e7905249aa` | DONE |
 | M2 | G4-A completed and merged | 2026-12-02 | G4-A-01…09 | TODO |
 | M3 | G4-B completed and merged | 2026-12-02 | G4-B-01…09 | TODO |
 | M3-C | G4-C completed and merged | 2026-12-02 | G4-C-01…07 | TODO |
@@ -190,7 +190,7 @@ Nominal critical path:
 
 | Phase | Total | TODO | IN_PROGRESS | IN_REVIEW | BLOCKED | DONE | Completion |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| G3 | 4 | 0 | 1 | 0 | 0 | 3 | 75% |
+| G3 | 4 | 0 | 0 | 0 | 0 | 4 | 100% |
 | G4-A | 9 | 9 | 0 | 0 | 0 | 0 | 0% |
 | G4-B | 9 | 9 | 0 | 0 | 0 | 0 | 0% |
 | G4-C | 7 | 7 | 0 | 0 | 0 | 0 | 0% |
@@ -198,14 +198,14 @@ Nominal critical path:
 | G5 | 7 | 7 | 0 | 0 | 0 | 0 | 0% |
 | G6 | 13 | 13 | 0 | 0 | 0 | 0 | 0% |
 | G7 | 13 | 13 | 0 | 0 | 0 | 0 | 0% |
-| **Total** | **69** | **65** | **1** | **0** | **0** | **3** | **4.3%** |
+| **Total** | **69** | **65** | **0** | **0** | **0** | **4** | **5.8%** |
 
 ### By member
 
 | Member | Total | TODO | IN_PROGRESS | IN_REVIEW | BLOCKED | DONE | Completion |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | Bùi Công Huy | 39 | 37 | 0 | 0 | 0 | 2 | 5.1% |
-| Nguyễn Văn Huy Hoàng | 30 | 28 | 1 | 0 | 0 | 1 | 3.3% |
+| Nguyễn Văn Huy Hoàng | 30 | 28 | 0 | 0 | 0 | 2 | 6.7% |
 
 ### Update rules
 
