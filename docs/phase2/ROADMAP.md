@@ -24,7 +24,7 @@ Cập nhật tại 28/11/2026. Chỉ ghi trạng thái đã có; không suy di�
 | G0 — Requirements & baseline setup | **COMPLETED** | Requirements/baseline documentation đã hoàn thành. Không lập lại task. |
 | G1 — System assessment | **COMPLETED** | Assessment/findings đã hoàn thành. Không audit lại. |
 | G2 — Verification & BEFORE benchmark | **COMPLETED** | Official Intel BEFORE baseline đã khóa; phải giữ nguyên locks/evidence. |
-| G3 — Architecture design & decisions | **APPROVED / PUBLICATION IN PROGRESS** | Quyết định dự án ngày 28/11/2026 đã chấp thuận ADR-001…004 và bốn plans, không yêu cầu approval riêng từng thành viên. G3-04 còn chờ merge/publish bản approved và ghi SHA. |
+| G3 — Architecture design & decisions | **COMPLETED** | ADR-001…004 `ACCEPTED`, bốn plans `APPROVED`; bản approved được publish qua [PR #4](https://github.com/BuiHuy16/ByteMe-phase2/pull/4), merge SHA `db39c50d9a8d9d53d2c41d026729e5e7905249aa`. G3-04/M1 `DONE`. |
 | G4 — Architecture implementation | **NOT STARTED** | Chỉ bắt đầu sau khi G3-04/M1 `DONE`. Bốn branch phát triển song song trên scope riêng; merge A → B → C → D. |
 | G5 — Verification & hardening | **NOT STARTED** | Phụ thuộc cả bốn PR G4 đã merge. |
 | G6 — AFTER benchmark & evaluation | **NOT STARTED** | Phụ thuộc Code Freeze SHA và G5 pass. |
@@ -120,7 +120,7 @@ Parallelism rule: G4-A, G4-B, G4-C và G4-D cùng triển khai từ 25/11 đến
 
 | ID | Milestone | Deadline | Exit criteria |
 |---|---|---:|---|
-| M1 | G3 approved | 24/11/2026 | Bốn ADR `ACCEPTED`, bốn plan `APPROVED`, acceptance/method ownership C/D, Git workflow và merge order được chốt bằng quyết định dự án; bản approved được merge/publish và SHA được ghi qua G3-04 |
+| M1 | G3 approved | 24/11/2026 | **DONE** — bốn ADR `ACCEPTED`, bốn plan `APPROVED`, acceptance/method ownership C/D, Git workflow và merge order được chốt; bản approved được merge/publish qua [PR #4](https://github.com/BuiHuy16/ByteMe-phase2/pull/4), SHA `db39c50d9a8d9d53d2c41d026729e5e7905249aa` |
 | M2 | G4-A completed and merged | 02/12/2026 | C1/C2/C4 targeted tests pass; NO_WAIT runtime proof pass; rollback/error mapping/regression pass; reviewer approves; A PR merged first |
 | M3 | G4-B completed and merged | 02/12/2026 | Query count constant and captured SELECT `≤4`; pagination/filter/order/ownership/API tests pass; B rebased on A; impacted tests pass; PR merged |
 | M3-C | G4-C completed and merged | 02/12/2026 | 0 `repository → service`, 0 package cycle; Auth regression/API behavior pass; C rebased on integrated A+B; PR merged |
@@ -192,7 +192,7 @@ Critical task IDs được liệt kê riêng trong [TASK_TRACKER.md](TASK_TRACKE
 
 | Risk | Probability / impact | Early trigger | Prevention/mitigation | Contingency | Owner |
 |---|---|---|---|---|---|
-| G3 publication trễ | Medium / **Critical** | Bản approved chưa merge/publish, G3-04/M1 chưa `DONE` | Giữ diff tài liệu hẹp, kiểm tra link/status/count trước publish | G4 không bắt đầu trước khi G3-04/M1 hoàn tất; không bỏ publication gate | Nguyễn Văn Huy Hoàng |
+| G3 publication trễ — **CLOSED** | Resolved | PR #4 merge ngày 28/11/2026 | Bản approved đã được kiểm tra link/status/count trước publish | G3-04/M1 `DONE` tại SHA `db39c50d9a8d9d53d2c41d026729e5e7905249aa`; publication gate đã đóng | Nguyễn Văn Huy Hoàng |
 | G4-A chậm | Medium / **Critical** | A2/A3 chưa xong 27/11 hoặc targeted suite đỏ 01/12 | Hoàng triển khai theo dependency từ 25/11; lock methods trước, scope freeze, Huy review theo lịch | Ưu tiên A blockers và cross-review để giữ A-first merge 02/12; không làm giảm verification | Nguyễn Văn Huy Hoàng |
 | G4-B integration bị nén | High / **High** | G4-B-01/02 nền tảng chưa sẵn cuối 27/11 hoặc query gate chưa đạt 01/12 | Chia lát cắt nhỏ theo dependency; ưu tiên critical methods/query gates; chuẩn bị rebase và impacted-test checklist trước 02/12 | Ưu tiên rebase/verification ngay sau A merge 02/12; không cắt contract/query verification hoặc scope | Bùi Công Huy |
 | G4-C boundary gate fail | Medium / **High** | ArchUnit còn cycle/reverse dependency ngày 01/12 hoặc Auth persistence behavior drift | Huy giữ scope Auth persistence hẹp; test-first hai architecture rules; không chạm D-owned security blocks | Mở lại ADR-003, ghi blocker và không làm yếu rule hoặc đổi A/B/D scope | Bùi Công Huy |
