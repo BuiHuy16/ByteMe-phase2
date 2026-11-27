@@ -26,6 +26,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("select o.id " + FILTER + " order by o.createdAt desc, o.id desc")
     List<Long> findPageIds(Long userId, Collection<OrderStatus> statuses, OrderType type, Pageable pageable);
 
+    @Query("select distinct o from Order o left join fetch o.items where o.id in :ids")
+    List<Order> findWithItemsByIdIn(Collection<Long> ids);
+
     @Query("select count(o) " + FILTER)
     long countMatching(Long userId, Collection<OrderStatus> statuses, OrderType type);
 

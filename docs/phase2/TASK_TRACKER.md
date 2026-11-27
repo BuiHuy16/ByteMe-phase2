@@ -56,6 +56,7 @@ Người có thẩm quyền quyết định dự án đã chấp thuận nguyên
 Local dependency gate chỉ cho phép triển khai tuần tự các task G4-B trên cùng branch trước khi push; đây không phải status mới và không làm thay đổi progress summary. Predecessor đủ local gate khi có commit gắn Task ID và acceptance kỹ thuật đã được kiểm tra. Status chỉ chuyển theo Update rules và Git workflow hiện hành; review trước merge cùng thứ tự A → B → C → D giữ nguyên.
 
 - G4-B-01: local commit `5323603`; query-count/pagination test skeleton đạt acceptance kỹ thuật với fixtures page size 1/5/20/50, phát hiện N+1 và bao phủ scope/order. G4-B-02 được mở local dependency gate; G4-B-01 vẫn `TODO` cho đến khi đủ điều kiện push/evidence/review của Git workflow.
+- G4-B-02: local commit `d3f499d`; page-ID query đạt acceptance kỹ thuật với owner/status/type scope, stable sort `createdAt DESC, id DESC`, pagination chỉ trên ID query và không có count ẩn. G4-B-03 được mở local dependency gate; G4-B-02 vẫn `TODO` cho đến khi đủ điều kiện push/evidence/review của Git workflow.
 
 ## 4. G4-C — Dependency boundaries
 

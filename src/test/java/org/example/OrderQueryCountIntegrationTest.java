@@ -5,6 +5,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import org.example.dto.OrderPage;
+import org.example.entity.Order;
+import org.example.entity.OrderItem;
 import org.example.entity.OrderStatus;
 import org.example.entity.OrderType;
 import org.example.repository.OrderRepository;
@@ -110,6 +112,34 @@ class OrderQueryCountIntegrationTest {
                 null, List.of(OrderStatus.PENDING), OrderType.DINE_IN, 0, 1));
     }
 
+    @Test
+    void bulkFetchReturnsDistinctRootsIncludingZeroItemOrderWithoutLazySelects() {
+        insertOrder(4_101L, CUSTOMER_ID, "2026-10-07 10:00:00.000000");
+        insertOrder(4_102L, CUSTOMER_ID, "2026-10-08 10:00:00.000000");
+        insertItem(4_102L, 12_002L, 2L);
+        insertItem(4_102L, 12_001L, 1L);
+
+        statistics.clear();
+        List<Order> fetched = orders.findWithItemsByIdIn(List.of(4_101L, 4_102L));
+
+        assertEquals(2, fetched.size(), "Fetch join must de-duplicate root Orders");
+        Order zeroItemOrder = fetched.stream()
+                .filter(order -> order.getId() == 4_101L)
+                .findFirst()
+                .orElseThrow();
+        Order multiItemOrder = fetched.stream()
+                .filter(order -> order.getId() == 4_102L)
+                .findFirst()
+                .orElseThrow();
+        assertTrue(zeroItemOrder.getItems().isEmpty(), "LEFT JOIN FETCH must preserve zero-item Orders");
+        assertEquals(List.of(12_001L, 12_002L), multiItemOrder.getItems().stream()
+                .map(OrderItem::getId)
+                .toList());
+        assertEquals(1L, statistics.getPrepareStatementCount(),
+                "Accessing fetched items must not trigger a lazy SELECT per Order");
+        assertEquals(0L, statistics.getCollectionFetchCount());
+    }
+
     @ParameterizedTest(name = "page size {0} exposes one lazy item SELECT per order")
     @ValueSource(ints = {1, 5, 20, 50})
     void baselineQueryCountGrowsWithPageSize(int size) {
@@ -176,11 +206,15 @@ class OrderQueryCountIntegrationTest {
     }
 
     private void insertItem(long orderId, long itemId) {
+        insertItem(orderId, itemId, 1L);
+    }
+
+    private void insertItem(long orderId, long itemId, long foodId) {
         db.update("""
                 INSERT INTO order_items
                     (id, order_id, food_id, food_name, unit_price, quantity, created_at)
-                VALUES (?, ?, 1, 'Phở bò tái', 65000.00, 1, '2026-10-01 10:00:00.000000')
-                """, itemId, orderId);
+                VALUES (?, ?, ?, 'Phở bò tái', 65000.00, 1, '2026-10-01 10:00:00.000000')
+                """, itemId, orderId, foodId);
     }
 
     private record QueryResult(OrderPage page, long preparedStatements, long collectionFetches) {}
