@@ -9,14 +9,18 @@ import org.example.dto.OrderPage;
 import org.example.entity.*;
 import org.example.repository.OrderRepository;
 import org.example.shared.api.Role;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -81,9 +85,42 @@ public class OrderService {
         // Customers only see their own orders.
         Long ownerId = role == Role.CUSTOMER ? userId : null;
 
-        List<OrderDto> content = orders.findPage(ownerId, statuses, type, page, size).stream()
-                .map(OrderDto::fromEntity).toList();
-        return new OrderPage(content, page, size, orders.countMatching(ownerId, statuses, type));
+        List<Long> pageIds = orders.findPageIds(ownerId, statuses, type, PageRequest.of(page, size));
+        List<Order> fetched = pageIds.isEmpty()
+                ? List.of()
+                : orders.findWithItemsByIdIn(pageIds);
+        List<OrderDto> content = assemblePageContent(pageIds, fetched);
+        long total = orders.countMatching(ownerId, statuses, type);
+        return new OrderPage(content, page, size, total);
+    }
+
+    private static List<OrderDto> assemblePageContent(List<Long> pageIds, List<Order> fetched) {
+        Set<Long> expectedIds = new HashSet<>(pageIds);
+        if (expectedIds.size() != pageIds.size()) {
+            throw new IllegalStateException("Order list invariant violated: duplicate page IDs");
+        }
+
+        Map<Long, Order> byId = new HashMap<>();
+        for (Order order : fetched) {
+            Long orderId = order == null ? null : order.getId();
+            if (!expectedIds.contains(orderId)) {
+                throw new IllegalStateException("Order list invariant violated: unexpected fetched Order ID " + orderId);
+            }
+            if (byId.put(orderId, order) != null) {
+                throw new IllegalStateException("Order list invariant violated: duplicate fetched Order ID " + orderId);
+            }
+        }
+
+        Set<Long> missingIds = new HashSet<>(expectedIds);
+        missingIds.removeAll(byId.keySet());
+        if (!missingIds.isEmpty()) {
+            throw new IllegalStateException("Order list invariant violated: missing fetched Order IDs " + missingIds);
+        }
+
+        return pageIds.stream()
+                .map(byId::get)
+                .map(OrderDto::fromEntity)
+                .toList();
     }
 
     @Transactional(readOnly = true)

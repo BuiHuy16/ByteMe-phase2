@@ -19,6 +19,7 @@ import org.example.entity.*;
 import org.example.repository.OrderRepository;
 import org.example.service.OrderService;
 import org.example.shared.api.Role;
+import org.springframework.data.domain.PageRequest;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -151,28 +152,81 @@ class OrderServiceTest {
     }
 
     @Test void customerListIsAlwaysScopedAndEmployeeDefaultsToActiveOrders() {
-        when(orders.findPage(any(), any(), any(), anyInt(), anyInt())).thenReturn(List.of(order(OrderType.DINE_IN, OrderStatus.PENDING)));
+        when(orders.findPageIds(any(), any(), any(), any())).thenReturn(List.of(1001L));
+        when(orders.findWithItemsByIdIn(List.of(1001L)))
+                .thenReturn(List.of(order(OrderType.DINE_IN, OrderStatus.PENDING)));
         when(orders.countMatching(any(), any(), any())).thenReturn(7L);
         var page = service.list(CUSTOMER, Role.CUSTOMER, null, null, 0, 20);
         assertEquals(7L, page.totalElements());
         assertEquals(1, page.content().size());
         assertEquals(new BigDecimal("130000.00"), page.content().getFirst().totalAmount());
-        verify(orders).findPage(4L, List.of(OrderStatus.values()), null, 0, 20);
+        verify(orders).findPageIds(4L, List.of(OrderStatus.values()), null, PageRequest.of(0, 20));
         verify(orders).countMatching(4L, List.of(OrderStatus.values()), null);
 
         var active = List.of(OrderStatus.PENDING, OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.SHIPPING);
         service.list(EMPLOYEE, Role.EMPLOYEE, null, null, 0, 20);
-        verify(orders).findPage(null, active, null, 0, 20);
+        verify(orders).findPageIds(null, active, null, PageRequest.of(0, 20));
         service.list(EMPLOYEE, Role.EMPLOYEE, OrderStatus.PENDING, OrderType.DINE_IN, 1, 5);
-        verify(orders).findPage(null, List.of(OrderStatus.PENDING), OrderType.DINE_IN, 1, 5);
+        verify(orders).findPageIds(null, List.of(OrderStatus.PENDING), OrderType.DINE_IN, PageRequest.of(1, 5));
         service.list(CUSTOMER, Role.CUSTOMER, OrderStatus.COMPLETED, OrderType.DELIVERY, 2, 100);
-        verify(orders).findPage(4L, List.of(OrderStatus.COMPLETED), OrderType.DELIVERY, 2, 100);
+        verify(orders).findPageIds(4L, List.of(OrderStatus.COMPLETED), OrderType.DELIVERY, PageRequest.of(2, 100));
 
         assertCode("VALIDATION_ERROR", () -> service.list(CUSTOMER, Role.CUSTOMER, null, null, -1, 20));
         assertCode("VALIDATION_ERROR", () -> service.list(CUSTOMER, Role.CUSTOMER, null, null, 0, 0));
         assertCode("VALIDATION_ERROR", () -> service.list(CUSTOMER, Role.CUSTOMER, null, null, 0, 101));
         assertCode("VALIDATION_ERROR", () -> service.list(CUSTOMER, Role.CUSTOMER, null, null, Integer.MAX_VALUE, 20));
         service.list(CUSTOMER, Role.CUSTOMER, null, null, Integer.MAX_VALUE / 100, 100);
+    }
+
+    @Test void listRestoresPageIdOrderBeforeMappingAndCounting() {
+        Order first = order(OrderType.DINE_IN, OrderStatus.PENDING);
+        first.setId(1001L);
+        Order second = order(OrderType.DELIVERY, OrderStatus.CONFIRMED);
+        second.setId(1002L);
+        when(orders.findPageIds(4L, List.of(OrderStatus.values()), null, PageRequest.of(0, 20)))
+                .thenReturn(List.of(1002L, 1001L));
+        when(orders.findWithItemsByIdIn(List.of(1002L, 1001L))).thenReturn(List.of(first, second));
+        when(orders.countMatching(4L, List.of(OrderStatus.values()), null)).thenReturn(2L);
+
+        OrderPage page = service.list(CUSTOMER, Role.CUSTOMER, null, null, 0, 20);
+
+        assertEquals(List.of(1002L, 1001L), page.content().stream().map(OrderDto::id).toList());
+        assertEquals(2L, page.totalElements());
+    }
+
+    @Test void emptyPageSkipsBulkFetchButStillCounts() {
+        when(orders.findPageIds(4L, List.of(OrderStatus.values()), null, PageRequest.of(3, 20)))
+                .thenReturn(List.of());
+        when(orders.countMatching(4L, List.of(OrderStatus.values()), null)).thenReturn(47L);
+
+        OrderPage page = service.list(CUSTOMER, Role.CUSTOMER, null, null, 3, 20);
+
+        assertTrue(page.content().isEmpty());
+        assertEquals(47L, page.totalElements());
+        verify(orders, never()).findWithItemsByIdIn(any());
+    }
+
+    @Test void listRejectsMissingUnexpectedAndDuplicateFetchedOrders() {
+        Order first = order(OrderType.DINE_IN, OrderStatus.PENDING);
+        first.setId(1001L);
+        Order second = order(OrderType.DINE_IN, OrderStatus.PENDING);
+        second.setId(1002L);
+        when(orders.findPageIds(any(), any(), any(), any()))
+                .thenReturn(List.of(1001L, 1002L), List.of(1001L), List.of(1001L));
+        when(orders.findWithItemsByIdIn(List.of(1001L, 1002L))).thenReturn(List.of(first));
+        when(orders.findWithItemsByIdIn(List.of(1001L)))
+                .thenReturn(List.of(second), List.of(first, first));
+
+        assertTrue(assertThrows(IllegalStateException.class,
+                () -> service.list(CUSTOMER, Role.CUSTOMER, null, null, 0, 20))
+                .getMessage().contains("missing"));
+        assertTrue(assertThrows(IllegalStateException.class,
+                () -> service.list(CUSTOMER, Role.CUSTOMER, null, null, 0, 20))
+                .getMessage().contains("unexpected"));
+        assertTrue(assertThrows(IllegalStateException.class,
+                () -> service.list(CUSTOMER, Role.CUSTOMER, null, null, 0, 20))
+                .getMessage().contains("duplicate"));
+        verify(orders, never()).countMatching(any(), any(), any());
     }
 
     @Test void ownershipIsCheckedBeforeAnyMutation() {
