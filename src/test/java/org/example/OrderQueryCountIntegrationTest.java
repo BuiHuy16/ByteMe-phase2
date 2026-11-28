@@ -1,7 +1,9 @@
 package org.example;
 
 import jakarta.persistence.EntityManagerFactory;
+import java.math.BigDecimal;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import org.example.dto.OrderPage;
@@ -9,6 +11,7 @@ import org.example.entity.Order;
 import org.example.entity.OrderItem;
 import org.example.entity.OrderStatus;
 import org.example.entity.OrderType;
+import org.example.entity.PaymentMethod;
 import org.example.repository.OrderRepository;
 import org.example.service.OrderService;
 import org.example.shared.api.Role;
@@ -32,6 +35,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
@@ -140,6 +144,101 @@ class OrderQueryCountIntegrationTest {
         assertEquals(0L, statistics.getCollectionFetchCount());
     }
 
+    @Test
+    void listContractPreservesScopedFiltersStablePagesAndTotals() {
+        insertOrder(4_201L, CUSTOMER_ID, OrderStatus.COMPLETED, OrderType.DINE_IN,
+                "2026-10-03 10:00:00.000000");
+        insertItem(4_201L, 13_001L);
+        insertOrder(4_202L, CUSTOMER_ID, OrderStatus.PENDING, OrderType.DELIVERY,
+                "2026-10-04 10:00:00.000000");
+        insertItem(4_202L, 13_002L);
+
+        OrderPage first = service.list(CUSTOMER_ID, Role.CUSTOMER,
+                OrderStatus.PENDING, OrderType.DINE_IN, 0, 20);
+        OrderPage second = service.list(CUSTOMER_ID, Role.CUSTOMER,
+                OrderStatus.PENDING, OrderType.DINE_IN, 1, 20);
+        OrderPage last = service.list(CUSTOMER_ID, Role.CUSTOMER,
+                OrderStatus.PENDING, OrderType.DINE_IN, 2, 20);
+        OrderPage empty = service.list(CUSTOMER_ID, Role.CUSTOMER,
+                OrderStatus.PENDING, OrderType.DINE_IN, 3, 20);
+
+        assertPageMetadata(first, 0, 20, 50L, 20);
+        assertPageMetadata(second, 1, 20, 50L, 20);
+        assertPageMetadata(last, 2, 20, 50L, 10);
+        assertPageMetadata(empty, 3, 20, 50L, 0);
+
+        List<Long> allIds = java.util.stream.Stream.of(first, second, last)
+                .flatMap(result -> result.content().stream())
+                .map(order -> order.id())
+                .toList();
+        List<Long> expectedIds = java.util.stream.LongStream
+                .rangeClosed(FIRST_ORDER_ID, FIRST_ORDER_ID + ORDER_COUNT - 1)
+                .boxed()
+                .sorted(java.util.Comparator.reverseOrder())
+                .toList();
+        assertEquals(expectedIds, allIds, "Tie ordering and page boundaries must be deterministic");
+        assertEquals(ORDER_COUNT, new HashSet<>(allIds).size(), "Adjacent pages must not duplicate roots");
+
+        OrderPage completed = service.list(CUSTOMER_ID, Role.CUSTOMER,
+                OrderStatus.COMPLETED, OrderType.DINE_IN, 0, 20);
+        assertEquals(List.of(4_201L), completed.content().stream().map(order -> order.id()).toList());
+        assertEquals(1L, completed.totalElements());
+
+        OrderPage delivery = service.list(CUSTOMER_ID, Role.CUSTOMER,
+                OrderStatus.PENDING, OrderType.DELIVERY, 0, 20);
+        assertEquals(List.of(4_202L), delivery.content().stream().map(order -> order.id()).toList());
+        assertEquals(1L, delivery.totalElements());
+
+        OrderPage employeeQueue = service.list(2L, Role.EMPLOYEE, null, null, 0, 100);
+        assertEquals(52L, employeeQueue.totalElements());
+        assertEquals(List.of(4_202L, 3_001L), employeeQueue.content().stream()
+                .limit(2)
+                .map(order -> order.id())
+                .toList());
+        assertTrue(employeeQueue.content().stream().noneMatch(order -> order.id() == 4_201L));
+    }
+
+    @Test
+    void listContractPreservesZeroAndMultiItemOrderDtos() {
+        insertOrder(4_301L, CUSTOMER_ID, "2026-10-08 10:00:00.000000");
+        insertOrder(4_302L, CUSTOMER_ID, "2026-10-08 10:00:00.000000");
+        insertItem(4_302L, 14_002L, 2L);
+        insertItem(4_302L, 14_001L, 1L);
+
+        OrderPage page = service.list(CUSTOMER_ID, Role.CUSTOMER,
+                OrderStatus.PENDING, OrderType.DINE_IN, 0, 2);
+
+        assertPageMetadata(page, 0, 2, 52L, 2);
+        assertEquals(List.of(4_302L, 4_301L), page.content().stream().map(order -> order.id()).toList());
+
+        var multiItem = page.content().get(0);
+        assertEquals(CUSTOMER_ID, multiItem.userId());
+        assertEquals(OrderType.DINE_IN, multiItem.orderType());
+        assertEquals(OrderStatus.PENDING, multiItem.status());
+        assertEquals("B01", multiItem.tableNumber());
+        assertEquals(PaymentMethod.CASH, multiItem.paymentMethod());
+        assertNull(multiItem.recipientName());
+        assertNull(multiItem.shippingPhone());
+        assertNull(multiItem.shippingAddress());
+        assertNull(multiItem.note());
+        assertNull(multiItem.confirmedBy());
+        assertNull(multiItem.confirmedAt());
+        assertNull(multiItem.cancelledAt());
+        assertNull(multiItem.completedAt());
+        assertEquals(java.time.Instant.parse("2026-10-08T10:00:00Z"), multiItem.createdAt());
+        assertEquals(multiItem.createdAt(), multiItem.updatedAt());
+        assertEquals(List.of(1L, 2L), multiItem.items().stream().map(item -> item.foodId()).toList());
+        assertTrue(multiItem.items().stream().allMatch(item -> item.foodName().equals("Phở bò tái")));
+        assertTrue(multiItem.items().stream().allMatch(item -> item.unitPrice().equals(new BigDecimal("65000.00"))));
+        assertTrue(multiItem.items().stream().allMatch(item -> item.quantity() == 1));
+        assertTrue(multiItem.items().stream().allMatch(item -> item.lineTotal().equals(new BigDecimal("65000.00"))));
+        assertEquals(new BigDecimal("130000.00"), multiItem.totalAmount());
+
+        var zeroItem = page.content().get(1);
+        assertTrue(zeroItem.items().isEmpty());
+        assertEquals(new BigDecimal("0.00"), zeroItem.totalAmount());
+    }
+
     @ParameterizedTest(name = "page size {0} exposes one lazy item SELECT per order")
     @ValueSource(ints = {1, 5, 20, 50})
     void baselineQueryCountGrowsWithPageSize(int size) {
@@ -191,6 +290,14 @@ class OrderQueryCountIntegrationTest {
                 .toList();
         assertEquals(expectedIds, page.content().stream().map(order -> order.id()).toList(),
                 "Orders có cùng createdAt phải dùng id DESC và giữ customer scope");
+    }
+
+    private static void assertPageMetadata(OrderPage page, int expectedPage, int expectedSize,
+                                           long expectedTotal, int expectedContentSize) {
+        assertEquals(expectedPage, page.page());
+        assertEquals(expectedSize, page.size());
+        assertEquals(expectedTotal, page.totalElements());
+        assertEquals(expectedContentSize, page.content().size());
     }
 
     private void insertOrder(long orderId, long userId, String createdAt) {
