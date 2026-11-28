@@ -2,6 +2,7 @@ package org.example;
 
 import jakarta.persistence.EntityManagerFactory;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -16,6 +17,7 @@ import org.example.repository.OrderRepository;
 import org.example.service.OrderService;
 import org.example.shared.api.Role;
 import org.hibernate.SessionFactory;
+import org.hibernate.resource.jdbc.spi.StatementInspector;
 import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +37,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -57,6 +60,8 @@ class OrderQueryCountIntegrationTest {
         properties.add("spring.datasource.username", MYSQL::getUsername);
         properties.add("spring.datasource.password", MYSQL::getPassword);
         properties.add("spring.jpa.properties.hibernate.generate_statistics", () -> "true");
+        properties.add("spring.jpa.properties.hibernate.session_factory.statement_inspector",
+                () -> SqlCapture.class.getName());
         TestAuthKeys.register(properties);
     }
 
@@ -239,33 +244,42 @@ class OrderQueryCountIntegrationTest {
         assertEquals(new BigDecimal("0.00"), zeroItem.totalAmount());
     }
 
-    @ParameterizedTest(name = "page size {0} exposes one lazy item SELECT per order")
-    @ValueSource(ints = {1, 5, 20, 50})
-    void baselineQueryCountGrowsWithPageSize(int size) {
-        QueryResult result = listAndMeasure(size);
-
-        assertPageFixture(result.page(), size);
-        assertEquals(size, result.collectionFetches(),
-                "Baseline phải phát hiện đúng một lazy collection fetch cho mỗi Order trong page");
-        assertEquals(size + 2L, result.preparedStatements(),
-                "Baseline service call gồm page SELECT, count SELECT và N item SELECT");
-    }
-
-    @ParameterizedTest(name = "page size {0} must fit the approved query budget")
+    @ParameterizedTest(name = "page size {0} uses three SELECTs without lazy item fetches")
     @ValueSource(ints = {1, 5, 20, 50})
     void orderListMustUseAtMostFourSelects(int size) {
         QueryResult result = listAndMeasure(size);
 
         assertPageFixture(result.page(), size);
+        assertEquals(3, result.selects().size(), "Expected page IDs, joined Orders/items, and count SELECTs");
+        assertEquals(0, result.collectionFetches(), "DTO mapping must not lazy-load order items");
         assertTrue(result.preparedStatements() <= 4,
                 () -> "N+1 detected for page size " + size + ": captured "
                         + result.preparedStatements() + " statements; target is <= 4");
+        assertEquals(1, result.selects().stream().filter(sql -> sql.contains(" left join order_items ")).count(),
+                "Orders/items must be fetched in one joined SELECT");
+        assertEquals(1, result.selects().stream().filter(sql -> sql.contains("select count(")).count(),
+                "Total must use one explicit count SELECT");
+        assertEquals(1, result.selects().stream().filter(sql -> sql.contains(" from orders ")
+                && sql.contains(" order by ") && sql.contains(" limit ")
+                && !sql.contains(" join ")).count(), "Only the Order ID query may paginate");
+        assertTrue(result.selects().stream().filter(sql -> sql.contains(" left join order_items "))
+                .noneMatch(sql -> sql.contains(" limit ")), "Collection fetch must not paginate");
+        assertFalse(result.selects().stream().anyMatch(sql -> sql.contains(" from order_items ")),
+                "No separate item SELECT may run for each Order");
+        System.out.printf("G4-B-06 size=%d app SELECT=%d captured statements=%d collection fetches=%d%n",
+                size, result.selects().size(), result.preparedStatements(), result.collectionFetches());
     }
 
     private QueryResult listAndMeasure(int size) {
         statistics.clear();
-        OrderPage page = service.list(CUSTOMER_ID, Role.CUSTOMER, null, null, 0, size);
-        return new QueryResult(page, statistics.getPrepareStatementCount(), statistics.getCollectionFetchCount());
+        SqlCapture.start();
+        try {
+            OrderPage page = service.list(CUSTOMER_ID, Role.CUSTOMER, null, null, 0, size);
+            return new QueryResult(page, statistics.getPrepareStatementCount(),
+                    statistics.getCollectionFetchCount(), SqlCapture.current());
+        } finally {
+            SqlCapture.stop();
+        }
     }
 
     private List<Long> findPageIds(Long userId, Collection<OrderStatus> statuses, OrderType type,
@@ -324,5 +338,32 @@ class OrderQueryCountIntegrationTest {
                 """, itemId, orderId, foodId);
     }
 
-    private record QueryResult(OrderPage page, long preparedStatements, long collectionFetches) {}
+    private record QueryResult(OrderPage page, long preparedStatements, long collectionFetches,
+                               List<String> selects) {}
+
+    public static final class SqlCapture implements StatementInspector {
+        private static final ThreadLocal<List<String>> SELECTS = new ThreadLocal<>();
+
+        static void start() {
+            SELECTS.set(new ArrayList<>());
+        }
+
+        static List<String> current() {
+            List<String> selects = SELECTS.get();
+            return selects == null ? List.of() : List.copyOf(selects);
+        }
+
+        static void stop() {
+            SELECTS.remove();
+        }
+
+        @Override
+        public String inspect(String sql) {
+            List<String> selects = SELECTS.get();
+            if (selects != null && sql.stripLeading().regionMatches(true, 0, "select", 0, 6)) {
+                selects.add(sql.toLowerCase(java.util.Locale.ROOT).replaceAll("\\s+", " "));
+            }
+            return sql;
+        }
+    }
 }

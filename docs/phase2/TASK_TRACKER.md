@@ -59,6 +59,7 @@ Local dependency gate chỉ cho phép triển khai tuần tự các task G4-B tr
 - G4-B-02: local commit `d3f499d`; page-ID query đạt acceptance kỹ thuật với owner/status/type scope, stable sort `createdAt DESC, id DESC`, pagination chỉ trên ID query và không có count ẩn. G4-B-03 được mở local dependency gate; G4-B-02 vẫn `TODO` cho đến khi đủ điều kiện push/evidence/review của Git workflow.
 - G4-B-03: local commit `eeb54ed`; bulk fetch dùng non-paginated `select distinct` + `left join fetch`, giữ zero-item Order, de-duplicate root và không phát sinh lazy item query/order. G4-B-04 được mở local dependency gate; G4-B-03 vẫn `TODO` cho đến khi đủ điều kiện push/evidence/review của Git workflow.
 - G4-B-04: local commit `18e45c7`; `OrderService.list` thực hiện page IDs → bulk fetch → validate/reorder → DTO mapping → count trong read-only transaction, xử lý empty page và giữ scoped filters/API contract; targeted query count là 3 SELECT cho non-empty page. G4-B-05 được mở local dependency gate; G4-B-04 vẫn `TODO` cho đến khi đủ điều kiện push/evidence/review của Git workflow.
+- G4-B-05: local commit `e5fb010`; bốn targeted MySQL/Testcontainers contract tests pass (4/4), xác nhận scope/filter, deterministic page boundaries/totals, zero/multi-item DTO fields và item order. G4-B-06 được mở local dependency gate; G4-B-05 vẫn `TODO` cho đến khi đủ điều kiện push/evidence/review của Git workflow.
 
 ## 4. G4-C — Dependency boundaries
 
